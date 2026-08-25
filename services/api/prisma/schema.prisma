@@ -44,6 +44,7 @@ model SyncOperation {
   entityId    String   @db.Uuid @map("entity_id")
   operation   String
   version     Int
+  payload     Json
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([userId, sequence])
