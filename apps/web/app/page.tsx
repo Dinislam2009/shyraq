@@ -14,12 +14,12 @@ const navItems = [
   { href: "/habits", label: "Habits" },
   { href: "/calendar", label: "Calendar" },
   { href: "/learning", label: "Learning" },
+  { href: "/analytics", label: "Analytics" },
 ];
 
 function Dashboard() {
   const session = useAuthSession();
   if (!session) return null;
-
   const now = new Date();
   const dateLabel = new Intl.DateTimeFormat("kk-KZ", { weekday: "long", month: "long", day: "numeric" }).format(now);
 
@@ -29,25 +29,14 @@ function Dashboard() {
         <div className="brand">SHYRAQ</div>
         <p className="brand-subtitle">Productivity & learning OS</p>
         <nav aria-label="Primary navigation" className="nav-list">
-          {navItems.map((item, index) => (
-            <Link className={`nav-item ${index === 0 ? "nav-item-active" : ""}`} href={item.href} key={item.href}>
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item, index) => <Link className={`nav-item ${index === 0 ? "nav-item-active" : ""}`} href={item.href} key={item.href}>{item.label}</Link>)}
         </nav>
       </aside>
-
       <section className="content-panel">
         <header className="topbar">
-          <div>
-            <p className="eyebrow">{dateLabel}</p>
-            <h1>Бүгін</h1>
-          </div>
-          <div className="connection-status" aria-label="Connection status">
-            <span className="status-dot" /> Online
-          </div>
+          <div><p className="eyebrow">{dateLabel}</p><h1>Бүгін</h1></div>
+          <div className="connection-status" aria-label="Connection status"><span className="status-dot" /> Online</div>
         </header>
-
         <DashboardSummary accessToken={session.access_token} />
         <FocusTimer accessToken={session.access_token} />
         <FocusHistory accessToken={session.access_token} />
@@ -57,10 +46,4 @@ function Dashboard() {
   );
 }
 
-export default function HomePage() {
-  return (
-    <AuthGate>
-      <Dashboard />
-    </AuthGate>
-  );
-}
+export default function HomePage() { return <AuthGate><Dashboard /></AuthGate>; }
