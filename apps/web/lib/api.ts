@@ -25,9 +25,12 @@ type TaskUpdateInput = Partial<TaskInput> & { status?: "TODO" | "IN_PROGRESS" | 
 export type HabitCompletion = { id: string; date: string };
 export type Habit = { id: string; title: string; description: string | null; frequency: "DAILY"; completions: HabitCompletion[] };
 export type FocusSession = { id: string; taskId: string | null; status: "RUNNING" | "COMPLETED" | "CANCELLED"; startedAt: string; endedAt: string | null; durationSeconds: number | null; task?: Task | null };
+export type CardState = { id: string; cardId: string; status: "NEW" | "LEARNING" | "REVIEW"; repetitions: number; interval: number; easeFactor: string | number; dueAt: string; lastReviewedAt: string | null; lapses: number };
 export type FlashcardDeck = { id: string; name: string; description: string | null; archivedAt: string | null; createdAt: string; updatedAt: string; _count?: { cards: number } };
-export type Flashcard = { id: string; deckId: string; front: string; back: string; position: number; createdAt: string; updatedAt: string };
-export type FlashcardProgress = { cardCount: number; reviewCount: number; correctCount: number; reviewedCardCount: number; completionPercent: number };
+export type Flashcard = { id: string; deckId: string; front: string; back: string; position: number; createdAt: string; updatedAt: string; state?: CardState | null };
+export type FlashcardProgress = { cardCount: number; reviewCount: number; correctCount: number; reviewedCardCount: number; dueCount: number; completionPercent: number };
+export type ReviewRating = "AGAIN" | "HARD" | "GOOD" | "EASY";
+export type FlashcardReviewResult = { review: { id: string; rating: ReviewRating; correct: boolean; reviewedAt: string }; state: CardState };
 export type AnalyticsSeries = { date: string; tasksCompleted: number; habitsCompleted: number; focusMinutes: number; reviews: number; correctReviews: number };
 export type Analytics = { days: number; range: { from: string; to: string }; totals: { tasksCompleted: number; habitsCompleted: number; focusMinutes: number; reviews: number; correctReviews: number; reviewAccuracy: number; activeHabits: number; activeDecks: number }; series: AnalyticsSeries[] };
 
@@ -61,10 +64,11 @@ export function cancelFocus(id: string, accessToken?: string) { return request<F
 export function getFlashcardDecks(accessToken?: string) { return request<FlashcardDeck[]>("/api/v1/learning/decks", {}, accessToken); }
 export function createFlashcardDeck(input: { name: string; description?: string | null }, accessToken?: string) { return request<FlashcardDeck>("/api/v1/learning/decks", { method: "POST", body: JSON.stringify(input) }, accessToken); }
 export function getFlashcards(deckId: string, accessToken?: string) { return request<Flashcard[]>(`/api/v1/learning/decks/${deckId}/cards`, {}, accessToken); }
+export function getDueFlashcards(deckId: string, accessToken?: string) { return request<Flashcard[]>(`/api/v1/learning/decks/${deckId}/due`, {}, accessToken); }
 export function createFlashcard(deckId: string, input: { front: string; back: string; position?: number }, accessToken?: string) { return request<Flashcard>(`/api/v1/learning/decks/${deckId}/cards`, { method: "POST", body: JSON.stringify(input) }, accessToken); }
 export function updateFlashcard(deckId: string, cardId: string, input: Partial<{ front: string; back: string; position: number }>, accessToken?: string) { return request<Flashcard>(`/api/v1/learning/decks/${deckId}/cards/${cardId}`, { method: "PATCH", body: JSON.stringify(input) }, accessToken); }
 export function deleteFlashcard(deckId: string, cardId: string, accessToken?: string) { return request<void>(`/api/v1/learning/decks/${deckId}/cards/${cardId}`, { method: "DELETE" }, accessToken); }
 export function archiveFlashcardDeck(deckId: string, accessToken?: string) { return request<FlashcardDeck>(`/api/v1/learning/decks/${deckId}`, { method: "PATCH", body: JSON.stringify({ archived: true }) }, accessToken); }
-export function reviewFlashcard(deckId: string, cardId: string, correct: boolean, accessToken?: string) { return request<{ id: string; correct: boolean }>(`/api/v1/learning/decks/${deckId}/cards/${cardId}/reviews`, { method: "POST", body: JSON.stringify({ correct }) }, accessToken); }
+export function reviewFlashcard(deckId: string, cardId: string, rating: ReviewRating, accessToken?: string) { return request<FlashcardReviewResult>(`/api/v1/learning/decks/${deckId}/cards/${cardId}/reviews`, { method: "POST", body: JSON.stringify({ rating }) }, accessToken); }
 export function getFlashcardProgress(deckId: string, accessToken?: string) { return request<FlashcardProgress>(`/api/v1/learning/decks/${deckId}/progress`, {}, accessToken); }
 export function getAnalytics(days = 7, accessToken?: string) { return request<Analytics>(`/api/v1/analytics?days=${days}`, {}, accessToken); }
