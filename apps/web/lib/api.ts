@@ -33,6 +33,9 @@ export type ReviewRating = "AGAIN" | "HARD" | "GOOD" | "EASY";
 export type FlashcardReviewResult = { review: { id: string; rating: ReviewRating; correct: boolean; reviewedAt: string }; state: CardState };
 export type AnalyticsSeries = { date: string; tasksCompleted: number; habitsCompleted: number; focusMinutes: number; reviews: number; correctReviews: number };
 export type Analytics = { days: number; range: { from: string; to: string }; totals: { tasksCompleted: number; habitsCompleted: number; focusMinutes: number; reviews: number; correctReviews: number; reviewAccuracy: number; activeHabits: number; activeDecks: number }; series: AnalyticsSeries[] };
+export type Notification = { id: string; type: string; title: string; message: string; readAt: string | null; createdAt: string; scheduledFor: string | null };
+export type NotificationPreferences = { id: string; userId: string; taskReminders: boolean; habitReminders: boolean; focusReminders: boolean; learningReminders: boolean };
+export type NotificationFeed = { notifications: Notification[]; unreadCount: number };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 async function request<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
@@ -72,3 +75,7 @@ export function archiveFlashcardDeck(deckId: string, accessToken?: string) { ret
 export function reviewFlashcard(deckId: string, cardId: string, rating: ReviewRating, accessToken?: string) { return request<FlashcardReviewResult>(`/api/v1/learning/decks/${deckId}/cards/${cardId}/reviews`, { method: "POST", body: JSON.stringify({ rating }) }, accessToken); }
 export function getFlashcardProgress(deckId: string, accessToken?: string) { return request<FlashcardProgress>(`/api/v1/learning/decks/${deckId}/progress`, {}, accessToken); }
 export function getAnalytics(days = 7, accessToken?: string) { return request<Analytics>(`/api/v1/analytics?days=${days}`, {}, accessToken); }
+export function getNotifications(accessToken?: string) { return request<NotificationFeed>("/api/v1/notifications", {}, accessToken); }
+export function markNotificationRead(id: string, accessToken?: string) { return request<{ ok: true }>(`/api/v1/notifications/${id}/read`, { method: "PATCH" }, accessToken); }
+export function getNotificationPreferences(accessToken?: string) { return request<NotificationPreferences>("/api/v1/notification-preferences", {}, accessToken); }
+export function updateNotificationPreferences(input: Partial<Pick<NotificationPreferences, "taskReminders" | "habitReminders" | "focusReminders" | "learningReminders">>, accessToken?: string) { return request<NotificationPreferences>("/api/v1/notification-preferences", { method: "PATCH", body: JSON.stringify(input) }, accessToken); }
