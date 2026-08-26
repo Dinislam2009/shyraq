@@ -24,10 +24,15 @@ test("authenticated sync pull cursor contract", { skip: !enabled }, async () => 
   assert.ifError(error);
   assert.ok(data.session?.access_token);
 
-  const headers = {
-    authorization: `Bearer ${data.session.access_token}`,
-    "content-type": "application/json",
-  };
+  const authHeaders = { authorization: `Bearer ${data.session.access_token}` };
+  const pushHeaders = { ...authHeaders, "content-type": "application/json" };
+
+  const baselineResponse = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=0&limit=500`, { headers: authHeaders });
+  const baselineText = await baselineResponse.text();
+  assert.equal(baselineResponse.status, 200, `baseline pull failed: HTTP ${baselineResponse.status}: ${baselineText}`);
+  const baseline = JSON.parse(baselineText) as { nextCursor: string };
+  const baselineCursor = baseline.nextCursor;
+
   const operations = Array.from({ length: 3 }, (_, index) => ({
     operationId: randomUUID(),
     entityType: "TASK" as const,
@@ -40,26 +45,22 @@ test("authenticated sync pull cursor contract", { skip: !enabled }, async () => 
 
   const push = await fetch(`${apiBaseUrl}/api/v1/sync/push`, {
     method: "POST",
-    headers,
+    headers: pushHeaders,
     body: JSON.stringify({ operations }),
   });
   const pushText = await push.text();
   assert.equal(push.status, 200, `push failed: HTTP ${push.status}: ${pushText}`);
 
-  const first = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=0&limit=2`, {
-    headers: { authorization: `Bearer ${data.session.access_token}` },
-  });
+  const first = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${baselineCursor}&limit=2`, { headers: authHeaders });
   const firstText = await first.text();
   assert.equal(first.status, 200, `first pull failed: HTTP ${first.status}: ${firstText}`);
   const firstBody = JSON.parse(firstText) as { cursor: string; nextCursor: string; hasMore: boolean; operations: Array<{ operationId: string; sequence: string }> };
-  assert.equal(firstBody.cursor, "0");
+  assert.equal(firstBody.cursor, baselineCursor);
   assert.equal(firstBody.operations.length, 2);
   assert.equal(firstBody.hasMore, true);
-  assert.ok(BigInt(firstBody.nextCursor) > 0n);
+  assert.ok(BigInt(firstBody.nextCursor) > BigInt(baselineCursor));
 
-  const second = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${firstBody.nextCursor}&limit=2`, {
-    headers: { authorization: `Bearer ${data.session.access_token}` },
-  });
+  const second = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${firstBody.nextCursor}&limit=2`, { headers: authHeaders });
   const secondText = await second.text();
   assert.equal(second.status, 200, `second pull failed: HTTP ${second.status}: ${secondText}`);
   const secondBody = JSON.parse(secondText) as { cursor: string; nextCursor: string; hasMore: boolean; operations: Array<{ operationId: string; sequence: string }> };
@@ -68,9 +69,7 @@ test("authenticated sync pull cursor contract", { skip: !enabled }, async () => 
   assert.equal(secondBody.operations[0]?.operationId, operations[2]?.operationId);
   assert.ok(BigInt(secondBody.nextCursor) > BigInt(firstBody.nextCursor));
 
-  const empty = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${secondBody.nextCursor}&limit=2`, {
-    headers: { authorization: `Bearer ${data.session.access_token}` },
-  });
+  const empty = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${secondBody.nextCursor}&limit=2`, { headers: authHeaders });
   const emptyText = await empty.text();
   assert.equal(empty.status, 200, `empty pull failed: HTTP ${empty.status}: ${emptyText}`);
   const emptyBody = JSON.parse(emptyText) as { cursor: string; nextCursor: string; hasMore: boolean; operations: unknown[] };
