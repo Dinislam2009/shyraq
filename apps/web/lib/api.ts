@@ -32,6 +32,16 @@ export type Habit = {
   completions: HabitCompletion[];
 };
 
+export type FocusSession = {
+  id: string;
+  taskId: string | null;
+  status: "RUNNING" | "COMPLETED" | "CANCELLED";
+  startedAt: string;
+  endedAt: string | null;
+  durationSeconds: number | null;
+  task?: Task | null;
+};
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 async function request<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
@@ -90,4 +100,23 @@ export function uncompleteHabit(id: string, accessToken?: string) {
 
 export function deleteHabit(id: string, accessToken?: string) {
   return request<void>(`/api/v1/habits/${id}`, { method: "DELETE" }, accessToken);
+}
+
+export function getFocusSessions(accessToken?: string) {
+  return request<FocusSession[]>("/api/v1/focus", {}, accessToken);
+}
+
+export function startFocus(taskId?: string | null, accessToken?: string) {
+  return request<FocusSession>("/api/v1/focus", {
+    method: "POST",
+    body: JSON.stringify({ taskId: taskId ?? null }),
+  }, accessToken);
+}
+
+export function completeFocus(id: string, accessToken?: string) {
+  return request<FocusSession>(`/api/v1/focus/${id}/complete`, { method: "POST" }, accessToken);
+}
+
+export function cancelFocus(id: string, accessToken?: string) {
+  return request<FocusSession>(`/api/v1/focus/${id}/cancel`, { method: "POST" }, accessToken);
 }
