@@ -24,12 +24,18 @@ async function request<T>(path: string, init: RequestInit = {}, accessToken?: st
   return response.json() as Promise<T>;
 }
 
-export function getHabits(accessToken?: string) {
-  return request<Habit[]>("/api/v1/habits", {}, accessToken);
+function normalizeHabit(habit: Habit): Habit {
+  return { ...habit, completions: Array.isArray(habit.completions) ? habit.completions : [] };
 }
 
-export function createHabit(input: { title: string; description?: string | null }, accessToken?: string) {
-  return request<Habit>("/api/v1/habits", { method: "POST", body: JSON.stringify(input) }, accessToken);
+export async function getHabits(accessToken?: string) {
+  const habits = await request<Habit[]>("/api/v1/habits", {}, accessToken);
+  return habits.map(normalizeHabit);
+}
+
+export async function createHabit(input: { title: string; description?: string | null }, accessToken?: string) {
+  const habit = await request<Habit>("/api/v1/habits", { method: "POST", body: JSON.stringify(input) }, accessToken);
+  return normalizeHabit(habit);
 }
 
 export function deleteHabit(id: string, accessToken?: string) {
