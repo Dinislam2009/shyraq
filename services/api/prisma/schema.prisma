@@ -15,6 +15,7 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   tasks Task[]
+  habits Habit[]
 
   @@map("users")
 }
@@ -37,6 +38,38 @@ model Task {
   @@index([userId])
   @@index([userId, updatedAt])
   @@map("tasks")
+}
+
+model Habit {
+  id          String            @id @db.Uuid
+  userId      String            @db.Uuid @map("user_id")
+  title       String
+  description String?
+  frequency   String            @default("DAILY")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  archivedAt  DateTime?         @map("archived_at")
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions HabitCompletion[]
+
+  @@index([userId, archivedAt])
+  @@map("habits")
+}
+
+model HabitCompletion {
+  id        String   @id @db.Uuid
+  habitId   String   @db.Uuid @map("habit_id")
+  userId    String   @db.Uuid @map("user_id")
+  date      DateTime @db.Date
+  createdAt DateTime @default(now()) @map("created_at")
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+  @@map("habit_completions")
 }
 
 model SyncOperation {
