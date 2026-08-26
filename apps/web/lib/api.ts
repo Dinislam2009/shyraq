@@ -19,6 +19,19 @@ type TaskUpdateInput = Partial<TaskInput> & {
   status?: "TODO" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 };
 
+export type HabitCompletion = {
+  id: string;
+  date: string;
+};
+
+export type Habit = {
+  id: string;
+  title: string;
+  description: string | null;
+  frequency: "DAILY";
+  completions: HabitCompletion[];
+};
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 async function request<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
@@ -49,4 +62,32 @@ export function updateTask(id: string, input: TaskUpdateInput, accessToken?: str
 
 export function deleteTask(id: string, accessToken?: string) {
   return request<void>(`/api/v1/tasks/${id}`, { method: "DELETE" }, accessToken);
+}
+
+export function getHabits(accessToken?: string) {
+  return request<Habit[]>("/api/v1/habits", {}, accessToken);
+}
+
+export function createHabit(title: string, accessToken?: string) {
+  return request<Habit>("/api/v1/habits", {
+    method: "POST",
+    body: JSON.stringify({ title }),
+  }, accessToken);
+}
+
+export function completeHabit(id: string, accessToken?: string) {
+  return request<HabitCompletion>(`/api/v1/habits/${id}/completions`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  }, accessToken);
+}
+
+export function uncompleteHabit(id: string, accessToken?: string) {
+  return request<void>(`/api/v1/habits/${id}/completions/today`, {
+    method: "DELETE",
+  }, accessToken);
+}
+
+export function deleteHabit(id: string, accessToken?: string) {
+  return request<void>(`/api/v1/habits/${id}`, { method: "DELETE" }, accessToken);
 }
