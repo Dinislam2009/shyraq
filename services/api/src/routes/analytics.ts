@@ -42,9 +42,12 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
 
     const totalReviews = reviews.length;
     const correctReviews = reviews.filter((review) => review.correct).length;
+    const firstDay = series[0]!;
+    const lastDay = series[series.length - 1]!;
+
     return {
       days,
-      range: { from: series[0].date, to: series[series.length - 1].date },
+      range: { from: firstDay.date, to: lastDay.date },
       totals: {
         tasksCompleted: tasks.length,
         habitsCompleted: completions.length,
