@@ -10,12 +10,13 @@ datasource db {
 }
 
 model User {
-  id        String   @id @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id               String            @id @db.Uuid
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
 
-  tasks Task[]
-  habits Habit[]
+  tasks            Task[]
+  habits           Habit[]
+  habitCompletions HabitCompletion[]
 
   @@map("users")
 }
