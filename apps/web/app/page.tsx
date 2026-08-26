@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TaskBoard } from "../components/task-board";
 
 const navItems = [
   { href: "/", label: "Today" },
@@ -32,44 +33,7 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="quick-add" aria-label="Quick add">
-          <span className="plus-icon">+</span>
-          <span>Жаңа тапсырма</span>
-        </section>
-
-        <section className="tasks-section" aria-labelledby="tasks-heading">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Focus</p>
-              <h2 id="tasks-heading">Тапсырмалар</h2>
-            </div>
-            <span className="task-count">3</span>
-          </div>
-
-          <div className="task-list">
-            <article className="task-card">
-              <span className="checkbox" aria-hidden="true" />
-              <div>
-                <h3>Математика</h3>
-                <p>Бүгін, 18:00</p>
-              </div>
-            </article>
-            <article className="task-card">
-              <span className="checkbox" aria-hidden="true" />
-              <div>
-                <h3>English</h3>
-                <p>Бүгін, 20:00</p>
-              </div>
-            </article>
-            <article className="task-card">
-              <span className="checkbox" aria-hidden="true" />
-              <div>
-                <h3>Shyraq project</h3>
-                <p>Priority: High</p>
-              </div>
-            </article>
-          </div>
-        </section>
+        <TaskBoard />
       </section>
     </main>
   );
