@@ -82,5 +82,13 @@ h3 { margin-bottom:6px; font-size:15px; }
 .dashboard-mini-item { display:flex; align-items:center; gap:9px; min-width:0; font-size:14px; }
 .mini-dot { width:9px; height:9px; flex:0 0 auto; border:1px solid #97a59a; border-radius:50%; background:var(--panel); }
 .mini-dot-done { border-color:var(--accent); background:var(--accent); }
+.board-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:30px; }
+.card-panel { padding:20px; border:1px solid var(--border); border-radius:14px; background:var(--panel); box-shadow:var(--shadow); }
+.card-panel strong { display:block; margin-top:12px; font-size:30px; }
+.card-panel > span { color:var(--muted); font-size:13px; }
+.analytics-chart { display:flex; align-items:flex-end; gap:8px; min-height:220px; margin-top:22px; padding:18px 8px 0; border-bottom:1px solid var(--border); }
+.analytics-bar-wrap { display:flex; flex:1; min-width:0; height:200px; flex-direction:column; align-items:center; justify-content:flex-end; gap:7px; }
+.analytics-bar { width:min(34px,80%); min-height:6px; border-radius:8px 8px 2px 2px; background:var(--accent); }
+.analytics-bar-wrap small { color:var(--muted); font-size:10px; }
 @media (max-width:900px) { .calendar-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media (max-width:760px) { .app-shell { grid-template-columns:1fr; } .sidebar { border-right:0; border-bottom:1px solid var(--border); } .nav-list { grid-template-columns:repeat(4,1fr); } .content-panel { padding:30px 20px 48px; } .calendar-toolbar { align-items:flex-start; flex-direction:column; } .calendar-actions { justify-content:flex-start; } .calendar-grid { grid-template-columns:1fr; } .calendar-card { display:grid; } .calendar-card time { min-width:0; } .dashboard-stats,.dashboard-lists { grid-template-columns:1fr; } }
+@media (max-width:760px) { .app-shell { grid-template-columns:1fr; } .sidebar { border-right:0; border-bottom:1px solid var(--border); } .nav-list { grid-template-columns:repeat(4,1fr); } .content-panel { padding:30px 20px 48px; } .calendar-toolbar { align-items:flex-start; flex-direction:column; } .calendar-actions { justify-content:flex-start; } .calendar-grid { grid-template-columns:1fr; } .calendar-card { display:grid; } .calendar-card time { min-width:0; } .dashboard-stats,.dashboard-lists,.board-grid { grid-template-columns:1fr; } }
