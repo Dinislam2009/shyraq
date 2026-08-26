@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { prisma } from "../lib/prisma.js";
 
 interface SyncQuery {
   cursor?: string;
@@ -19,11 +20,8 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const cursorValue = BigInt(cursor);
-    const operations = await app.prisma.syncOperation.findMany({
-      where: {
-        userId,
-        sequence: { gt: cursorValue },
-      },
+    const operations = await prisma.syncOperation.findMany({
+      where: { userId, sequence: { gt: cursorValue } },
       orderBy: { sequence: "asc" },
       take: limit,
     });
