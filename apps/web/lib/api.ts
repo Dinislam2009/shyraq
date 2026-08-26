@@ -1,3 +1,13 @@
+export type Project = {
+  id: string;
+  name: string;
+  description: string | null;
+  archivedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { tasks: number };
+};
+
 export type Task = {
   id: string;
   title: string;
@@ -6,6 +16,8 @@ export type Task = {
   priority: string;
   dueAt: string | null;
   version: number;
+  projectId?: string | null;
+  project?: Project | null;
 };
 
 type TaskInput = {
@@ -13,6 +25,7 @@ type TaskInput = {
   description?: string | null;
   priority?: "NONE" | "LOW" | "MEDIUM" | "HIGH";
   dueAt?: string | null;
+  projectId?: string | null;
 };
 
 type TaskUpdateInput = Partial<TaskInput> & {
@@ -56,6 +69,22 @@ async function request<T>(path: string, init: RequestInit = {}, accessToken?: st
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+export function getProjects(accessToken?: string) {
+  return request<Project[]>("/api/v1/projects", {}, accessToken);
+}
+
+export function createProject(input: { name: string; description?: string | null }, accessToken?: string) {
+  return request<Project>("/api/v1/projects", { method: "POST", body: JSON.stringify(input) }, accessToken);
+}
+
+export function updateProject(id: string, input: { name?: string; description?: string | null; archived?: boolean }, accessToken?: string) {
+  return request<Project>(`/api/v1/projects/${id}`, { method: "PATCH", body: JSON.stringify(input) }, accessToken);
+}
+
+export function deleteProject(id: string, accessToken?: string) {
+  return request<void>(`/api/v1/projects/${id}`, { method: "DELETE" }, accessToken);
 }
 
 export function getTasks(accessToken?: string) {
