@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DashboardSummary } from "../components/dashboard-summary";
 import { TaskBoard } from "../components/task-board";
 import { AuthGate, useAuthSession } from "../components/auth-gate";
 
@@ -14,6 +15,9 @@ const navItems = [
 function Dashboard() {
   const session = useAuthSession();
   if (!session) return null;
+
+  const now = new Date();
+  const dateLabel = new Intl.DateTimeFormat("kk-KZ", { weekday: "long", month: "long", day: "numeric" }).format(now);
 
   return (
     <main className="app-shell">
@@ -32,7 +36,7 @@ function Dashboard() {
       <section className="content-panel">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Wednesday, August 26</p>
+            <p className="eyebrow">{dateLabel}</p>
             <h1>Бүгін</h1>
           </div>
           <div className="connection-status" aria-label="Connection status">
@@ -40,6 +44,7 @@ function Dashboard() {
           </div>
         </header>
 
+        <DashboardSummary accessToken={session.access_token} />
         <TaskBoard accessToken={session.access_token} />
       </section>
     </main>
