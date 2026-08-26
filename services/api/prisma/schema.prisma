@@ -128,8 +128,24 @@ model Flashcard {
   updatedAt   DateTime      @updatedAt @map("updated_at")
   deck        FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
   reviews     FlashcardReview[]
+  state       CardState?
   @@index([deckId, position])
   @@map("flashcards")
+}
+
+model CardState {
+  id             String    @id @db.Uuid
+  cardId         String    @unique @db.Uuid @map("card_id")
+  status         String    @default("NEW")
+  repetitions    Int       @default(0)
+  interval       Int       @default(0)
+  easeFactor     Decimal   @default(2.5) @db.Decimal(4, 2) @map("ease_factor")
+  dueAt          DateTime  @default(now()) @map("due_at")
+  lastReviewedAt DateTime? @map("last_reviewed_at")
+  lapses         Int       @default(0)
+  card           Flashcard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  @@index([dueAt])
+  @@map("card_states")
 }
 
 model FlashcardReview {
