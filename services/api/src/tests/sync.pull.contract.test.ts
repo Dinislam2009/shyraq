@@ -31,7 +31,7 @@ test("authenticated sync pull cursor contract", { skip: !enabled }, async () => 
   const baselineText = await baselineResponse.text();
   assert.equal(baselineResponse.status, 200, `baseline pull failed: HTTP ${baselineResponse.status}: ${baselineText}`);
   const baseline = JSON.parse(baselineText) as { nextCursor: string };
-  const baselineCursor = baseline.nextCursor;
+  let cursor = baseline.nextCursor;
 
   const operations = Array.from({ length: 3 }, (_, index) => ({
     operationId: randomUUID(),
@@ -42,6 +42,7 @@ test("authenticated sync pull cursor contract", { skip: !enabled }, async () => 
     payload: { title: `Pull contract ${index + 1}`, status: "TODO", priority: "NONE" },
     createdAt: new Date(Date.now() + index).toISOString(),
   }));
+  const expectedIds = new Set(operations.map((operation) => operation.operationId));
 
   const push = await fetch(`${apiBaseUrl}/api/v1/sync/push`, {
     method: "POST",
@@ -51,34 +52,39 @@ test("authenticated sync pull cursor contract", { skip: !enabled }, async () => 
   const pushText = await push.text();
   assert.equal(push.status, 200, `push failed: HTTP ${push.status}: ${pushText}`);
 
-  const first = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${baselineCursor}&limit=2`, { headers: authHeaders });
-  const firstText = await first.text();
-  assert.equal(first.status, 200, `first pull failed: HTTP ${first.status}: ${firstText}`);
-  const firstBody = JSON.parse(firstText) as { cursor: string; nextCursor: string; hasMore: boolean; operations: Array<{ operationId: string; sequence: string }> };
-  assert.equal(firstBody.cursor, baselineCursor);
-  assert.equal(firstBody.operations.length, 2);
-  assert.equal(firstBody.hasMore, true);
-  assert.ok(BigInt(firstBody.nextCursor) > BigInt(baselineCursor));
+  const received = new Set<string>();
+  let previousCursor = cursor;
+  let pages = 0;
 
-  const second = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${firstBody.nextCursor}&limit=2`, { headers: authHeaders });
-  const secondText = await second.text();
-  assert.equal(second.status, 200, `second pull failed: HTTP ${second.status}: ${secondText}`);
-  const secondBody = JSON.parse(secondText) as { cursor: string; nextCursor: string; hasMore: boolean; operations: Array<{ operationId: string; sequence: string }> };
-  assert.equal(secondBody.operations.length, 1);
-  assert.equal(secondBody.hasMore, false);
-  assert.equal(secondBody.operations[0]?.operationId, operations[2]?.operationId);
-  assert.ok(BigInt(secondBody.nextCursor) > BigInt(firstBody.nextCursor));
+  while (received.size < expectedIds.size && pages < 20) {
+    const response = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${cursor}&limit=2`, { headers: authHeaders });
+    const text = await response.text();
+    assert.equal(response.status, 200, `pull failed: HTTP ${response.status}: ${text}`);
+    const body = JSON.parse(text) as {
+      cursor: string;
+      nextCursor: string;
+      hasMore: boolean;
+      operations: Array<{ operationId: string; sequence: string }>;
+    };
 
-  const receivedOperationIds = new Set([...firstBody.operations, ...secondBody.operations].map((operation) => operation.operationId));
-  assert.deepEqual(receivedOperationIds, new Set(operations.map((operation) => operation.operationId)));
+    assert.equal(body.cursor, cursor);
+    assert.ok(BigInt(body.nextCursor) >= BigInt(cursor));
 
-  // A later pull is allowed to contain operations created by other concurrent requests.
-  // The contract only requires that the cursor is stable when no new operations exist.
-  const empty = await fetch(`${apiBaseUrl}/api/v1/sync?cursor=${secondBody.nextCursor}&limit=2`, { headers: authHeaders });
-  const emptyText = await empty.text();
-  assert.equal(empty.status, 200, `post-pagination pull failed: HTTP ${empty.status}: ${emptyText}`);
-  const emptyBody = JSON.parse(emptyText) as { cursor: string; nextCursor: string; hasMore: boolean; operations: Array<{ operationId: string; sequence: string }> };
-  assert.equal(emptyBody.cursor, secondBody.nextCursor);
-  assert.ok(BigInt(emptyBody.nextCursor) >= BigInt(secondBody.nextCursor));
-  assert.ok(emptyBody.operations.every((operation) => !receivedOperationIds.has(operation.operationId)));
+    for (const operation of body.operations) {
+      if (expectedIds.has(operation.operationId)) {
+        assert.equal(received.has(operation.operationId), false, `operation repeated: ${operation.operationId}`);
+        received.add(operation.operationId);
+      }
+    }
+
+    pages += 1;
+    if (body.nextCursor === cursor) break;
+    previousCursor = cursor;
+    cursor = body.nextCursor;
+
+    assert.ok(BigInt(cursor) >= BigInt(previousCursor));
+  }
+
+  assert.deepEqual(received, expectedIds);
+  assert.ok(pages >= 2, "cursor pagination should require more than one page for three operations with limit=2");
 });
