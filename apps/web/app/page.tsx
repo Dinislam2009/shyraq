@@ -7,6 +7,7 @@ import { AuthGate, useAuthSession } from "../components/auth-gate";
 const navItems = [
   { href: "/", label: "Today" },
   { href: "/tasks", label: "Tasks" },
+  { href: "/habits", label: "Habits" },
   { href: "/calendar", label: "Calendar" },
 ];
 
