@@ -32,6 +32,21 @@ test("authenticated focus session contract", { skip: !enabled }, async () => {
     "content-type": "application/json",
   };
 
+  // A previous failed test run can leave a RUNNING session behind. Close any stale
+  // test-created running sessions so this contract is deterministic across reruns.
+  const existing = await fetch(`${apiBaseUrl}/api/v1/focus`, { headers: authHeaders });
+  const existingBodyText = await existing.text();
+  assert.equal(existing.status, 200, `preflight list failed: HTTP ${existing.status}: ${existingBodyText}`);
+  const existingSessions = JSON.parse(existingBodyText) as Array<{ id: string; status: string }>;
+  for (const item of existingSessions.filter((item) => item.status === "RUNNING")) {
+    const cleanup = await fetch(`${apiBaseUrl}/api/v1/focus/${item.id}/cancel`, {
+      method: "POST",
+      headers: authHeaders,
+    });
+    const cleanupBodyText = await cleanup.text();
+    assert.equal(cleanup.status, 200, `cleanup failed: HTTP ${cleanup.status}: ${cleanupBodyText}`);
+  }
+
   const start = await fetch(`${apiBaseUrl}/api/v1/focus`, {
     method: "POST",
     headers: jsonHeaders,
