@@ -8,21 +8,45 @@ export type Task = {
   version: number;
 };
 
+type TaskInput = {
+  title: string;
+  description?: string | null;
+  priority?: "NONE" | "LOW" | "MEDIUM" | "HIGH";
+  dueAt?: string | null;
+};
+
+type TaskUpdateInput = Partial<TaskInput> & {
+  status?: "TODO" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+};
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-export async function getTasks(accessToken?: string): Promise<Task[]> {
-  const headers: HeadersInit = accessToken
-    ? { Authorization: `Bearer ${accessToken}` }
-    : {};
+async function request<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
+  const headers = new Headers(init.headers);
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+  if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
 
-  const response = await fetch(`${API_URL}/api/v1/tasks`, {
-    headers,
-    cache: "no-store",
-  });
-
+  const response = await fetch(`${API_URL}${path}`, { ...init, headers, cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`Failed to load tasks (${response.status})`);
+    const message = await response.text();
+    throw new Error(message || `Request failed (${response.status})`);
   }
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
+}
 
-  return response.json() as Promise<Task[]>;
+export function getTasks(accessToken?: string) {
+  return request<Task[]>("/api/v1/tasks", {}, accessToken);
+}
+
+export function createTask(input: TaskInput, accessToken?: string) {
+  return request<Task>("/api/v1/tasks", { method: "POST", body: JSON.stringify(input) }, accessToken);
+}
+
+export function updateTask(id: string, input: TaskUpdateInput, accessToken?: string) {
+  return request<Task>(`/api/v1/tasks/${id}`, { method: "PATCH", body: JSON.stringify(input) }, accessToken);
+}
+
+export function deleteTask(id: string, accessToken?: string) {
+  return request<void>(`/api/v1/tasks/${id}`, { method: "DELETE" }, accessToken);
 }
