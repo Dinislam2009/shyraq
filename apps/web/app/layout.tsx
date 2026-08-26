@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
+import "./globals.css";
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="kk">
       <body>{children}</body>
     </html>
   );
