@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { DashboardSummary } from "../components/dashboard-summary";
+import { FocusTimer } from "../components/focus-timer";
 import { TaskBoard } from "../components/task-board";
 import { AuthGate, useAuthSession } from "../components/auth-gate";
 
@@ -45,6 +46,7 @@ function Dashboard() {
         </header>
 
         <DashboardSummary accessToken={session.access_token} />
+        <FocusTimer accessToken={session.access_token} />
         <TaskBoard accessToken={session.access_token} />
       </section>
     </main>
