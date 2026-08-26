@@ -34,24 +34,36 @@ test("authenticated flashcard deck, card, and review progress contract", { skip:
   const createCard = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/cards`, { method: "POST", headers: jsonHeaders, body: JSON.stringify({ front: "Capital of Kazakhstan?", back: "Astana", position: 0 }) });
   const cardText = await createCard.text();
   assert.equal(createCard.status, 201, `card create failed: HTTP ${createCard.status}: ${cardText}`);
-  const card = JSON.parse(cardText) as { id: string; front: string; back: string };
+  const card = JSON.parse(cardText) as { id: string; front: string; back: string; state: { status: string; interval: number; repetitions: number } };
   assert.ok(card.id);
   assert.equal(card.front, "Capital of Kazakhstan?");
+  assert.equal(card.state.status, "NEW");
+  assert.equal(card.state.interval, 0);
 
   const progressBefore = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/progress`, { headers: authHeaders });
   const progressBeforeText = await progressBefore.text();
   assert.equal(progressBefore.status, 200, `progress before review failed: HTTP ${progressBefore.status}: ${progressBeforeText}`);
-  assert.deepEqual(JSON.parse(progressBeforeText), { cardCount: 1, reviewCount: 0, correctCount: 0, reviewedCardCount: 0, completionPercent: 0 });
+  assert.deepEqual(JSON.parse(progressBeforeText), { cardCount: 1, reviewCount: 0, correctCount: 0, reviewedCardCount: 0, dueCount: 1, completionPercent: 0 });
 
-  const review = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/cards/${card.id}/reviews`, { method: "POST", headers: jsonHeaders, body: JSON.stringify({ correct: true }) });
+  const review = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/cards/${card.id}/reviews`, { method: "POST", headers: jsonHeaders, body: JSON.stringify({ rating: "GOOD" }) });
   const reviewText = await review.text();
   assert.equal(review.status, 201, `review failed: HTTP ${review.status}: ${reviewText}`);
-  assert.equal((JSON.parse(reviewText) as { correct: boolean }).correct, true);
+  const reviewBody = JSON.parse(reviewText) as { review: { correct: boolean; rating: string }; state: { status: string; repetitions: number; interval: number; easeFactor: string | number } };
+  assert.equal(reviewBody.review.correct, true);
+  assert.equal(reviewBody.review.rating, "GOOD");
+  assert.equal(reviewBody.state.status, "REVIEW");
+  assert.equal(reviewBody.state.repetitions, 1);
+  assert.equal(reviewBody.state.interval, 1);
+
+  const dueAfterGood = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/due`, { headers: authHeaders });
+  const dueAfterGoodText = await dueAfterGood.text();
+  assert.equal(dueAfterGood.status, 200, `due cards after review failed: HTTP ${dueAfterGood.status}: ${dueAfterGoodText}`);
+  assert.equal((JSON.parse(dueAfterGoodText) as unknown[]).length, 0);
 
   const progressAfter = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/progress`, { headers: authHeaders });
   const progressAfterText = await progressAfter.text();
   assert.equal(progressAfter.status, 200, `progress after review failed: HTTP ${progressAfter.status}: ${progressAfterText}`);
-  assert.deepEqual(JSON.parse(progressAfterText), { cardCount: 1, reviewCount: 1, correctCount: 1, reviewedCardCount: 1, completionPercent: 100 });
+  assert.deepEqual(JSON.parse(progressAfterText), { cardCount: 1, reviewCount: 1, correctCount: 1, reviewedCardCount: 1, dueCount: 0, completionPercent: 100 });
 
   const list = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/cards`, { headers: authHeaders });
   const listText = await list.text();
