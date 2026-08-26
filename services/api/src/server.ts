@@ -6,6 +6,7 @@ import { authPlugin } from "./plugins/auth.js";
 import { prisma } from "./lib/prisma.js";
 import { focusRoutes } from "./routes/focus.js";
 import { habitRoutes } from "./routes/habits.js";
+import { learningRoutes } from "./routes/learning.js";
 import { projectRoutes } from "./routes/projects.js";
 import { syncRoutes } from "./routes/sync.js";
 import { taskRoutes } from "./routes/tasks.js";
@@ -26,18 +27,10 @@ app.get("/health", async () => ({
 app.get("/health/db", async (_request, reply) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-
-    return {
-      status: "ok",
-      database: "reachable",
-    };
+    return { status: "ok", database: "reachable" };
   } catch (error) {
     app.log.error(error);
-
-    return reply.code(503).send({
-      status: "error",
-      database: "unreachable",
-    });
+    return reply.code(503).send({ status: "error", database: "unreachable" });
   }
 });
 
@@ -48,6 +41,7 @@ app.register(
     await api.register(projectRoutes);
     await api.register(habitRoutes);
     await api.register(focusRoutes);
+    await api.register(learningRoutes);
     await api.register(syncRoutes);
   },
   { prefix: "/api/v1" },
