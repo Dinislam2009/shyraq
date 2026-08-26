@@ -24,14 +24,17 @@ test("authenticated focus session contract", { skip: !enabled }, async () => {
   assert.ifError(error);
   assert.ok(data.session?.access_token);
 
-  const headers = {
+  const authHeaders = {
     authorization: `Bearer ${data.session.access_token}`,
+  };
+  const jsonHeaders = {
+    ...authHeaders,
     "content-type": "application/json",
   };
 
   const start = await fetch(`${apiBaseUrl}/api/v1/focus`, {
     method: "POST",
-    headers,
+    headers: jsonHeaders,
     body: JSON.stringify({}),
   });
   const startBodyText = await start.text();
@@ -50,13 +53,13 @@ test("authenticated focus session contract", { skip: !enabled }, async () => {
 
   const duplicate = await fetch(`${apiBaseUrl}/api/v1/focus`, {
     method: "POST",
-    headers,
+    headers: jsonHeaders,
     body: JSON.stringify({}),
   });
   const duplicateBodyText = await duplicate.text();
   assert.equal(duplicate.status, 409, `duplicate start failed: HTTP ${duplicate.status}: ${duplicateBodyText}`);
 
-  const list = await fetch(`${apiBaseUrl}/api/v1/focus`, { headers });
+  const list = await fetch(`${apiBaseUrl}/api/v1/focus`, { headers: authHeaders });
   const listBodyText = await list.text();
   assert.equal(list.status, 200, `list failed: HTTP ${list.status}: ${listBodyText}`);
   const listed = JSON.parse(listBodyText) as Array<{ id: string; status: string }>;
@@ -64,7 +67,7 @@ test("authenticated focus session contract", { skip: !enabled }, async () => {
 
   const complete = await fetch(`${apiBaseUrl}/api/v1/focus/${session.id}/complete`, {
     method: "POST",
-    headers,
+    headers: authHeaders,
   });
   const completeBodyText = await complete.text();
   assert.equal(complete.status, 200, `complete failed: HTTP ${complete.status}: ${completeBodyText}`);
@@ -82,14 +85,14 @@ test("authenticated focus session contract", { skip: !enabled }, async () => {
 
   const completeAgain = await fetch(`${apiBaseUrl}/api/v1/focus/${session.id}/complete`, {
     method: "POST",
-    headers,
+    headers: authHeaders,
   });
   const completeAgainBodyText = await completeAgain.text();
   assert.equal(completeAgain.status, 409, `second complete failed: HTTP ${completeAgain.status}: ${completeAgainBodyText}`);
 
   const startSecond = await fetch(`${apiBaseUrl}/api/v1/focus`, {
     method: "POST",
-    headers,
+    headers: jsonHeaders,
     body: JSON.stringify({}),
   });
   const startSecondBodyText = await startSecond.text();
@@ -99,7 +102,7 @@ test("authenticated focus session contract", { skip: !enabled }, async () => {
 
   const cancel = await fetch(`${apiBaseUrl}/api/v1/focus/${second.id}/cancel`, {
     method: "POST",
-    headers,
+    headers: authHeaders,
   });
   const cancelBodyText = await cancel.text();
   assert.equal(cancel.status, 200, `cancel failed: HTTP ${cancel.status}: ${cancelBodyText}`);
@@ -114,7 +117,7 @@ test("authenticated focus session contract", { skip: !enabled }, async () => {
 
   const invalid = await fetch(`${apiBaseUrl}/api/v1/focus/${randomUUID()}/complete`, {
     method: "POST",
-    headers,
+    headers: authHeaders,
   });
   const invalidBodyText = await invalid.text();
   assert.equal(invalid.status, 404, `missing session failed: HTTP ${invalid.status}: ${invalidBodyText}`);
