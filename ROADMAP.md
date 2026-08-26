@@ -24,7 +24,7 @@
 
 ## Current position
 
-**Phase 4–7 foundation is active.** Tasks, Habits, and Focus MVP functionality are implemented and tested. Projects and Calendar are not complete yet, so the next major product work must not jump directly to Analytics, Web Polish, Mobile, or Production.
+**Phase 4 is active.** Tasks and their core flows are implemented. Projects are now implemented end-to-end at the API/schema level with a basic web page and task↔project relationship. Calendar is the next dependency and must be completed before moving to Learning, Analytics, Web Polish, Mobile, or Production.
 
 ## Phase 0 — Architecture
 
@@ -66,9 +66,10 @@
 - Status/priority
 - Due dates
 - Task ownership
-- Projects
-- Project/task relationships
+- Projects — API/schema/basic web page implemented
+- Project/task relationships — implemented
 - Task completion flows
+- Remaining: complete Phase 4 integration and verification
 
 ## Phase 5 — Calendar
 
