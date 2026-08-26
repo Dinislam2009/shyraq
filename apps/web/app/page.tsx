@@ -13,6 +13,7 @@ const navItems = [
   { href: "/projects", label: "Projects" },
   { href: "/habits", label: "Habits" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/learning", label: "Learning" },
 ];
 
 function Dashboard() {
