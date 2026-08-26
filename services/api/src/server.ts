@@ -4,6 +4,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { authPlugin } from "./plugins/auth.js";
 import { prisma } from "./lib/prisma.js";
+import { habitRoutes } from "./routes/habits.js";
 import { syncRoutes } from "./routes/sync.js";
 import { taskRoutes } from "./routes/tasks.js";
 
@@ -42,6 +43,7 @@ app.register(
   async (api) => {
     await api.register(authPlugin);
     await api.register(taskRoutes);
+    await api.register(habitRoutes);
     await api.register(syncRoutes);
   },
   { prefix: "/api/v1" },
