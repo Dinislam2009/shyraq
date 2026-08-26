@@ -19,6 +19,7 @@ model User {
   habitCompletions HabitCompletion[]
   focusSessions    FocusSession[]
   flashcardDecks   FlashcardDeck[]
+  flashcardReviews FlashcardReview[]
   @@map("users")
 }
 
@@ -112,6 +113,7 @@ model FlashcardDeck {
   updatedAt   DateTime     @updatedAt @map("updated_at")
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   cards       Flashcard[]
+  reviews     FlashcardReview[]
   @@index([userId, archivedAt])
   @@map("flashcard_decks")
 }
@@ -125,8 +127,25 @@ model Flashcard {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
   deck        FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  reviews     FlashcardReview[]
   @@index([deckId, position])
   @@map("flashcards")
+}
+
+model FlashcardReview {
+  id         String   @id @db.Uuid
+  userId     String   @db.Uuid @map("user_id")
+  deckId     String   @db.Uuid @map("deck_id")
+  cardId     String   @db.Uuid @map("card_id")
+  correct    Boolean
+  reviewedAt DateTime @default(now()) @map("reviewed_at")
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck       FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  card       Flashcard    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  @@index([userId, reviewedAt])
+  @@index([deckId, reviewedAt])
+  @@index([cardId, reviewedAt])
+  @@map("flashcard_reviews")
 }
 
 model SyncOperation {
