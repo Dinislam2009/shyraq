@@ -27,7 +27,16 @@ test("authenticated analytics contract", { skip: !enabled }, async () => {
   const analytics = JSON.parse(text) as {
     days: number;
     range: { from: string; to: string };
-    totals: Record<string, number>;
+    totals: {
+      tasksCompleted: number;
+      habitsCompleted: number;
+      focusMinutes: number;
+      reviews: number;
+      correctReviews: number;
+      reviewAccuracy: number;
+      activeHabits: number;
+      activeDecks: number;
+    };
     series: Array<{ date: string; tasksCompleted: number; habitsCompleted: number; focusMinutes: number; reviews: number; correctReviews: number }>;
   };
   assert.equal(analytics.days, 7);
