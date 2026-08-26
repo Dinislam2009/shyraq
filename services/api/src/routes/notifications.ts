@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { uuidv7 } from "uuidv7";
+import { v7 as uuidv7 } from "uuid";
 import { prisma } from "../lib/prisma.js";
 
 export const notificationRoutes: FastifyPluginAsync = async (app) => {
