@@ -20,6 +20,8 @@ model User {
   focusSessions    FocusSession[]
   flashcardDecks   FlashcardDeck[]
   flashcardReviews FlashcardReview[]
+  notifications    Notification[]
+  notificationPreferences NotificationPreferences?
   @@map("users")
 }
 
@@ -64,11 +66,11 @@ model Habit {
   userId      String            @db.Uuid @map("user_id")
   title       String
   description String?
-  frequency   String            @default("DAILY")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-  archivedAt  DateTime?         @map("archived_at")
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  frequency   String             @default("DAILY")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  archivedAt  DateTime?          @map("archived_at")
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   completions HabitCompletion[]
   @@index([userId, archivedAt])
   @@map("habits")
@@ -163,6 +165,31 @@ model FlashcardReview {
   @@index([deckId, reviewedAt])
   @@index([cardId, reviewedAt])
   @@map("flashcard_reviews")
+}
+
+model Notification {
+  id        String    @id @db.Uuid
+  userId    String    @db.Uuid @map("user_id")
+  type      String
+  title     String
+  message   String
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model NotificationPreferences {
+  id              String  @id @db.Uuid
+  userId          String  @unique @db.Uuid @map("user_id")
+  taskReminders   Boolean @default(true) @map("task_reminders")
+  habitReminders  Boolean @default(true) @map("habit_reminders")
+  focusReminders  Boolean @default(true) @map("focus_reminders")
+  learningReminders Boolean @default(true) @map("learning_reminders")
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("notification_preferences")
 }
 
 model SyncOperation {
