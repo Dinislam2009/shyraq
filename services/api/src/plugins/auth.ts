@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getSupabaseClient } from "../lib/supabase";
-import { prisma } from "../lib/prisma";
+import { getSupabaseClient } from "../lib/supabase.js";
+import { prisma } from "../lib/prisma.js";
 
 declare module "fastify" {
   interface FastifyRequest {
