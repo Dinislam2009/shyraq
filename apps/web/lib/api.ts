@@ -20,27 +20,18 @@ export type Task = {
   project?: Project | null;
 };
 
-type TaskInput = {
-  title: string;
-  description?: string | null;
-  priority?: "NONE" | "LOW" | "MEDIUM" | "HIGH";
-  dueAt?: string | null;
-  projectId?: string | null;
-};
-
-type TaskUpdateInput = Partial<TaskInput> & {
-  status?: "TODO" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-};
-
+type TaskInput = { title: string; description?: string | null; priority?: "NONE" | "LOW" | "MEDIUM" | "HIGH"; dueAt?: string | null; projectId?: string | null };
+type TaskUpdateInput = Partial<TaskInput> & { status?: "TODO" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" };
 export type HabitCompletion = { id: string; date: string };
 export type Habit = { id: string; title: string; description: string | null; frequency: "DAILY"; completions: HabitCompletion[] };
 export type FocusSession = { id: string; taskId: string | null; status: "RUNNING" | "COMPLETED" | "CANCELLED"; startedAt: string; endedAt: string | null; durationSeconds: number | null; task?: Task | null };
 export type FlashcardDeck = { id: string; name: string; description: string | null; archivedAt: string | null; createdAt: string; updatedAt: string; _count?: { cards: number } };
 export type Flashcard = { id: string; deckId: string; front: string; back: string; position: number; createdAt: string; updatedAt: string };
 export type FlashcardProgress = { cardCount: number; reviewCount: number; correctCount: number; reviewedCardCount: number; completionPercent: number };
+export type AnalyticsSeries = { date: string; tasksCompleted: number; habitsCompleted: number; focusMinutes: number; reviews: number; correctReviews: number };
+export type Analytics = { days: number; range: { from: string; to: string }; totals: { tasksCompleted: number; habitsCompleted: number; focusMinutes: number; reviews: number; correctReviews: number; reviewAccuracy: number; activeHabits: number; activeDecks: number }; series: AnalyticsSeries[] };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-
 async function request<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
   const headers = new Headers(init.headers);
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
@@ -50,7 +41,6 @@ async function request<T>(path: string, init: RequestInit = {}, accessToken?: st
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
-
 export function getProjects(accessToken?: string) { return request<Project[]>("/api/v1/projects", {}, accessToken); }
 export function createProject(input: { name: string; description?: string | null }, accessToken?: string) { return request<Project>("/api/v1/projects", { method: "POST", body: JSON.stringify(input) }, accessToken); }
 export function updateProject(id: string, input: { name?: string; description?: string | null; archived?: boolean }, accessToken?: string) { return request<Project>(`/api/v1/projects/${id}`, { method: "PATCH", body: JSON.stringify(input) }, accessToken); }
@@ -77,3 +67,4 @@ export function deleteFlashcard(deckId: string, cardId: string, accessToken?: st
 export function archiveFlashcardDeck(deckId: string, accessToken?: string) { return request<FlashcardDeck>(`/api/v1/learning/decks/${deckId}`, { method: "PATCH", body: JSON.stringify({ archived: true }) }, accessToken); }
 export function reviewFlashcard(deckId: string, cardId: string, correct: boolean, accessToken?: string) { return request<{ id: string; correct: boolean }>(`/api/v1/learning/decks/${deckId}/cards/${cardId}/reviews`, { method: "POST", body: JSON.stringify({ correct }) }, accessToken); }
 export function getFlashcardProgress(deckId: string, accessToken?: string) { return request<FlashcardProgress>(`/api/v1/learning/decks/${deckId}/progress`, {}, accessToken); }
+export function getAnalytics(days = 7, accessToken?: string) { return request<Analytics>(`/api/v1/analytics?days=${days}`, {}, accessToken); }
