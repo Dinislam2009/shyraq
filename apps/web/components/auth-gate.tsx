@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
@@ -25,7 +25,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
 
-    void supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+      if (sessionError) setError(sessionError.message);
       setSession(data.session);
       setLoading(false);
     });
@@ -37,18 +38,33 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  async function signIn(event: React.FormEvent<HTMLFormElement>) {
+  async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabase) return;
+
     setSubmitting(true);
     setError(null);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) setError(signInError.message);
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (signInError) {
+      setError(signInError.message);
+    } else if (data.session) {
+      setSession(data.session);
+    } else {
+      const { data: current } = await supabase.auth.getSession();
+      setSession(current.session);
+    }
+
     setSubmitting(false);
   }
 
   async function signOut() {
     await supabase?.auth.signOut();
+    setSession(null);
   }
 
   if (loading) return <div className="auth-loading">Жүктелуде...</div>;
