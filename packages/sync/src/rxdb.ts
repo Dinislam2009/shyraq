@@ -61,25 +61,27 @@ export interface ShyraqDatabase {
   outbox: RxCollection<OutboxDocument>;
 }
 
-let databasePromise: Promise<RxDatabase<ShyraqDatabase>> | undefined;
+const databases = new Map<string, Promise<RxDatabase<ShyraqDatabase>>>();
 
 export function getShyraqDatabase(userId: string): Promise<RxDatabase<ShyraqDatabase>> {
-  if (!databasePromise) {
-    const safeName = `shyraq-${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
-    databasePromise = createRxDatabase<ShyraqDatabase>({
-      name: safeName,
-      storage: getRxStorageDexie(),
-      multiInstance: true,
-      eventReduce: true
-    }).then(async (db) => {
-      await db.addCollections({
-        tasks: { schema: taskSchema },
-        outbox: { schema: outboxSchema }
-      });
-      return db;
-    });
-  }
+  const existing = databases.get(userId);
+  if (existing) return existing;
 
+  const safeName = `shyraq-${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+  const databasePromise = createRxDatabase<ShyraqDatabase>({
+    name: safeName,
+    storage: getRxStorageDexie(),
+    multiInstance: true,
+    eventReduce: true
+  }).then(async (db) => {
+    await db.addCollections({
+      tasks: { schema: taskSchema },
+      outbox: { schema: outboxSchema }
+    });
+    return db;
+  });
+
+  databases.set(userId, databasePromise);
   return databasePromise;
 }
 
