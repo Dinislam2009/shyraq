@@ -33,21 +33,18 @@ test("authenticated task CRUD contract", { skip: !enabled }, async () => {
   const create = await fetch(`${apiBaseUrl}/api/v1/tasks`, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      operationId,
-      title: "CRUD contract test",
-      description: "initial",
-      priority: "HIGH",
-    }),
+    body: JSON.stringify({ operationId, title: "CRUD contract test", description: "initial", priority: "HIGH" }),
   });
-  assert.equal(create.status, 201);
-  const created = await create.json() as { id: string; title: string; version: number };
+  const createBodyText = await create.text();
+  assert.equal(create.status, 201, `create failed: HTTP ${create.status}: ${createBodyText}`);
+  const created = JSON.parse(createBodyText) as { id: string; title: string; version: number };
   assert.equal(created.title, "CRUD contract test");
   assert.equal(created.version, 1);
 
   const list = await fetch(`${apiBaseUrl}/api/v1/tasks`, { headers });
-  assert.equal(list.status, 200);
-  const listed = await list.json() as Array<{ id: string }>;
+  const listBodyText = await list.text();
+  assert.equal(list.status, 200, `list failed: HTTP ${list.status}: ${listBodyText}`);
+  const listed = JSON.parse(listBodyText) as Array<{ id: string }>;
   assert.ok(listed.some((task) => task.id === created.id));
 
   const update = await fetch(`${apiBaseUrl}/api/v1/tasks/${created.id}`, {
@@ -55,21 +52,21 @@ test("authenticated task CRUD contract", { skip: !enabled }, async () => {
     headers,
     body: JSON.stringify({ operationId: randomUUID(), title: "CRUD contract updated", status: "COMPLETED" }),
   });
-  assert.equal(update.status, 200);
-  const updated = await update.json() as { id: string; title: string; status: string; version: number };
+  const updateBodyText = await update.text();
+  assert.equal(update.status, 200, `update failed: HTTP ${update.status}: ${updateBodyText}`);
+  const updated = JSON.parse(updateBodyText) as { id: string; title: string; status: string; version: number };
   assert.equal(updated.id, created.id);
   assert.equal(updated.title, "CRUD contract updated");
   assert.equal(updated.status, "COMPLETED");
   assert.equal(updated.version, 2);
 
-  const remove = await fetch(`${apiBaseUrl}/api/v1/tasks/${created.id}`, {
-    method: "DELETE",
-    headers,
-  });
-  assert.equal(remove.status, 204);
+  const remove = await fetch(`${apiBaseUrl}/api/v1/tasks/${created.id}`, { method: "DELETE", headers });
+  const removeBodyText = await remove.text();
+  assert.equal(remove.status, 204, `delete failed: HTTP ${remove.status}: ${removeBodyText}`);
 
   const afterDelete = await fetch(`${apiBaseUrl}/api/v1/tasks`, { headers });
-  assert.equal(afterDelete.status, 200);
-  const remaining = await afterDelete.json() as Array<{ id: string }>;
+  const afterDeleteBodyText = await afterDelete.text();
+  assert.equal(afterDelete.status, 200, `post-delete list failed: HTTP ${afterDelete.status}: ${afterDeleteBodyText}`);
+  const remaining = JSON.parse(afterDeleteBodyText) as Array<{ id: string }>;
   assert.equal(remaining.some((task) => task.id === created.id), false);
 });
