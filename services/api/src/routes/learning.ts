@@ -6,6 +6,7 @@ interface IdParams { id: string }
 interface CardParams { id: string; cardId: string }
 interface DeckBody { name: string; description?: string | null }
 interface CardBody { front: string; back: string; position?: number }
+interface ReviewBody { correct: boolean }
 
 const validText = (value: unknown, max = 5000) => typeof value === "string" && value.trim().length > 0 && value.length <= max;
 
@@ -102,5 +103,34 @@ export const learningRoutes: FastifyPluginAsync = async (app) => {
     if (!current) return reply.code(404).send({ error: "CARD_NOT_FOUND" });
     await prisma.flashcard.delete({ where: { id: cardId } });
     return reply.code(204).send();
+  });
+
+  app.post<{ Params: CardParams; Body: ReviewBody }>("/learning/decks/:id/cards/:cardId/reviews", async (request, reply) => {
+    const userId = request.userId!;
+    const { id, cardId } = request.params;
+    if (!uuidValidate(id) || !uuidValidate(cardId)) return reply.code(400).send({ error: "INVALID_ID" });
+    if (typeof request.body?.correct !== "boolean") return reply.code(400).send({ error: "INVALID_REVIEW" });
+    const deck = await prisma.flashcardDeck.findFirst({ where: { id, userId, archivedAt: null } });
+    if (!deck) return reply.code(404).send({ error: "NOT_FOUND" });
+    const card = await prisma.flashcard.findFirst({ where: { id: cardId, deckId: id } });
+    if (!card) return reply.code(404).send({ error: "CARD_NOT_FOUND" });
+    return reply.code(201).send(await prisma.flashcardReview.create({
+      data: { id: uuidv7(), userId, deckId: id, cardId, correct: request.body.correct },
+    }));
+  });
+
+  app.get<{ Params: IdParams }>("/learning/decks/:id/progress", async (request, reply) => {
+    const userId = request.userId!;
+    const { id } = request.params;
+    if (!uuidValidate(id)) return reply.code(400).send({ error: "INVALID_ID" });
+    const deck = await prisma.flashcardDeck.findFirst({ where: { id, userId, archivedAt: null } });
+    if (!deck) return reply.code(404).send({ error: "NOT_FOUND" });
+    const [cardCount, reviewCount, correctCount] = await Promise.all([
+      prisma.flashcard.count({ where: { deckId: id } }),
+      prisma.flashcardReview.count({ where: { deckId: id, userId } }),
+      prisma.flashcardReview.count({ where: { deckId: id, userId, correct: true } }),
+    ]);
+    const reviewedCardIds = await prisma.flashcardReview.findMany({ where: { deckId: id, userId }, distinct: ["cardId"], select: { cardId: true } });
+    return { cardCount, reviewCount, correctCount, reviewedCardCount: reviewedCardIds.length, completionPercent: cardCount === 0 ? 0 : Math.round((reviewedCardIds.length / cardCount) * 100) };
   });
 };
