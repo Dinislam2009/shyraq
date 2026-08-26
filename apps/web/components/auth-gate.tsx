@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+
+const AuthContext = createContext<Session | null>(null);
+
+export function useAuthSession() {
+  return useContext(AuthContext);
+}
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -36,7 +42,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (!supabase) return;
     setSubmitting(true);
     setError(null);
-
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) setError(signInError.message);
     setSubmitting(false);
@@ -56,30 +61,22 @@ export function AuthGate({ children }: { children: ReactNode }) {
           <p className="brand-subtitle">Productivity & learning OS</p>
           <h1>Кіру</h1>
           <p className="auth-description">Жеке тапсырмаларыңа қол жеткізу үшін аккаунтыңа кір.</p>
-          <label>
-            Email
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
-          </label>
-          <label>
-            Құпиясөз
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
-          </label>
+          <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
+          <label>Құпиясөз<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" /></label>
           {error ? <p role="alert" className="error-message">{error}</p> : null}
-          <button className="primary-button" type="submit" disabled={submitting}>
-            {submitting ? "Кіру..." : "Кіру"}
-          </button>
+          <button className="primary-button" type="submit" disabled={submitting}>{submitting ? "Кіру..." : "Кіру"}</button>
         </form>
       </main>
     );
   }
 
   return (
-    <>
+    <AuthContext.Provider value={session}>
       <div className="user-bar">
         <span>{session.user.email}</span>
         <button onClick={() => void signOut()}>Шығу</button>
       </div>
       {children}
-    </>
+    </AuthContext.Provider>
   );
 }
