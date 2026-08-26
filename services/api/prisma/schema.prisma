@@ -153,6 +153,7 @@ model FlashcardReview {
   userId     String   @db.Uuid @map("user_id")
   deckId     String   @db.Uuid @map("deck_id")
   cardId     String   @db.Uuid @map("card_id")
+  rating     String   @default("GOOD")
   correct    Boolean
   reviewedAt DateTime @default(now()) @map("reviewed_at")
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
