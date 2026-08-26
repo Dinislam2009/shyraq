@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createTask, deleteTask, getTasks, updateTask, type Task } from "../lib/api";
 
-export function TaskBoard() {
+export function TaskBoard({ accessToken }: { accessToken: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
@@ -13,7 +13,7 @@ export function TaskBoard() {
   async function refresh() {
     try {
       setError(null);
-      setTasks(await getTasks());
+      setTasks(await getTasks(accessToken));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Тапсырмаларды жүктеу сәтсіз аяқталды");
     } finally {
@@ -23,7 +23,7 @@ export function TaskBoard() {
 
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [accessToken]);
 
   async function addTask() {
     const trimmed = title.trim();
@@ -31,7 +31,7 @@ export function TaskBoard() {
     setSaving(true);
     setError(null);
     try {
-      const task = await createTask({ title: trimmed });
+      const task = await createTask({ title: trimmed }, accessToken);
       setTasks((current) => [task, ...current]);
       setTitle("");
     } catch (err) {
@@ -44,7 +44,7 @@ export function TaskBoard() {
   async function toggleTask(task: Task) {
     const status = task.status === "COMPLETED" ? "TODO" : "COMPLETED";
     try {
-      const updated = await updateTask(task.id, { status });
+      const updated = await updateTask(task.id, { status }, accessToken);
       setTasks((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Тапсырма жаңартылмады");
@@ -53,7 +53,7 @@ export function TaskBoard() {
 
   async function removeTask(task: Task) {
     try {
-      await deleteTask(task.id);
+      await deleteTask(task.id, accessToken);
       setTasks((current) => current.filter((item) => item.id !== task.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Тапсырма өшірілмеді");
@@ -70,13 +70,7 @@ export function TaskBoard() {
         <span className="task-count">{tasks.length}</span>
       </div>
 
-      <form
-        className="quick-add"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void addTask();
-        }}
-      >
+      <form className="quick-add" onSubmit={(event) => { event.preventDefault(); void addTask(); }}>
         <span className="plus-icon">+</span>
         <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Жаңа тапсырма" aria-label="Жаңа тапсырма" />
         <button type="submit" disabled={saving || !title.trim()}>{saving ? "..." : "Қосу"}</button>
