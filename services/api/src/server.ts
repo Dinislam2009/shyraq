@@ -1,12 +1,18 @@
 import "dotenv/config";
 
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import { authPlugin } from "./plugins/auth.js";
 import { prisma } from "./lib/prisma.js";
 import { syncRoutes } from "./routes/sync.js";
 import { taskRoutes } from "./routes/tasks.js";
 
 const app = Fastify({ logger: true });
+
+await app.register(cors, {
+  origin: process.env.WEB_ORIGIN ?? "http://localhost:3000",
+  credentials: true,
+});
 
 app.get("/health", async () => ({
   status: "ok",
