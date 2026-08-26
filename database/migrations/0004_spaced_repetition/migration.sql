@@ -17,3 +17,6 @@ CREATE INDEX "card_states_due_at_idx" ON "card_states"("due_at");
 ALTER TABLE "card_states"
   ADD CONSTRAINT "card_states_card_id_fkey"
   FOREIGN KEY ("card_id") REFERENCES "flashcards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "flashcard_reviews"
+  ADD COLUMN "rating" TEXT NOT NULL DEFAULT 'GOOD';
