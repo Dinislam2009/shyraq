@@ -6,8 +6,10 @@ import { createTask, deleteTask, getTasks, updateTask, type Task } from "../lib/
 export function TaskBoard({ accessToken }: { accessToken: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
+  const [dueAt, setDueAt] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
@@ -31,9 +33,13 @@ export function TaskBoard({ accessToken }: { accessToken: string }) {
     setSaving(true);
     setError(null);
     try {
-      const task = await createTask({ title: trimmed }, accessToken);
+      const task = await createTask({
+        title: trimmed,
+        dueAt: dueAt ? new Date(dueAt).toISOString() : null,
+      }, accessToken);
       setTasks((current) => [task, ...current]);
       setTitle("");
+      setDueAt("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Тапсырма қосылмады");
     } finally {
@@ -42,21 +48,29 @@ export function TaskBoard({ accessToken }: { accessToken: string }) {
   }
 
   async function toggleTask(task: Task) {
+    setBusyTaskId(task.id);
+    setError(null);
     const status = task.status === "COMPLETED" ? "TODO" : "COMPLETED";
     try {
       const updated = await updateTask(task.id, { status }, accessToken);
       setTasks((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Тапсырма жаңартылмады");
+    } finally {
+      setBusyTaskId(null);
     }
   }
 
   async function removeTask(task: Task) {
+    setBusyTaskId(task.id);
+    setError(null);
     try {
       await deleteTask(task.id, accessToken);
       setTasks((current) => current.filter((item) => item.id !== task.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Тапсырма өшірілмеді");
+    } finally {
+      setBusyTaskId(null);
     }
   }
 
@@ -73,6 +87,14 @@ export function TaskBoard({ accessToken }: { accessToken: string }) {
       <form className="quick-add" onSubmit={(event) => { event.preventDefault(); void addTask(); }}>
         <span className="plus-icon">+</span>
         <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Жаңа тапсырма" aria-label="Жаңа тапсырма" />
+        <input
+          className="due-input"
+          type="datetime-local"
+          value={dueAt}
+          onChange={(event) => setDueAt(event.target.value)}
+          aria-label="Мерзімі"
+          title="Мерзімі"
+        />
         <button type="submit" disabled={saving || !title.trim()}>{saving ? "..." : "Қосу"}</button>
       </form>
 
@@ -83,12 +105,17 @@ export function TaskBoard({ accessToken }: { accessToken: string }) {
       <div className="task-list">
         {tasks.map((task) => (
           <article className="task-card" key={task.id}>
-            <button className={`checkbox ${task.status === "COMPLETED" ? "checkbox-done" : ""}`} onClick={() => void toggleTask(task)} aria-label={task.status === "COMPLETED" ? "Қайта ашу" : "Аяқтау"} />
+            <button
+              className={`checkbox ${task.status === "COMPLETED" ? "checkbox-done" : ""}`}
+              onClick={() => void toggleTask(task)}
+              disabled={busyTaskId === task.id}
+              aria-label={task.status === "COMPLETED" ? "Қайта ашу" : "Аяқтау"}
+            />
             <div className="task-copy">
               <h3 className={task.status === "COMPLETED" ? "task-completed" : ""}>{task.title}</h3>
-              <p>{task.priority !== "NONE" ? `Priority: ${task.priority}` : task.status}</p>
+              <p>{task.dueAt ? new Intl.DateTimeFormat("kk-KZ", { dateStyle: "medium", timeStyle: "short" }).format(new Date(task.dueAt)) : task.status}</p>
             </div>
-            <button className="task-delete" onClick={() => void removeTask(task)} aria-label={`${task.title} өшіру`}>×</button>
+            <button className="task-delete" onClick={() => void removeTask(task)} disabled={busyTaskId === task.id} aria-label={`${task.title} өшіру`}>×</button>
           </article>
         ))}
       </div>
