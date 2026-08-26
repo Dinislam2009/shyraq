@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { cancelFocus, completeFocus, getFocusSessions, startFocus, type FocusSession, type Task } from "../lib/api";
+import { cancelFocus, completeFocus, getFocusSessions, getTasks, startFocus, type FocusSession, type Task } from "../lib/api";
 
 function elapsedSeconds(session: FocusSession, now: number) {
   if (session.durationSeconds !== null) return session.durationSeconds;
@@ -14,8 +14,9 @@ function formatDuration(seconds: number) {
   return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
 }
 
-export function FocusTimer({ accessToken, tasks }: { accessToken: string; tasks: Task[] }) {
+export function FocusTimer({ accessToken }: { accessToken: string }) {
   const [session, setSession] = useState<FocusSession | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
   const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
@@ -23,8 +24,11 @@ export function FocusTimer({ accessToken, tasks }: { accessToken: string; tasks:
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void getFocusSessions(accessToken)
-      .then((items) => setSession(items.find((item) => item.status === "RUNNING") ?? null))
+    Promise.all([getFocusSessions(accessToken), getTasks(accessToken)])
+      .then(([sessions, nextTasks]) => {
+        setSession(sessions.find((item) => item.status === "RUNNING") ?? null);
+        setTasks(nextTasks);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Focus жүктелмеді"))
       .finally(() => setLoading(false));
   }, [accessToken]);
