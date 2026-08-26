@@ -31,6 +31,20 @@ a {
   text-decoration: none;
 }
 
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
@@ -154,6 +168,24 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.quick-add input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.quick-add button {
+  padding: 7px 11px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .plus-icon {
   display: grid;
   width: 28px;
@@ -165,7 +197,8 @@ h3 {
   line-height: 1;
 }
 
-.tasks-section {
+.tasks-section,
+.calendar-section {
   margin-top: 42px;
 }
 
@@ -181,13 +214,15 @@ h3 {
   font-weight: 700;
 }
 
-.task-list {
+.task-list,
+.calendar-list {
   display: grid;
   gap: 12px;
   margin-top: 18px;
 }
 
-.task-card {
+.task-card,
+.calendar-card {
   display: flex;
   align-items: flex-start;
   gap: 14px;
@@ -198,7 +233,8 @@ h3 {
   box-shadow: var(--shadow);
 }
 
-.task-card p {
+.task-card p,
+.calendar-card p {
   margin-bottom: 0;
   color: var(--muted);
   font-size: 13px;
@@ -212,6 +248,70 @@ h3 {
   border: 1.5px solid #97a59a;
   border-radius: 6px;
   background: #fff;
+}
+
+.checkbox-done {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.task-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.task-completed {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.task-delete {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.task-delete:hover {
+  border-color: #c9d1cb;
+  background: var(--panel-soft);
+}
+
+.error-message {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #ead4d4;
+  border-radius: 10px;
+  background: #fff7f7;
+  color: #9b4c4c;
+  font-size: 13px;
+}
+
+.empty-state {
+  margin: 18px 0 0;
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  background: var(--panel);
+}
+
+.calendar-card {
+  align-items: center;
+}
+
+.calendar-card time {
+  min-width: 190px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.calendar-card h3 {
+  margin-bottom: 5px;
 }
 
 @media (max-width: 760px) {
@@ -230,5 +330,13 @@ h3 {
 
   .content-panel {
     padding: 30px 20px 48px;
+  }
+
+  .calendar-card {
+    display: grid;
+  }
+
+  .calendar-card time {
+    min-width: 0;
   }
 }
