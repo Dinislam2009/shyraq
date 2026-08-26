@@ -48,8 +48,9 @@ test("authenticated sync contract", { skip: !enabled }, async () => {
     }),
   });
 
-  assert.equal(push.status, 200);
-  const pushBody = await push.json() as { results: Array<{ operationId: string; entityId: string; status: string }> };
+  const pushBodyText = await push.text();
+  assert.equal(push.status, 200, `sync push failed: HTTP ${push.status}: ${pushBodyText}`);
+  const pushBody = JSON.parse(pushBodyText) as { results: Array<{ operationId: string; entityId: string; status: string }> };
   assert.deepEqual(pushBody.results, [{ operationId, entityId, status: "APPLIED" }]);
 
   const duplicate = await fetch(`${apiBaseUrl}/api/v1/sync/push`, {
@@ -68,7 +69,8 @@ test("authenticated sync contract", { skip: !enabled }, async () => {
     }),
   });
 
-  assert.equal(duplicate.status, 200);
-  const duplicateBody = await duplicate.json() as { results: Array<{ operationId: string; entityId: string; status: string }> };
+  const duplicateBodyText = await duplicate.text();
+  assert.equal(duplicate.status, 200, `duplicate push failed: HTTP ${duplicate.status}: ${duplicateBodyText}`);
+  const duplicateBody = JSON.parse(duplicateBodyText) as { results: Array<{ operationId: string; entityId: string; status: string }> };
   assert.deepEqual(duplicateBody.results, [{ operationId, entityId, status: "DUPLICATE" }]);
 });
