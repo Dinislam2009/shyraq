@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { v7 as uuidv7, validate as uuidValidate } from "uuid";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 
 interface CreateTaskBody {
   id?: string;
