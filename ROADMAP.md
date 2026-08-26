@@ -8,8 +8,8 @@
 - [x] Phase 1 — Infrastructure
 - [x] Phase 2 — Auth + User
 - [ ] Phase 3 — Database Core
-- [ ] Phase 4 — Tasks + Projects
-- [ ] Phase 5 — Calendar
+- [x] Phase 4 — Tasks + Projects
+- [x] Phase 5 — Calendar
 - [x] Phase 6 — Habits
 - [x] Phase 7 — Focus
 - [ ] Phase 8 — Learning / Flashcards
@@ -24,7 +24,7 @@
 
 ## Current position
 
-**Phase 4 is active.** Tasks and their core flows are implemented. Projects are now implemented end-to-end at the API/schema level with a basic web page and task↔project relationship. Calendar is the next dependency and must be completed before moving to Learning, Analytics, Web Polish, Mobile, or Production.
+**Phase 8 is active.** Tasks + Projects, Calendar, Habits, and Focus have been implemented and locally verified. The current work is Learning / Flashcards. Do not move to Spaced Repetition, Analytics, Web Polish, Mobile, or Production until the Learning phase is implemented and verified.
 
 ## Phase 0 — Architecture
 
@@ -66,10 +66,10 @@
 - Status/priority
 - Due dates
 - Task ownership
-- Projects — API/schema/basic web page implemented
-- Project/task relationships — implemented
+- Projects — API/schema/basic web page
+- Project/task relationships
 - Task completion flows
-- Remaining: complete Phase 4 integration and verification
+- Integration and verification
 
 ## Phase 5 — Calendar
 
@@ -78,6 +78,7 @@
 - Task scheduling
 - Day/week navigation
 - Calendar ↔ tasks integration
+- Integration and verification
 
 ## Phase 6 — Habits
 
@@ -103,6 +104,23 @@
 - Decks/collections
 - Review interface
 - Learning progress
+
+### Implemented so far
+
+- Flashcard deck model and migration
+- Flashcard model and deck relationship
+- Authenticated deck CRUD API
+- Authenticated card CRUD API
+- Contract test coverage
+- Web API client
+- Basic Learning workspace with deck selection, review, card creation/deletion
+
+### Remaining before Phase 8 completion
+
+- Review UX verification
+- Learning progress tracking
+- Full typecheck/API contract verification
+- Final web verification
 
 ## Phase 9 — Spaced Repetition
 
