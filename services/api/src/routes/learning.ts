@@ -1,53 +1,16 @@
 import type { FastifyPluginAsync } from "fastify";
 import { v7 as uuidv7, validate as uuidValidate } from "uuid";
 import { prisma } from "../lib/prisma.js";
+import { REVIEW_RATINGS, scheduleReview, type ReviewRating } from "../lib/spaced-repetition.js";
 
 interface IdParams { id: string }
 interface CardParams { id: string; cardId: string }
 interface DeckBody { name: string; description?: string | null }
 interface CardBody { front: string; back: string; position?: number }
-type ReviewRating = "AGAIN" | "HARD" | "GOOD" | "EASY";
 interface ReviewBody { rating?: ReviewRating; correct?: boolean }
 
 const validText = (value: unknown, max = 5000) => typeof value === "string" && value.trim().length > 0 && value.length <= max;
-const ratings = new Set<ReviewRating>(["AGAIN", "HARD", "GOOD", "EASY"]);
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function scheduleReview(rating: ReviewRating, state: { repetitions: number; interval: number; easeFactor: number; lapses: number }) {
-  let repetitions = state.repetitions;
-  let interval = state.interval;
-  let easeFactor = state.easeFactor;
-  let lapses = state.lapses;
-  let status = "REVIEW";
-
-  if (rating === "AGAIN") {
-    repetitions = 0;
-    interval = 1;
-    easeFactor = Math.max(1.3, easeFactor - 0.2);
-    lapses += 1;
-    status = "LEARNING";
-  } else if (rating === "HARD") {
-    interval = Math.max(1, interval === 0 ? 1 : Math.round(interval * 1.2));
-    easeFactor = Math.max(1.3, easeFactor - 0.15);
-    status = repetitions === 0 ? "LEARNING" : "REVIEW";
-  } else if (rating === "GOOD") {
-    repetitions += 1;
-    interval = repetitions === 1 ? 1 : repetitions === 2 ? 6 : Math.max(1, Math.round(interval * easeFactor));
-    status = "REVIEW";
-  } else {
-    repetitions += 1;
-    easeFactor += 0.15;
-    interval = repetitions === 1 ? 4 : repetitions === 2 ? 10 : Math.max(1, Math.round(interval * easeFactor * 1.3));
-    status = "REVIEW";
-  }
-
-  return { repetitions, interval, easeFactor, lapses, status, dueAt: addDays(new Date(), interval) };
-}
+const ratings = new Set<string>(REVIEW_RATINGS);
 
 export const learningRoutes: FastifyPluginAsync = async (app) => {
   app.get("/learning/decks", async (request) => {
@@ -164,21 +127,22 @@ export const learningRoutes: FastifyPluginAsync = async (app) => {
     const userId = request.userId!;
     const { id, cardId } = request.params;
     if (!uuidValidate(id) || !uuidValidate(cardId)) return reply.code(400).send({ error: "INVALID_ID" });
-    const rating = request.body?.rating ?? (request.body?.correct === false ? "AGAIN" : request.body?.correct === true ? "GOOD" : undefined);
-    if (!rating || !ratings.has(rating)) return reply.code(400).send({ error: "INVALID_RATING", message: "Rating must be AGAIN, HARD, GOOD, or EASY" });
+    const requestedRating = request.body?.rating ?? (request.body?.correct === false ? "AGAIN" : request.body?.correct === true ? "GOOD" : undefined);
+    if (!requestedRating || !ratings.has(requestedRating)) return reply.code(400).send({ error: "INVALID_RATING", message: "Rating must be AGAIN, HARD, GOOD, or EASY" });
+    const rating = requestedRating as ReviewRating;
     const deck = await prisma.flashcardDeck.findFirst({ where: { id, userId, archivedAt: null } });
     if (!deck) return reply.code(404).send({ error: "NOT_FOUND" });
     const card = await prisma.flashcard.findFirst({ where: { id: cardId, deckId: id }, include: { state: true } });
     if (!card) return reply.code(404).send({ error: "CARD_NOT_FOUND" });
     const previous = card.state ?? { repetitions: 0, interval: 0, easeFactor: 2.5, lapses: 0 };
+    const now = new Date();
     const next = scheduleReview(rating, {
       repetitions: previous.repetitions,
       interval: previous.interval,
       easeFactor: Number(previous.easeFactor),
       lapses: previous.lapses,
-    });
+    }, now);
     const correct = rating !== "AGAIN";
-    const now = new Date();
     const result = await prisma.$transaction(async (tx) => {
       const review = await tx.flashcardReview.create({ data: { id: uuidv7(), userId, deckId: id, cardId, rating, correct, reviewedAt: now } });
       const state = await tx.cardState.upsert({
