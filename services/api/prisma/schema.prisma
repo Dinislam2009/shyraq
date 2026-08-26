@@ -13,11 +13,10 @@ model User {
   id               String            @id @db.Uuid
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
-
   tasks            Task[]
   habits           Habit[]
   habitCompletions HabitCompletion[]
-
+  focusSessions    FocusSession[]
   @@map("users")
 }
 
@@ -33,9 +32,8 @@ model Task {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  focusSessions FocusSession[]
   @@index([userId])
   @@index([userId, updatedAt])
   @@map("tasks")
@@ -50,10 +48,8 @@ model Habit {
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   archivedAt  DateTime?         @map("archived_at")
-
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   completions HabitCompletion[]
-
   @@index([userId, archivedAt])
   @@map("habits")
 }
@@ -64,13 +60,27 @@ model HabitCompletion {
   userId    String   @db.Uuid @map("user_id")
   date      DateTime @db.Date
   createdAt DateTime @default(now()) @map("created_at")
-
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@unique([habitId, date])
   @@index([userId, date])
   @@map("habit_completions")
+}
+
+model FocusSession {
+  id              String    @id @db.Uuid
+  userId          String    @db.Uuid @map("user_id")
+  taskId          String?   @db.Uuid @map("task_id")
+  startedAt       DateTime  @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  durationSeconds Int?      @map("duration_seconds")
+  status          String    @default("RUNNING")
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  @@index([userId, startedAt])
+  @@index([userId, status])
+  @@index([taskId])
+  @@map("focus_sessions")
 }
 
 model SyncOperation {
@@ -83,7 +93,6 @@ model SyncOperation {
   version     Int
   payload     Json
   createdAt   DateTime @default(now()) @map("created_at")
-
   @@index([userId, sequence])
   @@index([userId, entityType, entityId])
   @@map("sync_operations")
