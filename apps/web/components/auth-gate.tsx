@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
-export function AuthGate({ children }: { children: (session: Session) => React.ReactNode }) {
+export function AuthGate({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,7 +79,7 @@ export function AuthGate({ children }: { children: (session: Session) => React.R
         <span>{session.user.email}</span>
         <button onClick={() => void signOut()}>Шығу</button>
       </div>
-      {children(session)}
+      {children}
     </>
   );
 }
