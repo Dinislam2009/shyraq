@@ -1,3 +1,4 @@
+import fp from "fastify-plugin";
 import type { FastifyPluginAsync } from "fastify";
 import { getSupabaseClient } from "../lib/supabase.js";
 import { prisma } from "../lib/prisma.js";
@@ -8,7 +9,7 @@ declare module "fastify" {
   }
 }
 
-export const authPlugin: FastifyPluginAsync = async (app) => {
+const authPlugin: FastifyPluginAsync = async (app) => {
   app.decorateRequest("userId", null);
 
   app.addHook("preHandler", async (request, reply) => {
@@ -48,3 +49,6 @@ export const authPlugin: FastifyPluginAsync = async (app) => {
     });
   });
 };
+
+export { authPlugin };
+export default fp(authPlugin, { name: "shyraq-auth" });
