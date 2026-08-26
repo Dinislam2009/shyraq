@@ -1,9 +1,9 @@
 import "dotenv/config";
 
 import Fastify from "fastify";
-import { authPlugin } from "./plugins/auth";
-import { prisma } from "./lib/prisma";
-import { taskRoutes } from "./routes/tasks";
+import { authPlugin } from "./plugins/auth.js";
+import { prisma } from "./lib/prisma.js";
+import { taskRoutes } from "./routes/tasks.js";
 
 const app = Fastify({ logger: true });
 
