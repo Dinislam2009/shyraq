@@ -53,7 +53,7 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
           applied.push({ operationId: operation.operationId, entityId: updated.id, status: "APPLIED" });
         }
         return applied;
-      });
+      }, { maxWait: 15_000, timeout: 30_000 });
       return reply.send({ results });
     } catch (error) {
       if (error instanceof Error && error.message === "INVALID_OPERATION") return reply.code(400).send({ error: "INVALID_OPERATION", message: "One or more operations are invalid" });
