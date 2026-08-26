@@ -1,8 +1,13 @@
-import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
+dotenv.config({ path: path.join(repoRoot, ".env") });
 
 const apiBaseUrl = process.env.SHYRAQ_TEST_API_URL ?? "http://localhost:4000";
 const supabaseUrl = process.env.SUPABASE_URL;
