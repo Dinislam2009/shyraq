@@ -8,6 +8,7 @@ import { analyticsRoutes } from "./routes/analytics.js";
 import { focusRoutes } from "./routes/focus.js";
 import { habitRoutes } from "./routes/habits.js";
 import { learningRoutes } from "./routes/learning.js";
+import { notificationRoutes } from "./routes/notifications.js";
 import { projectRoutes } from "./routes/projects.js";
 import { syncRoutes } from "./routes/sync.js";
 import { taskRoutes } from "./routes/tasks.js";
@@ -41,6 +42,7 @@ app.register(
     await api.register(focusRoutes);
     await api.register(learningRoutes);
     await api.register(analyticsRoutes);
+    await api.register(notificationRoutes);
     await api.register(syncRoutes);
   },
   { prefix: "/api/v1" },
