@@ -9,6 +9,7 @@ interface CreateTaskBody {
   description?: string | null;
   priority?: "NONE" | "LOW" | "MEDIUM" | "HIGH";
   dueAt?: string | null;
+  projectId?: string | null;
 }
 
 interface UpdateTaskBody {
@@ -18,6 +19,7 @@ interface UpdateTaskBody {
   status?: "TODO" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
   priority?: "NONE" | "LOW" | "MEDIUM" | "HIGH";
   dueAt?: string | null;
+  projectId?: string | null;
 }
 
 interface TaskParams {
@@ -33,6 +35,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     return prisma.task.findMany({
       where: { userId, deletedAt: null },
       orderBy: [{ createdAt: "desc" }],
+      include: { project: true },
     });
   });
 
@@ -45,6 +48,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       description = null,
       priority = "NONE",
       dueAt = null,
+      projectId = null,
     } = request.body;
 
     if (typeof title !== "string" || title.trim().length === 0 || title.length > 500) {
@@ -59,10 +63,20 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     if (dueAt !== null && !isValidDate(dueAt)) {
       return reply.code(400).send({ error: "INVALID_DUE_AT", message: "dueAt must be a valid ISO date" });
     }
+    if (projectId !== null && !uuidValidate(projectId)) {
+      return reply.code(400).send({ error: "INVALID_PROJECT_ID", message: "projectId must be a valid UUID" });
+    }
+
+    if (projectId) {
+      const project = await prisma.project.findFirst({ where: { id: projectId, userId, archivedAt: null } });
+      if (!project) {
+        return reply.code(404).send({ error: "PROJECT_NOT_FOUND", message: "Project not found" });
+      }
+    }
 
     const existingOperation = await prisma.syncOperation.findUnique({ where: { operationId } });
     if (existingOperation) {
-      return reply.code(200).send(await prisma.task.findUnique({ where: { id: existingOperation.entityId } }));
+      return reply.code(200).send(await prisma.task.findUnique({ where: { id: existingOperation.entityId }, include: { project: true } }));
     }
 
     const taskId = id ?? uuidv7();
@@ -75,7 +89,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
           description,
           priority,
           dueAt: dueAt ? new Date(dueAt) : null,
+          projectId,
         },
+        include: { project: true },
       });
 
       await tx.syncOperation.create({
@@ -98,7 +114,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   app.patch<{ Params: TaskParams; Body: UpdateTaskBody }>("/tasks/:id", async (request, reply) => {
     const userId = request.userId!;
     const { id } = request.params;
-    const { operationId = uuidv7(), title, description, status, priority, dueAt } = request.body;
+    const { operationId = uuidv7(), title, description, status, priority, dueAt, projectId } = request.body;
 
     if (!uuidValidate(id) || !uuidValidate(operationId)) {
       return reply.code(400).send({ error: "INVALID_ID", message: "Task id and operationId must be valid UUIDs" });
@@ -109,10 +125,20 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     if (dueAt !== undefined && dueAt !== null && !isValidDate(dueAt)) {
       return reply.code(400).send({ error: "INVALID_DUE_AT", message: "dueAt must be a valid ISO date" });
     }
+    if (projectId !== undefined && projectId !== null && !uuidValidate(projectId)) {
+      return reply.code(400).send({ error: "INVALID_PROJECT_ID", message: "projectId must be a valid UUID" });
+    }
+
+    if (projectId) {
+      const project = await prisma.project.findFirst({ where: { id: projectId, userId, archivedAt: null } });
+      if (!project) {
+        return reply.code(404).send({ error: "PROJECT_NOT_FOUND", message: "Project not found" });
+      }
+    }
 
     const existingOperation = await prisma.syncOperation.findUnique({ where: { operationId } });
     if (existingOperation) {
-      return reply.send(await prisma.task.findUnique({ where: { id: existingOperation.entityId } }));
+      return reply.send(await prisma.task.findUnique({ where: { id: existingOperation.entityId }, include: { project: true } }));
     }
 
     const current = await prisma.task.findFirst({ where: { id, userId, deletedAt: null } });
@@ -129,8 +155,10 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
           ...(status !== undefined ? { status } : {}),
           ...(priority !== undefined ? { priority } : {}),
           ...(dueAt !== undefined ? { dueAt: dueAt ? new Date(dueAt) : null } : {}),
+          ...(projectId !== undefined ? { projectId } : {}),
           version: { increment: 1 },
         },
+        include: { project: true },
       });
 
       await tx.syncOperation.create({
