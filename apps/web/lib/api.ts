@@ -11,8 +11,12 @@ export type Task = {
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export async function getTasks(accessToken?: string): Promise<Task[]> {
+  const headers: HeadersInit = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {};
+
   const response = await fetch(`${API_URL}/api/v1/tasks`, {
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    headers,
     cache: "no-store",
   });
 
