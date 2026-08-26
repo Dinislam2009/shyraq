@@ -6,6 +6,7 @@ import { authPlugin } from "./plugins/auth.js";
 import { prisma } from "./lib/prisma.js";
 import { focusRoutes } from "./routes/focus.js";
 import { habitRoutes } from "./routes/habits.js";
+import { projectRoutes } from "./routes/projects.js";
 import { syncRoutes } from "./routes/sync.js";
 import { taskRoutes } from "./routes/tasks.js";
 
@@ -44,6 +45,7 @@ app.register(
   async (api) => {
     await api.register(authPlugin);
     await api.register(taskRoutes);
+    await api.register(projectRoutes);
     await api.register(habitRoutes);
     await api.register(focusRoutes);
     await api.register(syncRoutes);
