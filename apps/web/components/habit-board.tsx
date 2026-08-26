@@ -7,8 +7,12 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function completionsFor(habit: Habit) {
+  return Array.isArray(habit.completions) ? habit.completions : [];
+}
+
 function streakFor(habit: Habit) {
-  const dates = new Set(habit.completions.map((item) => item.date.slice(0, 10)));
+  const dates = new Set(completionsFor(habit).map((item) => item.date.slice(0, 10)));
   let cursor = new Date(`${today()}T00:00:00.000Z`);
   let streak = 0;
   while (dates.has(cursor.toISOString().slice(0, 10))) {
@@ -25,7 +29,10 @@ export function HabitBoard({ accessToken }: { accessToken: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const completedToday = useMemo(() => habits.filter((habit) => habit.completions.some((item) => item.date.slice(0, 10) === today())).length, [habits]);
+  const completedToday = useMemo(
+    () => habits.filter((habit) => completionsFor(habit).some((item) => item.date.slice(0, 10) === today())).length,
+    [habits],
+  );
 
   useEffect(() => {
     getHabits(accessToken).then(setHabits).catch((e) => setError(e instanceof Error ? e.message : "Failed to load habits")).finally(() => setLoading(false));
@@ -44,14 +51,15 @@ export function HabitBoard({ accessToken }: { accessToken: string }) {
 
   async function toggle(habit: Habit) {
     setError(null);
-    const done = habit.completions.some((item) => item.date.slice(0, 10) === today());
+    const completions = completionsFor(habit);
+    const done = completions.some((item) => item.date.slice(0, 10) === today());
     try {
       if (done) {
         await uncompleteHabit(habit.id, accessToken);
-        setHabits((current) => current.map((item) => item.id === habit.id ? { ...item, completions: item.completions.filter((completion) => completion.date.slice(0, 10) !== today()) } : item));
+        setHabits((current) => current.map((item) => item.id === habit.id ? { ...item, completions: completionsFor(item).filter((completion) => completion.date.slice(0, 10) !== today()) } : item));
       } else {
         const completion = await completeHabit(habit.id, today(), accessToken);
-        setHabits((current) => current.map((item) => item.id === habit.id ? { ...item, completions: [completion, ...item.completions] } : item));
+        setHabits((current) => current.map((item) => item.id === habit.id ? { ...item, completions: [completion, ...completionsFor(item)] } : item));
       }
     } catch (e) { setError(e instanceof Error ? e.message : "Failed to update habit"); }
   }
@@ -78,7 +86,7 @@ export function HabitBoard({ accessToken }: { accessToken: string }) {
       {loading ? <p className="empty-state">Жүктелуде...</p> : habits.length === 0 ? <p className="empty-state">Әзірге әдет жоқ. Бірінші әдетіңді қос.</p> : (
         <div className="habit-list">
           {habits.map((habit) => {
-            const done = habit.completions.some((item) => item.date.slice(0, 10) === today());
+            const done = completionsFor(habit).some((item) => item.date.slice(0, 10) === today());
             return <article className={`habit-card ${done ? "habit-card-done" : ""}`} key={habit.id}>
               <button className={`checkbox ${done ? "checkbox-done" : ""}`} onClick={() => void toggle(habit)} aria-label={done ? "Әдетті орындалмаған деп белгілеу" : "Әдетті орындау"}>{done ? "✓" : ""}</button>
               <div className="habit-copy"><h3 className={done ? "task-completed" : ""}>{habit.title}</h3><p>{streakFor(habit)} күн қатарынан</p></div>
