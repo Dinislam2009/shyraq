@@ -21,13 +21,26 @@ interface PushBody {
   operations: PushOperation[];
 }
 
-const taskPayload = (payload: Record<string, unknown>) => ({
-  title: typeof payload.title === "string" ? payload.title : undefined,
-  description: typeof payload.description === "string" || payload.description === null ? payload.description : undefined,
-  status: typeof payload.status === "string" ? payload.status : undefined,
-  priority: typeof payload.priority === "string" ? payload.priority : undefined,
-  dueAt: typeof payload.dueAt === "string" ? new Date(payload.dueAt) : payload.dueAt === null ? null : undefined,
-});
+const taskPayload = (payload: Record<string, unknown>) => {
+  const data: {
+    title?: string;
+    description?: string | null;
+    status?: string;
+    priority?: string;
+    dueAt?: Date | null;
+  } = {};
+
+  if (typeof payload.title === "string") data.title = payload.title;
+  if (typeof payload.description === "string" || payload.description === null) {
+    data.description = payload.description;
+  }
+  if (typeof payload.status === "string") data.status = payload.status;
+  if (typeof payload.priority === "string") data.priority = payload.priority;
+  if (typeof payload.dueAt === "string") data.dueAt = new Date(payload.dueAt);
+  if (payload.dueAt === null) data.dueAt = null;
+
+  return data;
+};
 
 export const syncRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: PushBody }>("/sync/push", async (request, reply) => {
@@ -35,12 +48,19 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
     const operations = request.body?.operations;
 
     if (!Array.isArray(operations) || operations.length > 100) {
-      return reply.code(400).send({ error: "INVALID_OPERATIONS", message: "operations must be an array with at most 100 items" });
+      return reply.code(400).send({
+        error: "INVALID_OPERATIONS",
+        message: "operations must be an array with at most 100 items",
+      });
     }
 
     try {
       const results = await prisma.$transaction(async (tx) => {
-        const applied: Array<{ operationId: string; entityId: string; status: "APPLIED" | "DUPLICATE" | "CONFLICT" }> = [];
+        const applied: Array<{
+          operationId: string;
+          entityId: string;
+          status: "APPLIED" | "DUPLICATE" | "CONFLICT";
+        }> = [];
 
         for (const operation of operations) {
           if (
@@ -58,13 +78,22 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
             throw new Error("INVALID_OPERATION");
           }
 
-          const duplicate = await tx.syncOperation.findUnique({ where: { operationId: operation.operationId } });
+          const duplicate = await tx.syncOperation.findUnique({
+            where: { operationId: operation.operationId },
+          });
+
           if (duplicate) {
-            applied.push({ operationId: operation.operationId, entityId: duplicate.entityId, status: "DUPLICATE" });
+            applied.push({
+              operationId: operation.operationId,
+              entityId: duplicate.entityId,
+              status: "DUPLICATE",
+            });
             continue;
           }
 
-          const current = await tx.task.findFirst({ where: { id: operation.entityId, userId } });
+          const current = await tx.task.findFirst({
+            where: { id: operation.entityId, userId },
+          });
           const clientTime = new Date(operation.createdAt);
 
           if (operation.operation === "CREATE" && !current) {
@@ -72,13 +101,29 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
               data: {
                 id: operation.entityId,
                 userId,
-                title: typeof operation.payload.title === "string" ? operation.payload.title.trim() : "Untitled",
-                description: typeof operation.payload.description === "string" ? operation.payload.description : null,
-                status: typeof operation.payload.status === "string" ? operation.payload.status : "TODO",
-                priority: typeof operation.payload.priority === "string" ? operation.payload.priority : "NONE",
-                dueAt: typeof operation.payload.dueAt === "string" ? new Date(operation.payload.dueAt) : null,
+                title:
+                  typeof operation.payload.title === "string"
+                    ? operation.payload.title.trim()
+                    : "Untitled",
+                description:
+                  typeof operation.payload.description === "string"
+                    ? operation.payload.description
+                    : null,
+                status:
+                  typeof operation.payload.status === "string"
+                    ? operation.payload.status
+                    : "TODO",
+                priority:
+                  typeof operation.payload.priority === "string"
+                    ? operation.payload.priority
+                    : "NONE",
+                dueAt:
+                  typeof operation.payload.dueAt === "string"
+                    ? new Date(operation.payload.dueAt)
+                    : null,
               },
             });
+
             await tx.syncOperation.create({
               data: {
                 operationId: operation.operationId,
@@ -90,20 +135,34 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
                 payload: created,
               },
             });
-            applied.push({ operationId: operation.operationId, entityId: created.id, status: "APPLIED" });
+
+            applied.push({
+              operationId: operation.operationId,
+              entityId: created.id,
+              status: "APPLIED",
+            });
             continue;
           }
 
           if (!current || current.updatedAt > clientTime) {
-            applied.push({ operationId: operation.operationId, entityId: operation.entityId, status: "CONFLICT" });
+            applied.push({
+              operationId: operation.operationId,
+              entityId: operation.entityId,
+              status: "CONFLICT",
+            });
             continue;
           }
 
           const updated = await tx.task.update({
             where: { id: current.id },
-            data: operation.operation === "DELETE"
-              ? { deletedAt: clientTime, version: { increment: 1 } }
-              : { ...taskPayload(operation.payload), deletedAt: null, version: { increment: 1 } },
+            data:
+              operation.operation === "DELETE"
+                ? { deletedAt: clientTime, version: { increment: 1 } }
+                : {
+                    ...taskPayload(operation.payload),
+                    deletedAt: null,
+                    version: { increment: 1 },
+                  },
           });
 
           await tx.syncOperation.create({
@@ -117,7 +176,12 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
               payload: updated,
             },
           });
-          applied.push({ operationId: operation.operationId, entityId: updated.id, status: "APPLIED" });
+
+          applied.push({
+            operationId: operation.operationId,
+            entityId: updated.id,
+            status: "APPLIED",
+          });
         }
 
         return applied;
@@ -126,7 +190,10 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({ results });
     } catch (error) {
       if (error instanceof Error && error.message === "INVALID_OPERATION") {
-        return reply.code(400).send({ error: "INVALID_OPERATION", message: "One or more operations are invalid" });
+        return reply.code(400).send({
+          error: "INVALID_OPERATION",
+          message: "One or more operations are invalid",
+        });
       }
       throw error;
     }
@@ -138,7 +205,10 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
     const limit = Math.min(Math.max(Number(request.query.limit ?? 200), 1), 500);
 
     if (!/^\d+$/.test(cursor)) {
-      return reply.code(400).send({ error: "INVALID_CURSOR", message: "cursor must be a non-negative integer" });
+      return reply.code(400).send({
+        error: "INVALID_CURSOR",
+        message: "cursor must be a non-negative integer",
+      });
     }
 
     const operations = await prisma.syncOperation.findMany({
@@ -147,13 +217,19 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
       take: limit,
     });
 
-    const nextCursor = operations.length > 0 ? operations[operations.length - 1]!.sequence.toString() : cursor;
+    const nextCursor =
+      operations.length > 0
+        ? operations[operations.length - 1]!.sequence.toString()
+        : cursor;
 
     return {
       cursor,
       nextCursor,
       hasMore: operations.length === limit,
-      operations: operations.map((operation) => ({ ...operation, sequence: operation.sequence.toString() })),
+      operations: operations.map((operation) => ({
+        ...operation,
+        sequence: operation.sequence.toString(),
+      })),
     };
   });
 
