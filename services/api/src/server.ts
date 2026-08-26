@@ -4,6 +4,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { authPlugin } from "./plugins/auth.js";
 import { prisma } from "./lib/prisma.js";
+import { analyticsRoutes } from "./routes/analytics.js";
 import { focusRoutes } from "./routes/focus.js";
 import { habitRoutes } from "./routes/habits.js";
 import { learningRoutes } from "./routes/learning.js";
@@ -19,10 +20,7 @@ await app.register(cors, {
   credentials: true,
 });
 
-app.get("/health", async () => ({
-  status: "ok",
-  service: "shyraq-api",
-}));
+app.get("/health", async () => ({ status: "ok", service: "shyraq-api" }));
 
 app.get("/health/db", async (_request, reply) => {
   try {
@@ -42,6 +40,7 @@ app.register(
     await api.register(habitRoutes);
     await api.register(focusRoutes);
     await api.register(learningRoutes);
+    await api.register(analyticsRoutes);
     await api.register(syncRoutes);
   },
   { prefix: "/api/v1" },
@@ -49,7 +48,6 @@ app.register(
 
 const port = Number(process.env.PORT ?? 4000);
 const host = process.env.HOST ?? "0.0.0.0";
-
 app.listen({ port, host }).catch((error) => {
   app.log.error(error);
   process.exit(1);
