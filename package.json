@@ -8,7 +8,8 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "update": "git fetch origin && git rebase --autostash origin/feature/habits"
   },
   "devDependencies": {
     "prettier": "^3.6.2",
