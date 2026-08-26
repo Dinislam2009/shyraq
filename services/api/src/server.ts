@@ -1,7 +1,9 @@
 import "dotenv/config";
 
 import Fastify from "fastify";
+import { authPlugin } from "./plugins/auth";
 import { prisma } from "./lib/prisma";
+import { taskRoutes } from "./routes/tasks";
 
 const app = Fastify({ logger: true });
 
@@ -27,6 +29,14 @@ app.get("/health/db", async (_request, reply) => {
     });
   }
 });
+
+app.register(
+  async (api) => {
+    await api.register(authPlugin);
+    await api.register(taskRoutes);
+  },
+  { prefix: "/api/v1" },
+);
 
 const port = Number(process.env.PORT ?? 4000);
 const host = process.env.HOST ?? "0.0.0.0";
