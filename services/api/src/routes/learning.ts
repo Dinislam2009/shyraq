@@ -6,9 +6,48 @@ interface IdParams { id: string }
 interface CardParams { id: string; cardId: string }
 interface DeckBody { name: string; description?: string | null }
 interface CardBody { front: string; back: string; position?: number }
-interface ReviewBody { correct: boolean }
+type ReviewRating = "AGAIN" | "HARD" | "GOOD" | "EASY";
+interface ReviewBody { rating?: ReviewRating; correct?: boolean }
 
 const validText = (value: unknown, max = 5000) => typeof value === "string" && value.trim().length > 0 && value.length <= max;
+const ratings = new Set<ReviewRating>(["AGAIN", "HARD", "GOOD", "EASY"]);
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function scheduleReview(rating: ReviewRating, state: { repetitions: number; interval: number; easeFactor: number; lapses: number }) {
+  let repetitions = state.repetitions;
+  let interval = state.interval;
+  let easeFactor = state.easeFactor;
+  let lapses = state.lapses;
+  let status = "REVIEW";
+
+  if (rating === "AGAIN") {
+    repetitions = 0;
+    interval = 1;
+    easeFactor = Math.max(1.3, easeFactor - 0.2);
+    lapses += 1;
+    status = "LEARNING";
+  } else if (rating === "HARD") {
+    interval = Math.max(1, interval === 0 ? 1 : Math.round(interval * 1.2));
+    easeFactor = Math.max(1.3, easeFactor - 0.15);
+    status = repetitions === 0 ? "LEARNING" : "REVIEW";
+  } else if (rating === "GOOD") {
+    repetitions += 1;
+    interval = repetitions === 1 ? 1 : repetitions === 2 ? 6 : Math.max(1, Math.round(interval * easeFactor));
+    status = "REVIEW";
+  } else {
+    repetitions += 1;
+    easeFactor += 0.15;
+    interval = repetitions === 1 ? 4 : repetitions === 2 ? 10 : Math.max(1, Math.round(interval * easeFactor * 1.3));
+    status = "REVIEW";
+  }
+
+  return { repetitions, interval, easeFactor, lapses, status, dueAt: addDays(new Date(), interval) };
+}
 
 export const learningRoutes: FastifyPluginAsync = async (app) => {
   app.get("/learning/decks", async (request) => {
@@ -61,7 +100,20 @@ export const learningRoutes: FastifyPluginAsync = async (app) => {
     if (!uuidValidate(id)) return reply.code(400).send({ error: "INVALID_ID" });
     const deck = await prisma.flashcardDeck.findFirst({ where: { id, userId, archivedAt: null } });
     if (!deck) return reply.code(404).send({ error: "NOT_FOUND" });
-    return prisma.flashcard.findMany({ where: { deckId: id }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] });
+    return prisma.flashcard.findMany({ where: { deckId: id }, include: { state: true }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] });
+  });
+
+  app.get<{ Params: IdParams }>("/learning/decks/:id/due", async (request, reply) => {
+    const userId = request.userId!;
+    const { id } = request.params;
+    if (!uuidValidate(id)) return reply.code(400).send({ error: "INVALID_ID" });
+    const deck = await prisma.flashcardDeck.findFirst({ where: { id, userId, archivedAt: null } });
+    if (!deck) return reply.code(404).send({ error: "NOT_FOUND" });
+    return prisma.flashcard.findMany({
+      where: { deckId: id, OR: [{ state: null }, { state: { dueAt: { lte: new Date() } } }] },
+      include: { state: true },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+    });
   });
 
   app.post<{ Params: IdParams; Body: CardBody }>("/learning/decks/:id/cards", async (request, reply) => {
@@ -72,7 +124,10 @@ export const learningRoutes: FastifyPluginAsync = async (app) => {
     if (!deck) return reply.code(404).send({ error: "NOT_FOUND" });
     const { front, back, position = 0 } = request.body;
     if (!validText(front) || !validText(back)) return reply.code(400).send({ error: "INVALID_CARD", message: "Front and back are required" });
-    return reply.code(201).send(await prisma.flashcard.create({ data: { id: uuidv7(), deckId: id, front: front.trim(), back: back.trim(), position } }));
+    return reply.code(201).send(await prisma.flashcard.create({
+      data: { id: uuidv7(), deckId: id, front: front.trim(), back: back.trim(), position, state: { create: { id: uuidv7() } } },
+      include: { state: true },
+    }));
   });
 
   app.patch<{ Params: CardParams; Body: Partial<CardBody> }>("/learning/decks/:id/cards/:cardId", async (request, reply) => {
@@ -90,7 +145,7 @@ export const learningRoutes: FastifyPluginAsync = async (app) => {
       ...(front !== undefined ? { front: front.trim() } : {}),
       ...(back !== undefined ? { back: back.trim() } : {}),
       ...(position !== undefined ? { position } : {}),
-    } });
+    }, include: { state: true } });
   });
 
   app.delete<{ Params: CardParams }>("/learning/decks/:id/cards/:cardId", async (request, reply) => {
@@ -109,14 +164,31 @@ export const learningRoutes: FastifyPluginAsync = async (app) => {
     const userId = request.userId!;
     const { id, cardId } = request.params;
     if (!uuidValidate(id) || !uuidValidate(cardId)) return reply.code(400).send({ error: "INVALID_ID" });
-    if (typeof request.body?.correct !== "boolean") return reply.code(400).send({ error: "INVALID_REVIEW" });
+    const rating = request.body?.rating ?? (request.body?.correct === false ? "AGAIN" : request.body?.correct === true ? "GOOD" : undefined);
+    if (!rating || !ratings.has(rating)) return reply.code(400).send({ error: "INVALID_RATING", message: "Rating must be AGAIN, HARD, GOOD, or EASY" });
     const deck = await prisma.flashcardDeck.findFirst({ where: { id, userId, archivedAt: null } });
     if (!deck) return reply.code(404).send({ error: "NOT_FOUND" });
-    const card = await prisma.flashcard.findFirst({ where: { id: cardId, deckId: id } });
+    const card = await prisma.flashcard.findFirst({ where: { id: cardId, deckId: id }, include: { state: true } });
     if (!card) return reply.code(404).send({ error: "CARD_NOT_FOUND" });
-    return reply.code(201).send(await prisma.flashcardReview.create({
-      data: { id: uuidv7(), userId, deckId: id, cardId, correct: request.body.correct },
-    }));
+    const previous = card.state ?? { repetitions: 0, interval: 0, easeFactor: 2.5, lapses: 0 };
+    const next = scheduleReview(rating, {
+      repetitions: previous.repetitions,
+      interval: previous.interval,
+      easeFactor: Number(previous.easeFactor),
+      lapses: previous.lapses,
+    });
+    const correct = rating !== "AGAIN";
+    const now = new Date();
+    const result = await prisma.$transaction(async (tx) => {
+      const review = await tx.flashcardReview.create({ data: { id: uuidv7(), userId, deckId: id, cardId, rating, correct, reviewedAt: now } });
+      const state = await tx.cardState.upsert({
+        where: { cardId },
+        create: { id: uuidv7(), cardId, status: next.status, repetitions: next.repetitions, interval: next.interval, easeFactor: next.easeFactor, dueAt: next.dueAt, lastReviewedAt: now, lapses: next.lapses },
+        update: { status: next.status, repetitions: next.repetitions, interval: next.interval, easeFactor: next.easeFactor, dueAt: next.dueAt, lastReviewedAt: now, lapses: next.lapses },
+      });
+      return { review, state };
+    });
+    return reply.code(201).send(result);
   });
 
   app.get<{ Params: IdParams }>("/learning/decks/:id/progress", async (request, reply) => {
@@ -131,6 +203,7 @@ export const learningRoutes: FastifyPluginAsync = async (app) => {
       prisma.flashcardReview.count({ where: { deckId: id, userId, correct: true } }),
     ]);
     const reviewedCardIds = await prisma.flashcardReview.findMany({ where: { deckId: id, userId }, distinct: ["cardId"], select: { cardId: true } });
-    return { cardCount, reviewCount, correctCount, reviewedCardCount: reviewedCardIds.length, completionPercent: cardCount === 0 ? 0 : Math.round((reviewedCardIds.length / cardCount) * 100) };
+    const dueCount = await prisma.flashcard.count({ where: { deckId: id, OR: [{ state: null }, { state: { dueAt: { lte: new Date() } } }] } });
+    return { cardCount, reviewCount, correctCount, reviewedCardCount: reviewedCardIds.length, dueCount, completionPercent: cardCount === 0 ? 0 : Math.round((reviewedCardIds.length / cardCount) * 100) };
   });
 };
