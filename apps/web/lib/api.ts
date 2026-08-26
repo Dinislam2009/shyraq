@@ -37,6 +37,7 @@ export type Habit = { id: string; title: string; description: string | null; fre
 export type FocusSession = { id: string; taskId: string | null; status: "RUNNING" | "COMPLETED" | "CANCELLED"; startedAt: string; endedAt: string | null; durationSeconds: number | null; task?: Task | null };
 export type FlashcardDeck = { id: string; name: string; description: string | null; archivedAt: string | null; createdAt: string; updatedAt: string; _count?: { cards: number } };
 export type Flashcard = { id: string; deckId: string; front: string; back: string; position: number; createdAt: string; updatedAt: string };
+export type FlashcardProgress = { cardCount: number; reviewCount: number; correctCount: number; reviewedCardCount: number; completionPercent: number };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -74,3 +75,5 @@ export function createFlashcard(deckId: string, input: { front: string; back: st
 export function updateFlashcard(deckId: string, cardId: string, input: Partial<{ front: string; back: string; position: number }>, accessToken?: string) { return request<Flashcard>(`/api/v1/learning/decks/${deckId}/cards/${cardId}`, { method: "PATCH", body: JSON.stringify(input) }, accessToken); }
 export function deleteFlashcard(deckId: string, cardId: string, accessToken?: string) { return request<void>(`/api/v1/learning/decks/${deckId}/cards/${cardId}`, { method: "DELETE" }, accessToken); }
 export function archiveFlashcardDeck(deckId: string, accessToken?: string) { return request<FlashcardDeck>(`/api/v1/learning/decks/${deckId}`, { method: "PATCH", body: JSON.stringify({ archived: true }) }, accessToken); }
+export function reviewFlashcard(deckId: string, cardId: string, correct: boolean, accessToken?: string) { return request<{ id: string; correct: boolean }>(`/api/v1/learning/decks/${deckId}/cards/${cardId}/reviews`, { method: "POST", body: JSON.stringify({ correct }) }, accessToken); }
+export function getFlashcardProgress(deckId: string, accessToken?: string) { return request<FlashcardProgress>(`/api/v1/learning/decks/${deckId}/progress`, {}, accessToken); }
