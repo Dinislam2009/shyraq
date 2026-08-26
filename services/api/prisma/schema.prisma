@@ -18,6 +18,7 @@ model User {
   habits           Habit[]
   habitCompletions HabitCompletion[]
   focusSessions    FocusSession[]
+  flashcardDecks   FlashcardDeck[]
   @@map("users")
 }
 
@@ -99,6 +100,33 @@ model FocusSession {
   @@index([userId, status])
   @@index([taskId])
   @@map("focus_sessions")
+}
+
+model FlashcardDeck {
+  id          String       @id @db.Uuid
+  userId      String       @db.Uuid @map("user_id")
+  name        String
+  description String?
+  archivedAt  DateTime?    @map("archived_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards       Flashcard[]
+  @@index([userId, archivedAt])
+  @@map("flashcard_decks")
+}
+
+model Flashcard {
+  id          String        @id @db.Uuid
+  deckId      String        @db.Uuid @map("deck_id")
+  front       String
+  back        String
+  position    Int           @default(0)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deck        FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  @@index([deckId, position])
+  @@map("flashcards")
 }
 
 model SyncOperation {
