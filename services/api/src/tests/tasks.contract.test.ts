@@ -60,7 +60,10 @@ test("authenticated task CRUD contract", { skip: !enabled }, async () => {
   assert.equal(updated.status, "COMPLETED");
   assert.equal(updated.version, 2);
 
-  const remove = await fetch(`${apiBaseUrl}/api/v1/tasks/${created.id}`, { method: "DELETE", headers });
+  const remove = await fetch(`${apiBaseUrl}/api/v1/tasks/${created.id}`, {
+    method: "DELETE",
+    headers: { authorization: `Bearer ${data.session.access_token}` },
+  });
   const removeBodyText = await remove.text();
   assert.equal(remove.status, 204, `delete failed: HTTP ${remove.status}: ${removeBodyText}`);
 
