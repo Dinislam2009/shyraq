@@ -16,7 +16,7 @@ const email = process.env.SHYRAQ_TEST_EMAIL;
 const password = process.env.SHYRAQ_TEST_PASSWORD;
 const enabled = Boolean(supabaseUrl && supabaseAnonKey && email && password);
 
-test("authenticated flashcard deck and card contract", { skip: !enabled }, async () => {
+test("authenticated flashcard deck, card, and review progress contract", { skip: !enabled }, async () => {
   const supabase = createClient(supabaseUrl!, supabaseAnonKey!, { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } });
   const { data, error } = await supabase.auth.signInWithPassword({ email: email!, password: password! });
   assert.ifError(error);
@@ -42,6 +42,23 @@ test("authenticated flashcard deck and card contract", { skip: !enabled }, async
   const card = JSON.parse(cardText) as { id: string; front: string; back: string };
   assert.ok(card.id);
   assert.equal(card.front, "Capital of Kazakhstan?");
+
+  const progressBefore = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/progress`, { headers });
+  const progressBeforeText = await progressBefore.text();
+  assert.equal(progressBefore.status, 200, `progress before review failed: HTTP ${progressBefore.status}: ${progressBeforeText}`);
+  assert.deepEqual(JSON.parse(progressBeforeText), { cardCount: 1, reviewCount: 0, correctCount: 0, reviewedCardCount: 0, completionPercent: 0 });
+
+  const review = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/cards/${card.id}/reviews`, {
+    method: "POST", headers, body: JSON.stringify({ correct: true }),
+  });
+  const reviewText = await review.text();
+  assert.equal(review.status, 201, `review failed: HTTP ${review.status}: ${reviewText}`);
+  assert.equal((JSON.parse(reviewText) as { correct: boolean }).correct, true);
+
+  const progressAfter = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/progress`, { headers });
+  const progressAfterText = await progressAfter.text();
+  assert.equal(progressAfter.status, 200, `progress after review failed: HTTP ${progressAfter.status}: ${progressAfterText}`);
+  assert.deepEqual(JSON.parse(progressAfterText), { cardCount: 1, reviewCount: 1, correctCount: 1, reviewedCardCount: 1, completionPercent: 100 });
 
   const list = await fetch(`${apiBaseUrl}/api/v1/learning/decks/${deck.id}/cards`, { headers });
   const listText = await list.text();
