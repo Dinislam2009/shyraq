@@ -1,24 +1,8 @@
 import { SearchIcon } from "@/components/icons";
+import { getCurrentUser } from "@/lib/supabase/queries";
+import { signOut } from "@/app/signout/actions";
 
-export function Topbar() {
-  return (
-    <header className="flex h-18 items-center justify-between border-b border-black/[0.06] bg-white/90 px-5 backdrop-blur sm:px-8">
-      <div className="flex items-center gap-3 lg:hidden">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-xs font-bold text-white">S</span>
-        <span className="font-semibold">Shyraq</span>
-      </div>
-      <div className="relative hidden w-full max-w-md md:block">
-        <SearchIcon size={17} />
-        <input aria-label="Search" placeholder="Search decks, cards, tags..." className="absolute inset-y-0 left-8 w-[calc(100%-2rem)] bg-transparent text-sm outline-none placeholder:text-slate-400" />
-        <div className="flex h-10 items-center rounded-xl border border-slate-200 bg-slate-50 pl-3 text-slate-400"><span className="ml-5 text-xs">⌘ K</span></div>
-      </div>
-      <div className="ml-auto flex items-center gap-3">
-        <div className="hidden text-right sm:block">
-          <p className="text-sm font-medium text-slate-900">Dinis</p>
-          <p className="text-xs text-slate-400">Student</p>
-        </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">D</div>
-      </div>
-    </header>
-  );
+export async function Topbar(){
+ const user=await getCurrentUser(); const name=String(user?.user_metadata?.display_name||user?.email?.split("@")[0]||"Student");
+ return <header className="flex h-18 items-center justify-between border-b border-black/[0.06] bg-white/90 px-5 backdrop-blur sm:px-8"><div className="flex items-center gap-3 lg:hidden"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-xs font-bold text-white">S</span><span className="font-semibold">Shyraq</span></div><div className="relative hidden w-full max-w-md md:block"><div className="flex h-10 items-center rounded-xl border border-slate-200 bg-slate-50 pl-3 text-slate-400"><SearchIcon size={17}/><span className="ml-5 text-sm">Search decks, cards, tags...</span><span className="ml-auto mr-3 text-xs text-slate-400">⌘ K</span></div></div><div className="ml-auto flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-medium text-slate-900">{name}</p><p className="text-xs text-slate-400">{user?.email||"Student"}</p></div><details className="relative"><summary className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">{name.slice(0,1).toUpperCase()}</summary><div className="absolute right-0 z-20 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"><form action={signOut}><button className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-50">Sign out</button></form></div></details></div></header>;
 }
