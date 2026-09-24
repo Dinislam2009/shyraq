@@ -247,8 +247,14 @@ create policy tags_member on public.tags for all to authenticated using(private.
 drop policy if exists card_tags_member on public.card_tags;
 create policy card_tags_member on public.card_tags for all to authenticated using(exists(select 1 from public.cards c join public.decks d on d.id=c.deck_id where c.id=card_id and private.is_workspace_member(d.workspace_id,'editor'))) with check(exists(select 1 from public.cards c join public.decks d on d.id=c.deck_id where c.id=card_id and private.is_workspace_member(d.workspace_id,'editor')));
 
-drop policy if exists collections_member on public.collections;
-create policy collections_member on public.collections for all to authenticated using(private.is_workspace_member(workspace_id,'viewer')) with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists collections_read on public.collections;
+create policy collections_read on public.collections for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+drop policy if exists collections_write on public.collections;
+create policy collections_write on public.collections for insert to authenticated with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists collections_update on public.collections;
+create policy collections_update on public.collections for update to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor')) with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists collections_delete on public.collections;
+create policy collections_delete on public.collections for delete to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
 drop policy if exists collection_cards_member on public.collection_cards;
 create policy collection_cards_member on public.collection_cards for all to authenticated using(exists(select 1 from public.collections c where c.id=collection_id and private.is_workspace_member(c.workspace_id,'editor'))) with check(exists(select 1 from public.collections c where c.id=collection_id and private.is_workspace_member(c.workspace_id,'editor')));
 
@@ -261,8 +267,14 @@ create policy sync_cursor_self on public.sync_cursors for all to authenticated u
 drop policy if exists sync_change_self on public.sync_changes;
 create policy sync_change_self on public.sync_changes for select to authenticated using(user_id=(select auth.uid()));
 
-drop policy if exists media_member on public.media;
-create policy media_member on public.media for all to authenticated using(owner_id=(select auth.uid()) or private.is_workspace_member(workspace_id,'viewer')) with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists media_read on public.media;
+create policy media_read on public.media for select to authenticated using(owner_id=(select auth.uid()) or private.is_workspace_member(workspace_id,'viewer'));
+drop policy if exists media_insert on public.media;
+create policy media_insert on public.media for insert to authenticated with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists media_update on public.media;
+create policy media_update on public.media for update to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor')) with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists media_delete on public.media;
+create policy media_delete on public.media for delete to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
 
 drop policy if exists follows_self on public.public_deck_follows;
 create policy follows_self on public.public_deck_follows for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
