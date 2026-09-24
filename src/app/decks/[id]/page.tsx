@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { getDeck } from "@/lib/supabase/queries";
-import { deleteDeck } from "@/app/decks/actions";
 import { updateCard, deleteCard } from "@/app/decks/[id]/cards/actions";
 
 export default async function DeckPage({params}:{params:Promise<{id:string}>}){
