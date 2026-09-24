@@ -2,6 +2,7 @@
 import {useState} from "react";
 import {createEmptyCard,fsrs,Rating} from "ts-fsrs";
 import {queueReview,syncReviews} from "@/lib/sync/client";
+import {getDeviceId} from "@/lib/offline/store";
 import {useRouter} from "next/navigation";
 
 const scheduler=fsrs({request_retention:0.9,maximum_interval:36500,enable_fuzz:true,enable_short_term:true,learning_steps:["1m","10m"],relearning_steps:["10m"]});
@@ -21,7 +22,7 @@ export function ReviewRunner({userId,card,stateData}:{userId:string;card:{id:str
      id:crypto.randomUUID(),
      userId,
      cardId:card.id,
-     deviceId:crypto.randomUUID(),
+     deviceId:getDeviceId(),
      sequence:Date.now(),
      rating,
      reviewedAt:new Date().toISOString(),
