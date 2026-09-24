@@ -16,28 +16,64 @@ export async function importAnki(formData:FormData){
  const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
  if(!workspace)return {error:"Personal workspace not found."};
 
- const cardIdBySource:number[]=[];
+ const sourceToImported=new Map<number,string>();
  let imported=0;
+
  for(const sourceDeck of parsed.decks){
    const {data:deck,error}=await supabase.from("decks").insert({
-     workspace_id:workspace.id,owner_id:user.id,name:sourceDeck.name,description:sourceDeck.description,
-     visibility:"private",settings:{source:"anki",ankiDeckId:sourceDeck.id}
+     workspace_id:workspace.id,
+     owner_id:user.id,
+     name:sourceDeck.name,
+     description:sourceDeck.description,
+     visibility:"private",
+     settings:{source:"anki",ankiDeckId:sourceDeck.id}
    }).select("id").single();
    if(error)return {error:error.message};
+
    const rows=sourceDeck.cards.map((card,index)=>({
-     deck_id:deck.id,owner_id:user.id,kind:"basic",content:{front:card.front,back:card.back,tags:card.tags},
+     deck_id:deck.id,
+     owner_id:user.id,
+     kind:"basic" as const,
+     content:{front:card.front,back:card.back,tags:card.tags},
      sort_order:index
    }));
+
    if(rows.length){
      const {data:created,error:cardsError}=await supabase.from("cards").insert(rows).select("id");
      if(cardsError)return {error:cardsError.message};
-     for(const row of created||[])cardIdBySource.push(Number(row.id));
+     for(let index=0;index<sourceDeck.cards.length;index++){
+       const sourceId=sourceDeck.cards[index].sourceCardId;
+       const importedId=created?.[index]?.id;
+       if(importedId)sourceToImported.set(sourceId,importedId);
+     }
      imported+=rows.length;
    }
  }
 
- const reviewCount=parsed.reviews.length;
+ const reviewRows=parsed.reviews.flatMap(review=>{
+   const importedCardId=sourceToImported.get(review.cardId);
+   if(!importedCardId)return [];
+   return [{
+     event_key:crypto.randomUUID(),
+     user_id:user.id,
+     card_id:importedCardId,
+     device_id:crypto.randomUUID(),
+     reviewed_at:new Date(review.timestamp).toISOString(),
+     rating:ratingMap[review.rating],
+     elapsed_ms:review.timeMs,
+     previous_state:{source:"anki",interval:review.lastInterval},
+     next_state:{source:"anki",interval:review.interval,factor:review.factor,type:review.type},
+     metadata:{source:"anki",sourceCardId:review.cardId}
+   }];
+ });
+
+ if(reviewRows.length){
+   const {error}=await supabase.from("review_events").insert(reviewRows);
+   if(error)return {error:error.message};
+ }
+
  revalidatePath("/decks");
  revalidatePath("/import");
- return {ok:true,count:imported,reviews:reviewCount,media:Object.keys(parsed.media).length};
+ revalidatePath("/statistics");
+ return {ok:true,count:imported,reviews:reviewRows.length,media:Object.keys(parsed.media).length};
 }
