@@ -10,10 +10,10 @@ export type ParsedAnki={
 };
 
 function decode(value:Uint8Array){return new TextDecoder().decode(value);}
-function stripHtml(value:string){return value.replace(/<br\\s*\\/?>/gi,"\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").trim();}
+function stripHtml(value:string){return value.replace(/<br\s*\/?>(?=)/gi,"\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").trim();}
 function replaceMedia(value:string,media:Record<string,string>){
   return value.replace(/(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi,(all,prefix,name,suffix)=>prefix+"__SHYRAQ_MEDIA__"+encodeURIComponent(media[name]||name)+suffix)
-    .replace(/\\[sound:([^\\]]+)\\]/gi,(all,name)=>"__SHYRAQ_AUDIO__"+encodeURIComponent(media[name]||name));
+    .replace(/\[sound:([^\]]+)\]/gi,(all,name)=>"__SHYRAQ_AUDIO__"+encodeURIComponent(media[name]||name));
 }
 
 export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
@@ -37,7 +37,7 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
   const noteValues=db.exec("select id,mid,tags,flds from notes")[0]?.values||[];
   const notes=new Map<number,{fields:string[];tags:string[];model:any}>();
   for(const row of noteValues){
-    notes.set(Number(row[0]),{fields:String(row[3]||"").split("\\x1f"),tags:String(row[2]||"").trim().split(/\\s+/).filter(Boolean),model:modelsRaw[String(row[1])]||null});
+    notes.set(Number(row[0]),{fields:String(row[3]||"").split("\x1f"),tags:String(row[2]||"").trim().split(/\s+/).filter(Boolean),model:modelsRaw[String(row[1])]||null});
   }
 
   const cardValues=db.exec("select id,nid,did,ord,due,ivl,factor,reps,lapses from cards")[0]?.values||[];
