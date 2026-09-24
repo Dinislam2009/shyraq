@@ -194,7 +194,7 @@ begin
 end $$;
 revoke all on function private.record_sync_change() from public,anon,authenticated;
 
-do $ declare t text; begin
+do $$ declare t text; begin
  foreach t in array array['decks','card_templates','cards','tags','collections','review_states','review_events','media'] loop
   execute format('drop trigger if exists %I_sync on public.%I',t,t);
   execute format('create trigger %I_sync after insert or update or delete on public.%I for each row execute function private.record_sync_change()',t,t);
