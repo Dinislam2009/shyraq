@@ -65,6 +65,19 @@ create table if not exists public.collection_cards (
  card_id uuid not null references public.cards(id) on delete cascade, created_at timestamptz not null default now(),
  primary key(collection_id,card_id)
 );
+create table if not exists public.review_preferences (
+ user_id uuid primary key references auth.users(id) on delete cascade,
+ desired_retention double precision not null default 0.9 check(desired_retention >= 0.7 and desired_retention <= 0.99),
+ maximum_interval integer not null default 36500 check(maximum_interval >= 1),
+ learning_steps jsonb not null default '["1m","10m"]'::jsonb,
+ relearning_steps jsonb not null default '["10m"]'::jsonb,
+ new_cards_per_day integer not null default 20 check(new_cards_per_day >= 0),
+ reviews_per_day integer not null default 9999 check(reviews_per_day >= 0),
+ enable_fuzz boolean not null default true,
+ enable_short_term boolean not null default true,
+ updated_at timestamptz not null default now()
+);
+
 create table if not exists public.review_states (
  user_id uuid not null references auth.users(id) on delete cascade, card_id uuid not null references public.cards(id) on delete cascade,
  queue public.card_queue not null default 'learning', state_data jsonb not null default '{}'::jsonb, due_at timestamptz,
@@ -116,6 +129,7 @@ create table if not exists public.workspace_invitations (
 );
 
 create index if not exists profiles_username_idx on public.profiles(username);
+create index if not exists review_preferences_updated_idx on public.review_preferences(updated_at);
 create index if not exists decks_workspace_idx on public.decks(workspace_id);
 create index if not exists decks_owner_id_idx on public.decks(owner_id);
 create index if not exists decks_source_deck_id_idx on public.decks(source_deck_id);
@@ -230,6 +244,7 @@ alter table public.tags enable row level security;
 alter table public.card_tags enable row level security;
 alter table public.collections enable row level security;
 alter table public.collection_cards enable row level security;
+alter table public.review_preferences enable row level security;
 alter table public.review_states enable row level security;
 alter table public.review_events enable row level security;
 alter table public.media enable row level security;
@@ -301,6 +316,9 @@ drop policy if exists collections_delete on public.collections;
 create policy collections_delete on public.collections for delete to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
 drop policy if exists collection_cards_member on public.collection_cards;
 create policy collection_cards_member on public.collection_cards for all to authenticated using(exists(select 1 from public.collections c where c.id=collection_id and private.is_workspace_member(c.workspace_id,'editor'))) with check(exists(select 1 from public.collections c where c.id=collection_id and private.is_workspace_member(c.workspace_id,'editor')));
+
+drop policy if exists review_preferences_self on public.review_preferences;
+create policy review_preferences_self on public.review_preferences for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
 drop policy if exists review_state_self on public.review_states;
 create policy review_state_self on public.review_states for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
