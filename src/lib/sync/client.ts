@@ -1,5 +1,20 @@
 "use client";
-import {createClient} from "@/lib/supabase/client";
-import {getDeviceId,localDb} from "@/lib/local/db";
-export async function pushPendingReviews(userId:string){const events=await localDb.reviewEvents.where("userId").equals(userId).and(e=>e.syncStatus==="pending").toArray();if(!events.length)return 0;const supabase=createClient();const {error}=await supabase.from("review_events").upsert(events.map(e=>({event_key:e.eventKey,user_id:e.userId,card_id:e.cardId,device_id:e.deviceId,client_sequence:e.clientSequence,reviewed_at:e.reviewedAt,rating:e.rating,previous_state:e.previousState,next_state:e.nextState})),{onConflict:"event_key",ignoreDuplicates:true});if(error)throw error;await localDb.reviewEvents.bulkPut(events.map(e=>({...e,syncStatus:"synced" as const})));return events.length}
-export async function recordLocalReview(input:Omit<import("@/lib/local/db").LocalReviewEvent,"deviceId"|"clientSequence"|"syncStatus">){const deviceId=getDeviceId();const previous=await localDb.reviewEvents.where("deviceId").equals(deviceId).reverse().sortBy("clientSequence");const sequence=(previous.at(-1)?.clientSequence??0)+1;await localDb.reviewEvents.put({...input,deviceId,clientSequence:sequence,syncStatus:"pending"})}
+import { offlineStore, type OfflineReview } from "@/lib/offline/store";
+
+export async function queueReview(event:OfflineReview){
+ await offlineStore.reviews.put({...event,status:"pending"});
+}
+export async function syncReviews(){
+ const events=await offlineStore.reviews.where("status").equals("pending").limit(500).toArray();
+ if(!events.length)return {accepted:0};
+ const response=await fetch("/api/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({events})});
+ if(!response.ok)throw new Error("Sync failed");
+ const result=await response.json();
+ await offlineStore.reviews.bulkPut(events.map(e=>({...e,status:"synced" as const})));
+ return result as {accepted:number};
+}
+export async function pullChanges(since=0){
+ const response=await fetch("/api/sync?since="+encodeURIComponent(String(since)),{cache:"no-store"});
+ if(!response.ok)throw new Error("Pull failed");
+ return response.json() as Promise<{changes:any[];cursor:number}>;
+}
