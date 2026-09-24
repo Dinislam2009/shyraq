@@ -3,8 +3,9 @@
 import { useState } from "react";
 
 type CardAction = (formData: FormData) => void | Promise<void>;
+type Template = {id:string;name:string;front_template:string;back_template:string};
 
-export function CardEditor({ action }: { action: CardAction }) {
+export function CardEditor({ action, templates = [] }: { action: CardAction; templates?: Template[] }) {
   const [kind, setKind] = useState("basic");
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
@@ -24,7 +25,14 @@ export function CardEditor({ action }: { action: CardAction }) {
 
   return (
     <form action={action} className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <label className="block text-sm font-medium">
+          Template
+          <select name="template_id" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
+            <option value="">Default</option>
+            {templates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
+          </select>
+        </label>
         <label className="block text-sm font-medium">
           Card type
           <select name="kind" value={kind} onChange={e => setKind(e.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
