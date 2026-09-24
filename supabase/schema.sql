@@ -152,17 +152,28 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function private.handle_new_user();
 
 create or replace function private.record_sync_change() returns trigger language plpgsql security definer set search_path=public,private as $$
-declare eid uuid; uid uuid; payload jsonb;
+declare
+ payload jsonb;
+ eid uuid;
+ uid uuid;
+ deck_id_value uuid;
 begin
- if tg_op='DELETE' then eid=old.id; payload=to_jsonb(old);
- else eid=new.id; payload=to_jsonb(new); end if;
- if tg_table_name='review_states' then eid=coalesce(new.card_id,old.card_id);
- elsif tg_table_name='card_tags' then eid=coalesce(new.card_id,old.card_id); end if;
- uid=coalesce(new.user_id,old.user_id);
- if uid is null then
-   select owner_id into uid from public.decks where id=coalesce(new.deck_id,old.deck_id);
+ payload:=case when tg_op='DELETE' then to_jsonb(old) else to_jsonb(new) end;
+ eid:=nullif(payload->>'id','')::uuid;
+ if tg_table_name='review_states' or tg_table_name='card_tags' then eid:=nullif(payload->>'card_id','')::uuid; end if;
+ if payload ? 'user_id' then uid:=nullif(payload->>'user_id','')::uuid;
+ elsif payload ? 'owner_id' then uid:=nullif(payload->>'owner_id','')::uuid;
  end if;
- if uid is not null then
+ if payload ? 'deck_id' then deck_id_value:=nullif(payload->>'deck_id','')::uuid;
+ elsif tg_table_name='card_tags' then
+   select c.deck_id into deck_id_value from public.cards c where c.id=eid;
+ elsif tg_table_name='review_states' then
+   select c.deck_id into deck_id_value from public.cards c where c.id=eid;
+ end if;
+ if uid is null and deck_id_value is not null then
+   select d.owner_id into uid from public.decks d where d.id=deck_id_value;
+ end if;
+ if uid is not null and eid is not null then
    insert into public.sync_changes(event_key,user_id,entity_type,entity_id,operation,payload)
    values(gen_random_uuid(),uid,tg_table_name,eid,case when tg_op='DELETE' then 'delete' else 'upsert' end,payload);
  end if;
