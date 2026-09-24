@@ -138,25 +138,46 @@ alter table public.review_states enable row level security;
 alter table public.review_events enable row level security;
 alter table public.sync_changes enable row level security;
 
+create or replace function public.is_workspace_member(target_workspace uuid, minimum_role public.workspace_role default 'viewer')
+returns boolean language sql security definer set search_path=public as $
+  select exists(
+    select 1 from public.workspace_members m
+    where m.workspace_id=target_workspace
+      and m.user_id=(select auth.uid())
+      and case minimum_role
+        when 'viewer' then m.role in ('viewer','reviewer','editor','admin','owner')
+        when 'reviewer' then m.role in ('reviewer','editor','admin','owner')
+        when 'editor' then m.role in ('editor','admin','owner')
+        when 'admin' then m.role in ('admin','owner')
+        when 'owner' then m.role='owner'
+      end
+  );
+$;
+
+create or replace function public.is_workspace_owner(target_workspace uuid)
+returns boolean language sql security definer set search_path=public as $
+  select exists(select 1 from public.workspaces w where w.id=target_workspace and w.owner_id=(select auth.uid()));
+$;
+
 create policy profiles_self on public.profiles for all to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
 
-create policy workspace_member_read on public.workspaces for select to authenticated using(owner_id=(select auth.uid()) or exists(select 1 from public.workspace_members m where m.workspace_id=id and m.user_id=(select auth.uid())));
+create policy workspace_member_read on public.workspaces for select to authenticated using(owner_id=(select auth.uid()) or public.is_workspace_member(id,'viewer'));
 create policy workspace_owner_write on public.workspaces for all to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
 
-create policy members_read on public.workspace_members for select to authenticated using(user_id=(select auth.uid()) or exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid()) and m.role in ('owner','admin')));
-create policy members_admin_write on public.workspace_members for all to authenticated using(exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid()) and m.role in ('owner','admin'))) with check(exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid()) and m.role in ('owner','admin')));
+create policy members_read on public.workspace_members for select to authenticated using(user_id=(select auth.uid()) or public.is_workspace_member(workspace_id,'admin'));
+create policy members_admin_write on public.workspace_members for all to authenticated using(public.is_workspace_member(workspace_id,'admin')) with check(public.is_workspace_member(workspace_id,'admin'));
 
-create policy decks_read on public.decks for select to authenticated using(visibility='public' or exists(select 1 from public.workspace_members m where m.workspace_id=decks.workspace_id and m.user_id=(select auth.uid())));
-create policy decks_write on public.decks for insert to authenticated with check(owner_id=(select auth.uid()) and exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid()) and m.role in ('owner','admin','editor')));
+create policy decks_read on public.decks for select to authenticated using(visibility='public' or public.is_workspace_member(decks.workspace_id,'viewer'));
+create policy decks_write on public.decks for insert to authenticated with check(owner_id=(select auth.uid()) and public.is_workspace_member(workspace_id,'editor'));
 create policy decks_update on public.decks for update to authenticated using(exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid()) and m.role in ('owner','admin','editor'))) with check(exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid()) and m.role in ('owner','admin','editor')));
-create policy decks_delete on public.decks for delete to authenticated using(owner_id=(select auth.uid()) or exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid()) and m.role in ('owner','admin')));
+create policy decks_delete on public.decks for delete to authenticated using(owner_id=(select auth.uid()) or public.is_workspace_member(workspace_id,'admin'));
 
-create policy cards_read on public.cards for select to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and (d.visibility='public' or exists(select 1 from public.workspace_members m where m.workspace_id=d.workspace_id and m.user_id=(select auth.uid())))));
+create policy cards_read on public.cards for select to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and (d.visibility='public' or public.is_workspace_member(d.workspace_id,'viewer'))));
 create policy cards_write on public.cards for insert to authenticated with check(owner_id=(select auth.uid()) and exists(select 1 from public.decks d join public.workspace_members m on m.workspace_id=d.workspace_id where d.id=deck_id and m.user_id=(select auth.uid()) and m.role in ('owner','admin','editor')));
 create policy cards_update on public.cards for update to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
 create policy cards_delete on public.cards for delete to authenticated using(owner_id=(select auth.uid()));
 
-create policy tags_member on public.tags for all to authenticated using(exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid()))) with check(exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid())));
+create policy tags_member on public.tags for all to authenticated using(public.is_workspace_member(workspace_id,'viewer')) with check(exists(select 1 from public.workspace_members m where m.workspace_id=workspace_id and m.user_id=(select auth.uid())));
 
 create policy card_tags_member on public.card_tags for all to authenticated using(exists(select 1 from public.cards c join public.decks d on d.id=c.deck_id join public.workspace_members m on m.workspace_id=d.workspace_id where c.id=card_id and m.user_id=(select auth.uid()))) with check(exists(select 1 from public.cards c join public.decks d on d.id=c.deck_id join public.workspace_members m on m.workspace_id=d.workspace_id where c.id=card_id and m.user_id=(select auth.uid())));
 
