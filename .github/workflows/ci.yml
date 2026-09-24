@@ -4,6 +4,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+permissions:
+  contents: read
+  issues: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,5 +17,27 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm install
-      - run: npm run lint
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee /tmp/shyraq-lint.log
+      - name: Report lint diagnostics
+        if: steps.lint.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('/tmp/shyraq-lint.log', 'utf8');
+            const trimmed = output.length > 60000 ? output.slice(-60000) : output;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 2,
+              body: "### Temporary CI lint output\n\n~~~text\n" + trimmed + "\n~~~"
+            });
+      - name: Fail on lint errors
+        if: steps.lint.outcome == 'failure'
+        run: exit 1
       - run: npm run build
