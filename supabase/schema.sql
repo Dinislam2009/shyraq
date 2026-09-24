@@ -103,12 +103,25 @@ create table if not exists public.deck_copies (
  primary key(user_id,source_deck_id,copied_deck_id)
 );
 
+create table if not exists public.workspace_invitations (
+ id uuid primary key default gen_random_uuid(),
+ workspace_id uuid not null references public.workspaces(id) on delete cascade,
+ invited_by uuid not null references auth.users(id) on delete cascade,
+ email text,
+ role public.workspace_role not null default 'reviewer',
+ token_hash text not null unique,
+ expires_at timestamptz not null,
+ accepted_at timestamptz,
+ created_at timestamptz not null default now()
+);
+
 create index if not exists decks_workspace_idx on public.decks(workspace_id);
 create index if not exists cards_deck_idx on public.cards(deck_id,sort_order);
 create index if not exists review_states_due_idx on public.review_states(user_id,due_at);
 create index if not exists review_events_user_idx on public.review_events(user_id,reviewed_at desc);
 create index if not exists sync_changes_user_cursor_idx on public.sync_changes(user_id,cursor);
 create index if not exists public_decks_idx on public.decks(visibility,updated_at desc);
+create index if not exists workspace_invitations_workspace_idx on public.workspace_invitations(workspace_id,expires_at);
 
 create or replace function private.is_workspace_member(target_workspace uuid, minimum_role public.workspace_role default 'viewer')
 returns boolean language sql security definer set search_path=public,private as $$
@@ -205,6 +218,7 @@ alter table public.sync_cursors enable row level security;
 alter table public.sync_changes enable row level security;
 alter table public.public_deck_follows enable row level security;
 alter table public.deck_copies enable row level security;
+alter table public.workspace_invitations enable row level security;
 
 drop policy if exists profiles_self on public.profiles;
 create policy profiles_self on public.profiles for all to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
@@ -281,6 +295,13 @@ create policy follows_self on public.public_deck_follows for all to authenticate
 drop policy if exists copies_self on public.deck_copies;
 create policy copies_self on public.deck_copies for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
+drop policy if exists invitations_admin_read on public.workspace_invitations;
+create policy invitations_admin_read on public.workspace_invitations for select to authenticated using(private.is_workspace_member(workspace_id,'admin') or email=lower((select auth.jwt()->>'email')));
+drop policy if exists invitations_admin_write on public.workspace_invitations;
+create policy invitations_admin_write on public.workspace_invitations for insert to authenticated with check(invited_by=(select auth.uid()) and private.is_workspace_member(workspace_id,'admin'));
+drop policy if exists invitations_admin_update on public.workspace_invitations;
+create policy invitations_admin_update on public.workspace_invitations for update to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
+
 drop policy if exists public_user_media_read on storage.objects;
 create policy public_user_media_read on storage.objects for select to authenticated using(bucket_id='user-media' and (storage.foldername(name))[1]=(select auth.uid())::text);
 drop policy if exists public_user_media_insert on storage.objects;
@@ -294,3 +315,5 @@ insert into storage.buckets(id,name,public) values('user-media','user-media',fal
 
 revoke all on all tables in schema public from anon;
 grant select,insert,update,delete on all tables in schema public to authenticated;
+revoke all on public.workspace_invitations from anon;
+grant select,insert,update on public.workspace_invitations to authenticated;
