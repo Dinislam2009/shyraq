@@ -7,6 +7,8 @@ export const mainNavigation:NavItem[]=[
 ];
 export const secondaryNavigation:NavItem[]=[
  {href:"/explore",label:"Public decks",icon:"layers"},
- {href:"/export",label:"Import & export",icon:"settings"},
+ {href:"/import",label:"Import",icon:"settings"},
+ {href:"/export",label:"Export",icon:"settings"},
+ {href:"/settings/workspace",label:"Workspace",icon:"settings"},
  {href:"/settings",label:"Settings",icon:"settings"},
 ];
