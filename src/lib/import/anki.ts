@@ -2,7 +2,7 @@ import { unzipSync } from "fflate";
 import initSqlJs from "sql.js";
 
 export type ParsedAnki={
-  decks:Array<{id:string;name:string;description:string;cards:Array<{front:string;back:string;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number}>}>;
+  decks:Array<{id:string;name:string;description:string;cards:Array<{front:string;back:string;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;sourceCardId:number}>}>;
   media:Record<string,string>;
   mediaFiles:Record<string,Uint8Array>;
   reviews:Array<{cardId:number;timestamp:number;rating:1|2|3|4;interval:number;lastInterval:number;factor:number;timeMs:number;type:number}>;
@@ -47,7 +47,7 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
     deck.cards.push({
       front:replaceMedia(stripHtml(note.fields[0]||""),media),
       back:replaceMedia(stripHtml(note.fields[1]||""),media),
-      tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8])
+      tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),sourceCardId:Number(row[0])
     });
   }
 
