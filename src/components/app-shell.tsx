@@ -1,7 +1,8 @@
+import type { ReactNode } from "react";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-[#f8fafc] text-slate-950">
       <Sidebar />
