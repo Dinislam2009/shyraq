@@ -16,6 +16,15 @@ export async function createDeck(formData:FormData):Promise<void>{
  if(!workspace)fail("/decks/new","Personal workspace not found.");
  const {data,error}=await supabase.from("decks").insert({workspace_id:workspace.id,owner_id:user.id,name,description}).select("id").single();
  if(error||!data)fail("/decks/new",error?.message||"Unable to create deck.");
+ const {error:templateError}=await supabase.from("card_templates").insert({
+   deck_id:data.id,
+   name:"Basic",
+   front_template:"{{front}}",
+   back_template:"{{back}}",
+   css:"",
+   field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]
+ });
+ if(templateError)fail("/decks/new",templateError.message);
  revalidatePath("/dashboard");revalidatePath("/decks");redirect("/decks/"+data.id);
 }
 export async function updateDeck(id:string,formData:FormData):Promise<void>{
