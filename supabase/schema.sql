@@ -116,10 +116,28 @@ create table if not exists public.workspace_invitations (
 );
 
 create index if not exists decks_workspace_idx on public.decks(workspace_id);
+create index if not exists decks_owner_id_idx on public.decks(owner_id);
+create index if not exists decks_source_deck_id_idx on public.decks(source_deck_id);
 create index if not exists cards_deck_idx on public.cards(deck_id,sort_order);
+create index if not exists cards_owner_id_idx on public.cards(owner_id);
+create index if not exists cards_template_id_idx on public.cards(template_id);
+create index if not exists card_templates_deck_id_idx on public.card_templates(deck_id);
+create index if not exists card_tags_tag_id_idx on public.card_tags(tag_id);
+create index if not exists collection_cards_card_id_idx on public.collection_cards(card_id);
+create index if not exists collections_owner_id_idx on public.collections(owner_id);
+create index if not exists collections_workspace_id_idx on public.collections(workspace_id);
+create index if not exists deck_copies_source_deck_id_idx on public.deck_copies(source_deck_id);
+create index if not exists deck_copies_copied_deck_id_idx on public.deck_copies(copied_deck_id);
+create index if not exists media_owner_id_idx on public.media(owner_id);
+create index if not exists media_workspace_id_idx on public.media(workspace_id);
+create index if not exists public_deck_follows_deck_id_idx on public.public_deck_follows(deck_id);
 create index if not exists review_states_due_idx on public.review_states(user_id,due_at);
+create index if not exists review_states_card_id_idx on public.review_states(card_id);
 create index if not exists review_events_user_idx on public.review_events(user_id,reviewed_at desc);
+create index if not exists review_events_card_id_idx on public.review_events(card_id);
 create index if not exists sync_changes_user_cursor_idx on public.sync_changes(user_id,cursor);
+create index if not exists workspace_invitations_invited_by_idx on public.workspace_invitations(invited_by);
+create index if not exists workspace_members_user_id_idx on public.workspace_members(user_id);
 create index if not exists public_decks_idx on public.decks(visibility,updated_at desc);
 create index if not exists workspace_invitations_workspace_idx on public.workspace_invitations(workspace_id,expires_at);
 
@@ -226,12 +244,16 @@ create policy profiles_self on public.profiles for all to authenticated using(id
 drop policy if exists workspace_member_read on public.workspaces;
 create policy workspace_member_read on public.workspaces for select to authenticated using(owner_id=(select auth.uid()) or private.is_workspace_member(id,'viewer'));
 drop policy if exists workspace_owner_write on public.workspaces;
-create policy workspace_owner_write on public.workspaces for all to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
+create policy workspace_owner_insert on public.workspaces for insert to authenticated with check(owner_id=(select auth.uid()));
+create policy workspace_owner_update on public.workspaces for update to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
+create policy workspace_owner_delete on public.workspaces for delete to authenticated using(owner_id=(select auth.uid()));
 
 drop policy if exists members_read on public.workspace_members;
 create policy members_read on public.workspace_members for select to authenticated using(user_id=(select auth.uid()) or private.is_workspace_member(workspace_id,'admin'));
 drop policy if exists members_admin_write on public.workspace_members;
-create policy members_admin_write on public.workspace_members for all to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
+create policy members_admin_insert on public.workspace_members for insert to authenticated with check(private.is_workspace_member(workspace_id,'admin'));
+create policy members_admin_update on public.workspace_members for update to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
+create policy members_admin_delete on public.workspace_members for delete to authenticated using(private.is_workspace_member(workspace_id,'admin'));
 
 drop policy if exists decks_read on public.decks;
 create policy decks_read on public.decks for select to authenticated using(visibility='public' or private.is_workspace_member(workspace_id,'viewer'));
@@ -245,7 +267,11 @@ create policy decks_delete on public.decks for delete to authenticated using(own
 drop policy if exists templates_read on public.card_templates;
 create policy templates_read on public.card_templates for select to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and (d.visibility='public' or private.is_workspace_member(d.workspace_id,'viewer'))));
 drop policy if exists templates_write on public.card_templates;
-create policy templates_write on public.card_templates for all to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and private.is_workspace_member(d.workspace_id,'editor'))) with check(exists(select 1 from public.decks d where d.id=deck_id and private.is_workspace_member(d.workspace_id,'editor')));
+drop policy if exists templates_read on public.card_templates;
+create policy templates_read on public.card_templates for select to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and (d.visibility='public' or private.is_workspace_member(d.workspace_id,'viewer'))));
+create policy templates_insert on public.card_templates for insert to authenticated with check(exists(select 1 from public.decks d where d.id=deck_id and private.is_workspace_member(d.workspace_id,'editor')));
+create policy templates_update on public.card_templates for update to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and private.is_workspace_member(d.workspace_id,'editor'))) with check(exists(select 1 from public.decks d where d.id=deck_id and private.is_workspace_member(d.workspace_id,'editor')));
+create policy templates_delete on public.card_templates for delete to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and private.is_workspace_member(d.workspace_id,'editor')));
 
 drop policy if exists cards_read on public.cards;
 create policy cards_read on public.cards for select to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and (d.visibility='public' or private.is_workspace_member(d.workspace_id,'viewer'))));
