@@ -53,7 +53,7 @@ export async function createCard(deckId:string,formData:FormData):Promise<void>{
  revalidatePath("/decks/"+deckId);redirect("/decks/"+deckId);
 }
 export async function updateCard(deckId:string,cardId:string,formData:FormData):Promise<void>{
- const supabase=await createClient();const p=payload(formData);const mediaFile=formData.get("media_file");
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");const p=payload(formData);const mediaFile=formData.get("media_file");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
  if(mediaFile instanceof File&&mediaFile.size>0&&deck){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;}}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to upload media.");}}
  const {error}=await supabase.from("cards").update(p).eq("id",cardId);if(error)fail("/decks/"+deckId,error.message);
