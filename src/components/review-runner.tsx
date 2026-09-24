@@ -11,7 +11,7 @@ export function ReviewRunner({userId,card,stateData,preferences}:{userId:string;
  const [revealed,setRevealed]=useState(false);const [busy,setBusy]=useState(false);const [saved,setSaved]=useState(false);const router=useRouter();
  async function answer(rating:"again"|"hard"|"good"|"easy"){
   setBusy(true);
-  const scheduler=fsrs({request_retention:preferences.desired_retention,maximum_interval:preferences.maximum_interval,enable_fuzz:preferences.enable_fuzz,enable_short_term:preferences.enable_short_term,learning_steps:preferences.learning_steps,relearning_steps:preferences.relearning_steps});
+  const scheduler=fsrs({request_retention:preferences.desired_retention,maximum_interval:preferences.maximum_interval,enable_fuzz:preferences.enable_fuzz,enable_short_term:preferences.enable_short_term,learning_steps:preferences.learning_steps as any,relearning_steps:preferences.relearning_steps as any});
   const previous=stateData?{...stateData,due:new Date(stateData.due),last_review:stateData.last_review?new Date(stateData.last_review):undefined}:createEmptyCard(new Date());
   const result=scheduler.next(previous,new Date(),({again:Rating.Again,hard:Rating.Hard,good:Rating.Good,easy:Rating.Easy} as const)[rating]);
   await queueReview({id:crypto.randomUUID(),userId,cardId:card.id,deviceId:getDeviceId(),sequence:Date.now(),rating,reviewedAt:new Date().toISOString(),previousState:previous as Record<string,unknown>,nextState:result.card as unknown as Record<string,unknown>,status:"pending"});
