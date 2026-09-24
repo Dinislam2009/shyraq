@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const signup = mode === "signup";
   const router = useRouter();
-  const supabase = createClient();
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [name,setName]=useState("");
@@ -16,13 +15,21 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [busy,setBusy]=useState(false);
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setBusy(true); setError("");
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    const supabase = createClient();
     const result = signup
       ? await supabase.auth.signUp({ email, password, options:{ data:{display_name:name} } })
       : await supabase.auth.signInWithPassword({ email, password });
+
     if (result.error) setError(result.error.message);
-    else if (signup && !result.data.session) setError("Account created. If email confirmation is enabled in Supabase, confirm it before signing in.");
-    else { router.replace("/dashboard"); router.refresh(); }
+    else if (signup && !result.data.session) {
+      setError("Account created. Sign in after completing the configured account setup.");
+    } else {
+      router.replace("/dashboard");
+      router.refresh();
+    }
     setBusy(false);
   }
 
