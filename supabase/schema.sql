@@ -115,6 +115,7 @@ create table if not exists public.workspace_invitations (
  created_at timestamptz not null default now()
 );
 
+create index if not exists profiles_username_idx on public.profiles(username);
 create index if not exists decks_workspace_idx on public.decks(workspace_id);
 create index if not exists decks_owner_id_idx on public.decks(owner_id);
 create index if not exists decks_source_deck_id_idx on public.decks(source_deck_id);
@@ -240,6 +241,9 @@ alter table public.workspace_invitations enable row level security;
 
 drop policy if exists profiles_self on public.profiles;
 create policy profiles_self on public.profiles for all to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
+drop policy if exists profiles_public_read on public.profiles;
+create policy profiles_public_read on public.profiles for select to authenticated using(true);
+
 
 drop policy if exists workspace_member_read on public.workspaces;
 create policy workspace_member_read on public.workspaces for select to authenticated using(owner_id=(select auth.uid()) or private.is_workspace_member(id,'viewer'));
