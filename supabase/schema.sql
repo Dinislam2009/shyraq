@@ -139,7 +139,7 @@ returns boolean language sql security definer set search_path=public,private as 
  select exists(select 1 from public.workspaces w where w.id=target_workspace and w.owner_id=(select auth.uid()));
 $$;
 
-create or replace function private.touch_updated_at() returns trigger language plpgsql as $$ begin new.updated_at=now(); return new; end $$;
+create or replace function private.touch_updated_at() returns trigger language plpgsql set search_path=public,private as $ begin new.updated_at=now(); return new; end $;
 do $$ declare t text; begin
  foreach t in array array['profiles','workspaces','decks','card_templates','cards','review_states','sync_cursors'] loop
   execute format('drop trigger if exists %I_touch on public.%I',t,t);
