@@ -1,0 +1,9 @@
+import Link from "next/link";
+import {notFound} from "next/navigation";
+import {AppShell} from "@/components/app-shell";
+import {createClient} from "@/lib/supabase/server";
+export default async function CreatorPage({params}:{params:Promise<{username:string}>}){
+ const {username}=await params;const supabase=await createClient();const {data:profile}=await supabase.from("profiles").select("id,username,display_name,bio,avatar_url").eq("username",username.toLowerCase()).maybeSingle();if(!profile)notFound();
+ const {data:decks}=await supabase.from("decks").select("id,name,description,updated_at,cards(count)").eq("owner_id",profile.id).eq("visibility","public").order("updated_at",{ascending:false});
+ return <AppShell><div className="mx-auto max-w-6xl px-5 py-8 sm:px-8"><Link href="/explore" className="text-sm text-slate-400">← Public decks</Link><div className="mt-6 rounded-3xl border border-black/[0.06] bg-white p-8"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-lg font-bold">{String(profile.display_name||profile.username||"S").slice(0,1).toUpperCase()}</div><h1 className="mt-5 text-3xl font-semibold">{profile.display_name||profile.username}</h1><p className="mt-1 text-sm text-slate-400">@{profile.username}</p><p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500">{profile.bio||"Shyraq creator"}</p></div><section className="mt-8"><h2 className="text-lg font-semibold">Public decks</h2><div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{(decks??[]).map((d:any)=><Link href={"/explore/"+d.id} key={d.id} className="rounded-2xl border border-black/[0.06] bg-white p-6 hover:shadow-sm"><h3 className="font-semibold">{d.name}</h3><p className="mt-2 line-clamp-2 text-sm text-slate-500">{d.description||"No description"}</p><p className="mt-5 text-xs text-slate-400">{d.cards?.[0]?.count??0} cards</p></Link>)}</div></section></div></AppShell>;
+}
