@@ -75,6 +75,12 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
             </>
           )}
 
+          {(kind === "image" || kind === "audio" || kind === "custom") && (
+            <label className="block">
+              <span className="text-sm font-medium">Media file</span>
+              <input name="media_file" type="file" accept={kind === "audio" ? "audio/*" : "image/*,audio/*,video/*"} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
+            </label>
+          )}
           {kind === "image" && (
             <label className="block">
               <span className="text-sm font-medium">Image URL</span>
