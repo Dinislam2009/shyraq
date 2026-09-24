@@ -1,0 +1,9 @@
+import Link from "next/link";
+import { AppShell } from "@/components/app-shell";
+import { createCard } from "@/app/decks/[id]/cards/actions";
+
+export default async function NewCardPage({params}:{params:Promise<{id:string}>}){
+ const {id}=await params;
+ return <AppShell><div className="mx-auto max-w-3xl px-5 py-8 sm:px-8"><Link href={"/decks/"+id} className="text-sm text-slate-400 hover:text-slate-700">← Back to deck</Link><h1 className="mt-6 text-3xl font-semibold tracking-tight">Add card</h1><p className="mt-2 text-sm text-slate-500">Create a basic card now; richer templates use the same model.</p>
+ <form action={createCard.bind(null,id)} className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6"><label className="block text-sm font-medium">Card type<select name="kind" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm"><option value="basic">Basic</option><option value="reverse">Reverse</option><option value="cloze">Cloze</option><option value="multiple_choice">Multiple choice</option><option value="image">Image</option><option value="custom">Custom</option></select></label><div className="mt-5 grid gap-5 md:grid-cols-2"><label className="block"><span className="text-sm font-medium">Front</span><textarea name="front" required rows={10} className="mt-2 w-full rounded-xl border px-3 py-3 text-sm" placeholder="Question, term, prompt..."/></label><label className="block"><span className="text-sm font-medium">Back</span><textarea name="back" required rows={10} className="mt-2 w-full rounded-xl border px-3 py-3 text-sm" placeholder="Answer, explanation, example..."/></label></div><div className="mt-6 flex justify-end gap-3"><Link href={"/decks/"+id} className="rounded-xl border px-4 py-2.5 text-sm">Cancel</Link><button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">Save card</button></div></form></div></AppShell>;
+}
