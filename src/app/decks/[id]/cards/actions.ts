@@ -7,6 +7,7 @@ function fail(path:string,message:string):never{redirect(path+"?error="+encodeUR
 function payload(formData:FormData){
  const kind=String(formData.get("kind")||"basic");
  const content:any={front:String(formData.get("front")||""),back:String(formData.get("back")||"")};
+ const templateId=String(formData.get("template_id")||"").trim();
  const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
  if(tags.length)content.tags=tags;
  if(kind==="multiple_choice"){
@@ -17,7 +18,7 @@ function payload(formData:FormData){
   const imageUrl=String(formData.get("image_url")||"").trim();
   if(imageUrl)content.imageUrl=imageUrl;
  }
- return {kind,content};
+ return {kind,content,template_id:templateId||null};
 }
 function tagsFromForm(formData:FormData){return String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);}
 async function applyTags(supabase:any,cardId:string,workspaceId:string,names:string[]){
@@ -32,7 +33,7 @@ export async function createCard(deckId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();if(!deck)fail("/decks/"+deckId,"Deck not found.");
  const p=payload(formData);const {data:last}=await supabase.from("cards").select("sort_order").eq("deck_id",deckId).order("sort_order",{ascending:false}).limit(1).maybeSingle();
- const {data:card,error}=await supabase.from("cards").insert({deck_id:deckId,owner_id:user.id,kind:p.kind,content:p.content,sort_order:(last?.sort_order??-1)+1}).select("id").single();
+ const {data:card,error}=await supabase.from("cards").insert({deck_id:deckId,owner_id:user.id,kind:p.kind,content:p.content,template_id:p.template_id,sort_order:(last?.sort_order??-1)+1}).select("id").single();
  if(error||!card)fail("/decks/"+deckId+"/cards/new",error?.message||"Unable to create card.");
  try{await applyTags(supabase,card.id,deck.workspace_id,tagsFromForm(formData));}catch(error){fail("/decks/"+deckId+"/cards/new",error instanceof Error?error.message:"Unable to save tags.");}
  revalidatePath("/decks/"+deckId);redirect("/decks/"+deckId);
