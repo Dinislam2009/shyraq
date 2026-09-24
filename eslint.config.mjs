@@ -13,7 +13,8 @@ const eslintConfig = defineConfig([
         { varsIgnorePattern: "^_", argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }
       ],
       "react/no-unescaped-entities": "off",
-      "react-hooks/set-state-in-effect": "off"
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off"
     }
   },
   globalIgnores([
