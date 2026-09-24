@@ -4,7 +4,21 @@ import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
 
 function fail(path:string,message:string):never{redirect(path+"?error="+encodeURIComponent(message));}
-function payload(formData:FormData){return {kind:String(formData.get("kind")||"basic"),content:{front:String(formData.get("front")||""),back:String(formData.get("back")||"")}};}
+function payload(formData:FormData){
+ const kind=String(formData.get("kind")||"basic");
+ const content:any={front:String(formData.get("front")||""),back:String(formData.get("back")||"")};
+ const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
+ if(tags.length)content.tags=tags;
+ if(kind==="multiple_choice"){
+  content.options=String(formData.get("options")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,10);
+  content.answer=Math.max(0,Number(formData.get("answer")||0));
+ }
+ if(kind==="image"){
+  const imageUrl=String(formData.get("image_url")||"").trim();
+  if(imageUrl)content.imageUrl=imageUrl;
+ }
+ return {kind,content};
+}
 function tagsFromForm(formData:FormData){return String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);}
 async function applyTags(supabase:any,cardId:string,workspaceId:string,names:string[]){
  if(!names.length){await supabase.from("card_tags").delete().eq("card_id",cardId);return;}
