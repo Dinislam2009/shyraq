@@ -39,7 +39,24 @@ jobs:
             });
       - name: Build
         id: build
-        run: npm run build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee /tmp/shyraq-build.log
+      - name: Report build diagnostics
+        if: steps.build.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('/tmp/shyraq-build.log', 'utf8');
+            const trimmed = output.length > 60000 ? output.slice(-60000) : output;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 2,
+              body: "### Temporary CI build output\n\n~~~text\n" + trimmed + "\n~~~"
+            });
       - name: Final CI result
         if: always()
         run: |
