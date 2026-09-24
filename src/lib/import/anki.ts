@@ -1,5 +1,6 @@
 import { unzipSync } from "fflate";
 import initSqlJs from "sql.js";
+import { join } from "node:path";
 
 export type ParsedAnki={
   decks:Array<{id:string;name:string;description:string;cards:Array<{front:string;back:string;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;sourceCardId:number}>}>;
@@ -9,7 +10,7 @@ export type ParsedAnki={
 };
 
 function decode(value:Uint8Array){return new TextDecoder().decode(value);}
-function stripHtml(value:string){return value.replace(/<br\\s*\\/?>/gi,"\\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").trim();}
+function stripHtml(value:string){return value.replace(/<br\\s*\\/?>/gi,"\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").trim();}
 function replaceMedia(value:string,media:Record<string,string>){
   return value.replace(/(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi,(all,prefix,name,suffix)=>prefix+"__SHYRAQ_MEDIA__"+encodeURIComponent(media[name]||name)+suffix)
     .replace(/\\[sound:([^\\]]+)\\]/gi,(all,name)=>"__SHYRAQ_AUDIO__"+encodeURIComponent(media[name]||name));
@@ -19,7 +20,7 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
   const files=unzipSync(bytes);
   const collection=files["collection.anki2"]||files["collection.anki21"]||files["collection.sqlite"];
   if(!collection)throw new Error("Invalid Anki package: collection database is missing.");
-  const SQL=await initSqlJs({locateFile:file=>require.resolve("sql.js/dist/"+file)});
+  const SQL=await initSqlJs({locateFile:file=>join(process.cwd(),"node_modules","sql.js","dist",file)});
   const db=new SQL.Database(collection);
 
   const colRows=db.exec("select decks, models from col limit 1")[0]?.values?.[0];
@@ -30,7 +31,7 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
   const mediaFiles:Record<string,Uint8Array>={};
   for(const [numericName,originalName] of Object.entries(media)){if(files[numericName])mediaFiles[String(originalName)]=files[numericName];}
 
-  const deckMap=new Map<number,{id:string;name:string;description:string;cards:Array<{front:string;back:string;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number}>}>();
+  const deckMap=new Map<number,{id:string;name:string;description:string;cards:Array<{front:string;back:string;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;sourceCardId:number}>}>();
   for(const [id,deck] of Object.entries(decksRaw)){deckMap.set(Number(id),{id:String(id),name:String((deck as any).name||"Imported deck"),description:"Imported from Anki",cards:[]});}
 
   const noteValues=db.exec("select id,mid,tags,flds from notes")[0]?.values||[];
