@@ -21,6 +21,31 @@ export async function getPersonalWorkspace(){const supabase=await createClient()
 export async function getDecks(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return [];const {data}=await supabase.from("decks").select("id,name,description,visibility,workspace_id,owner_id,updated_at,cards(count)").order("updated_at",{ascending:false});return data??[];}
 export async function getDeck(id:string){const supabase=await createClient();const {data}=await supabase.from("decks").select("id,name,description,visibility,workspace_id,owner_id,settings,created_at,updated_at,cards(id,content,kind,sort_order,is_suspended,is_marked,updated_at)").eq("id",id).maybeSingle();return data;}
 export async function getReviewPreferences(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return null;const {data}=await supabase.from("review_preferences").select("*").eq("user_id",user.id).maybeSingle();return data;}
+export async function getReviewBatch(deckId?:string,limit=20){
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return [];
+ const now=new Date().toISOString();
+ let dueQuery=supabase.from("review_states").select("card_id,state_data,due_at").eq("user_id",user.id).lte("due_at",now).order("due_at",{ascending:true}).limit(limit);
+ const {data:dueStates}=await dueQuery;
+ const result:any[]=[];
+ for(const due of dueStates??[]){
+   const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content").eq("id",due.card_id).maybeSingle();
+   if(card&&(!deckId||card.deck_id===deckId))result.push({card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false});
+   if(result.length>=limit)break;
+ }
+ if(result.length<limit){
+   const {data:tracked}=await supabase.from("review_states").select("card_id").eq("user_id",user.id).limit(5000);
+   const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
+   let query=supabase.from("cards").select("id,deck_id,kind,content").order("updated_at",{ascending:true}).limit(limit-result.length);
+   if(deckId)query=query.eq("deck_id",deckId);
+   if(trackedIds.length)query=query.not("id","in","("+trackedIds.join(",")+")");
+   const {data:cards}=await query;
+   for(const card of cards??[])result.push({card:await withMediaUrl(supabase,card),stateData:null,isNew:true});
+ }
+ return result;
+}
+
 export async function getReviewCard(deckId?:string){
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();if(!user)return null;
