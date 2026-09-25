@@ -190,7 +190,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Deck archive
 - [x] Deck trash / restore
 - [x] Permanent deletion confirmation with dependency summary
-- [ ] Deck duplication UX improvements
+- [x] Deck duplication UX improvements
 - [x] Deck settings page
 
 ## Deck organization
