@@ -86,8 +86,7 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
 
     <div className="mt-6 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
      <div>
-      <div className="mb-4 flex items-center gap-3">
-       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold">S</div>
+      <div className="mb-4 flex items-center gap-3">{deck.settings?.coverUrl?<img src={String(deck.settings.coverUrl)} alt="" className="h-16 w-28 rounded-xl object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold">S</div>}
        {user&&<CollaborationPresence deckId={id} userId={user.id}/>}
       </div>
       <h1 className="text-3xl font-semibold tracking-tight">{deck.name}</h1>
