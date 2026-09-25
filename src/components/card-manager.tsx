@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag } from "@/app/decks/[id]/cards/actions";
 import { toggleFavorite } from "@/app/collections/actions";
 
@@ -24,6 +26,18 @@ export function CardManager({ deckId, cards, favoriteIds }: { deckId: string; ca
   const [busy, setBusy] = useState(false);
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("shyraq-deck-" + deckId)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cards", filter: "deck_id=eq." + deckId }, () => router.refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "card_templates", filter: "deck_id=eq." + deckId }, () => router.refresh())
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [deckId, router]);
+
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
