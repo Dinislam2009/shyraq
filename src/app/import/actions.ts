@@ -48,6 +48,20 @@ async function createDeckWithTemplate(supabase:any,userId:string,workspaceId:str
  deckMap.set(String(sourceDeck.id),deck.id);
  return deck.id;
 }
+function verifyArchiveChecksums(archive:Record<string,Uint8Array>){
+ const raw=archive["checksums.json"];
+ if(!raw)return;
+ let manifest:any;
+ try{manifest=JSON.parse(new TextDecoder().decode(raw));}catch{throw new Error("Invalid backup integrity manifest.");}
+ if(manifest?.algorithm!=="sha256"||!manifest?.files||typeof manifest.files!=="object")throw new Error("Unsupported backup integrity manifest.");
+ for(const [name,expected] of Object.entries(manifest.files)){
+  if(name==="checksums.json")continue;
+  const bytes=archive[name];
+  if(!bytes)throw new Error("Backup is incomplete: missing "+name+".");
+  const actual=createHash("sha256").update(bytes).digest("hex");
+  if(actual!==String(expected))throw new Error("Backup integrity check failed for "+name+".");
+ }
+}
 async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>){
  if(payload?.format!=="shyraq-backup-v2")throw new Error("Unsupported Shyraq backup format.");
  const deckMap=new Map<string,string>();
@@ -242,6 +256,7 @@ export async function importCards(formData:FormData):Promise<void>{
   const filename=file.name.toLowerCase();
   if(filename.endsWith(".zip")){
    const archive=unzipSync(new Uint8Array(await file.arrayBuffer()));
+   verifyArchiveChecksums(archive);
    const backup=archive["shyraq-backup.json"];
    if(!backup)throw new Error("This ZIP does not contain shyraq-backup.json.");
    const payload=JSON.parse(new TextDecoder().decode(backup));
