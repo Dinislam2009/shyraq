@@ -47,5 +47,6 @@ export async function deleteDeck(id:string,formData:FormData){
  const {supabase,deck}=await requireAccess(id,false);
  const {error}=await supabase.from("decks").update({deleted_at:new Date().toISOString()}).eq("id",id);
  if(error)redirect("/decks/"+id+"/settings?error="+encodeURIComponent(error.message));
- await supabase.from("activity_feed").insert({workspace_id:deck.workspace_id,actor_id:(await supabase.auth.getUser()).data.user?.id,event_type:"deck.trashed",entity_type:"deck",entity_id:id,metadata:{}});\n revalidatePath("/decks");revalidatePath("/decks/trash");redirect("/decks");
+ await supabase.from("activity_feed").insert({workspace_id:deck.workspace_id,actor_id:(await supabase.auth.getUser()).data.user?.id,event_type:"deck.trashed",entity_type:"deck",entity_id:id,metadata:{}});
+ revalidatePath("/decks");revalidatePath("/decks/trash");redirect("/decks");
 }
