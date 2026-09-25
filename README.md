@@ -265,7 +265,7 @@ Target editor:
 - [x] Better code-language selector
 - [x] Media library picker
 - [x] Card template variables beyond front/back
-- [ ] Advanced template CSS editor
+- [x] Advanced template CSS editor
 
 ## Bulk card creation
 
