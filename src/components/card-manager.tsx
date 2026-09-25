@@ -28,7 +28,9 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [kind, setKind] = useState("all");
   const [status, setStatus] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);\n  const [viewName, setViewName] = useState("");\n  const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string}>>([]);
+  const [busy, setBusy] = useState(false);
+  const [viewName, setViewName] = useState("");
+  const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string}>>([]);
   const { t } = useI18n();
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
