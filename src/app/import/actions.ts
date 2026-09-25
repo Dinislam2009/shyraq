@@ -3,32 +3,14 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { unzipSync } from "fflate";
+import { createHash } from "node:crypto";
+import { parseStandardText, validateImportRows, duplicateKey, type ImportRow } from "@/lib/import/standard";
 
 function fail(message:string):never{ redirect("/import?error="+encodeURIComponent(message)); }
-function csvLine(line:string){
- const out:string[]=[]; let current=""; let quoted=false;
- for(let i=0;i<line.length;i++){
-  const ch=line[i];
-  if(ch==='"'){ if(quoted&&line[i+1]==='"'){ current+='"'; i++; } else quoted=!quoted; }
-  else if(ch===","&&!quoted){ out.push(current); current=""; }
-  else current+=ch;
- }
- out.push(current); return out;
-}
 function safeCollectionKind(value:string){return value==="favorites"?"favorites":"custom";}
 function safeKind(value:string){
  const allowed=["basic","reverse","cloze","multiple_choice","image","custom"];
  return allowed.includes(value)?value:"basic";
-}
-function contentFromRow(row:any){
- const content:any={front:String(row.front||""),back:String(row.back||"")};
- const tags=String(row.tags||"").split(",").map((x:string)=>x.trim()).filter(Boolean).slice(0,30);
- if(tags.length)content.tags=tags;
- const options=Array.isArray(row.options)?row.options:String(row.options||"").split("|").map((x:string)=>x.trim()).filter(Boolean).slice(0,10);
- if(options.length)content.options=options;
- if(row.answer!==undefined&&row.answer!==""&&options.length){const rawAnswer=Number(row.answer);content.answer=Math.max(0,Math.min(options.length-1,Number.isFinite(rawAnswer)?Math.trunc(rawAnswer):0));}
- if(row.imageUrl)content.imageUrl=String(row.imageUrl);
- return content;
 }
 function replaceMediaRefs(value:any,map:Map<string,string>):any{
  if(typeof value==="string")return map.get(value)||value;
