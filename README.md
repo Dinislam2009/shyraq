@@ -680,10 +680,10 @@ If a local edit conflicts with an author update:
 - [x] Bio
 - [x] Public decks
 - [x] Follow/copy
-- [ ] Creator avatar
-- [ ] Creator statistics
+- [x] Creator avatar
+- [x] Creator statistics
 - [ ] Creator collections
-- [ ] Creator activity controls
+- [x] Creator activity controls
 - [ ] Block/mute creator
 - [ ] Community moderation/report history
 
@@ -701,13 +701,13 @@ If a local edit conflicts with an author update:
 - [x] Reviewing
 - [x] Resolved
 - [x] Dismissed
-- [ ] Platform-wide moderation queue
+- [x] Platform-wide moderation queue
 - [ ] Moderator roles
-- [ ] Report escalation
-- [ ] Abuse-rate limiting
-- [ ] Automated spam protection without AI
-- [ ] Audit log
-- [ ] Moderator actions history
+- [x] Report escalation
+- [x] Abuse-rate limiting
+- [x] Automated spam protection without AI
+- [x] Audit log
+- [x] Moderator actions history
 
 The moderation system should remain transparent and should not rely on AI classification.
 
