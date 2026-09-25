@@ -27,6 +27,7 @@ test("deck permissions separate edit from delete",()=>{
 });
 
 test("deck permission overrides take precedence over workspace role",()=>{
+ assert.equal(resolveDeckRole("admin","viewer"),"editor");
  assert.equal(resolveDeckRole("editor","viewer"),"viewer");
  assert.equal(resolveDeckRole("reviewer","editor"),"editor");
  assert.equal(resolveDeckRole("viewer",""),"viewer");
