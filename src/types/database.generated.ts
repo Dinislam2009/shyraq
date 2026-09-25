@@ -890,6 +890,10 @@ export type Database = {
           new_cards_per_day: number
           relearning_steps: Json
           reviews_per_day: number
+          rating_labels: Json
+          rating_order: Json
+          show_keyboard_hints: boolean
+          swipe_enabled: boolean
           updated_at: string
           user_id: string
         }
@@ -902,6 +906,10 @@ export type Database = {
           new_cards_per_day?: number
           relearning_steps?: Json
           reviews_per_day?: number
+          rating_labels?: Json
+          rating_order?: Json
+          show_keyboard_hints?: boolean
+          swipe_enabled?: boolean
           updated_at?: string
           user_id: string
         }
