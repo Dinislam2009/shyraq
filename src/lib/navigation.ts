@@ -13,6 +13,7 @@ export const secondaryNavigation:NavItem[]=[
  {href:"/settings/profile",label:"Profile",icon:"settings"},
  {href:"/settings/review",label:"Review settings",icon:"settings"},
  {href:"/settings/sync",label:"Sync",icon:"settings"},
+ {href:"/settings/moderation",label:"Moderation",icon:"settings"},
  {href:"/settings/workspace",label:"Workspace",icon:"settings"},
  {href:"/settings",label:"Settings",icon:"settings"}
 ];
