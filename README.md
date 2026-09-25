@@ -107,7 +107,7 @@ Create a stable technical foundation before adding advanced product features.
 - [x] Profile settings
 - [ ] Avatar upload
 - [x] Profile statistics
-- [ ] Public creator deck collections
+- [x] Public creator deck collections
 - [ ] Creator activity/history controls
 
 ## Account lifecycle
@@ -188,7 +188,7 @@ Shyraq supports both individual and collaborative learning.
 - [ ] Deck cover image
 - [x] Deck color/icon customization
 - [x] Deck archive
-- [ ] Deck trash / restore
+- [x] Deck trash / restore
 - [x] Permanent deletion confirmation with dependency summary
 - [ ] Deck duplication UX improvements
 - [x] Deck settings page
@@ -738,12 +738,12 @@ Collaboration is planned after the public sharing foundation.
 - [ ] Optimistic updates
 - [ ] Conflict detection
 - [ ] Conflict resolution UI
-- [ ] Version history
-- [ ] Restore previous version
-- [ ] Comments
-- [ ] Mentions
+- [x] Version history
+- [x] Restore previous version
+- [x] Comments
+- [x] Mentions
 - [x] Activity feed
-- [ ] Workspace audit log
+- [x] Workspace audit log
 - [ ] Fine-grained permissions per deck
 - [ ] Fine-grained permissions per collection
 
