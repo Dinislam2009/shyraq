@@ -4,11 +4,15 @@ import {createClient} from "@/lib/supabase/server";
 import {revalidatePath} from "next/cache";
 
 function hashToken(token:string){return createHash("sha256").update(token).digest("hex");}
-export async function createWorkspaceInvite(formData:FormData){
+export async function createWorkspaceInvite(formData:FormData):Promise<{ok?:boolean;link?:string;error?:string}>{
  const supabase=await createClient();
- const {data:{user}}=await supabase.auth.getUser(); if(!user)return {error:"Authentication required."};
- const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return {error:"Authentication required."};
+ const workspaceId=String(formData.get("workspace_id")||"").trim();
+ const {data:workspace}=await supabase.from("workspaces").select("id").eq("id",workspaceId).maybeSingle();
  if(!workspace)return {error:"Workspace not found."};
+ const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspace.id).eq("user_id",user.id).maybeSingle();
+ if(!member||!["owner","admin"].includes(member.role))return {error:"Only workspace admins can create invites."};
  const role=String(formData.get("role")||"reviewer");
  if(!["admin","editor","reviewer","viewer"].includes(role))return {error:"Invalid role."};
  const email=String(formData.get("email")||"").trim().toLowerCase()||null;
