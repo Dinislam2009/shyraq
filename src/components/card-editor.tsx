@@ -141,7 +141,7 @@ export function CardEditor({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold">Custom fields</p>
-            <p className="mt-1 text-xs text-slate-500">Use variables such as {{subject}} or {{example}} in templates.</p>
+            <p className="mt-1 text-xs text-slate-500">Use variables such as {"{{subject}}"} or {"{{example}}"} in templates.</p>
           </div>
           <button type="button" onClick={addField} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold shadow-sm">+ Add field</button>
         </div>
