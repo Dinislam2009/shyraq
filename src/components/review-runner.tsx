@@ -71,7 +71,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
    if(index>=queue.length-1)setDone(true);
    else setIndex(v=>v+1);
    setBusy(false);
- },[busy,card.id,current,index,preferences,revealed,router,userId]);
+ },[busy,card.id,current,index,preferences,queue,revealed,router,userId]);
 
  useEffect(()=>{
    const onKeyDown=(event:KeyboardEvent)=>{
