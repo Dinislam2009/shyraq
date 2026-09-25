@@ -10,8 +10,10 @@ export async function updateProfile(formData:FormData):Promise<void>{
  const username=String(formData.get("username")||"").trim().toLowerCase();
  const bio=String(formData.get("bio")||"").trim().slice(0,280);
  const avatarUrl=String(formData.get("avatar_url")||"").trim().slice(0,500);
+ const showActivity=formData.get("show_activity")==="on";
+ const showFollowers=formData.get("show_followers")==="on";
  if(username&&!/^[a-z0-9_]{3,30}$/.test(username))fail("Username must be 3–30 characters and use only letters, numbers and underscores.");
- const {error}=await supabase.from("profiles").update({display_name:displayName||null,username:username||null,bio:bio||null,avatar_url:avatarUrl||null}).eq("id",user.id);
+ const {error}=await supabase.from("profiles").update({display_name:displayName||null,username:username||null,bio:bio||null,avatar_url:avatarUrl||null,show_activity:showActivity,show_followers:showFollowers}).eq("id",user.id);
  if(error)fail(error.message);
  revalidatePath("/settings/profile");revalidatePath("/u/"+username);revalidatePath("/dashboard");redirect("/settings/profile?saved=1");
 }
