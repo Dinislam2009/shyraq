@@ -17,6 +17,13 @@ function payload(formData:FormData){
  if(kind==="image"){
   const imageUrl=String(formData.get("image_url")||"").trim();
   if(imageUrl)content.imageUrl=imageUrl;
+  const rawOcclusions=String(formData.get("occlusions")||"").trim();
+  if(rawOcclusions){
+   try{
+    const parsed=JSON.parse(rawOcclusions);
+    if(Array.isArray(parsed))content.occlusions=parsed.slice(0,100).map((row:any)=>({x:Number(row.x)||0,y:Number(row.y)||0,w:Number(row.w)||0,h:Number(row.h)||0})).filter((row:any)=>row.w>0&&row.h>0).map((row:any)=>({x:Math.max(0,Math.min(1,row.x)),y:Math.max(0,Math.min(1,row.y)),w:Math.max(0,Math.min(1,row.w)),h:Math.max(0,Math.min(1,row.h))}));
+   }catch{}
+  }
  }
  return {kind,content,template_id:templateId||null};
 }
