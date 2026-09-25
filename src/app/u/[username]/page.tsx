@@ -2,6 +2,7 @@ import Link from "next/link";
 import {notFound} from "next/navigation";
 import {AppShell} from "@/components/app-shell";
 import {createClient} from "@/lib/supabase/server";
+import {setCreatorRelation} from "@/app/u/actions";
 
 export default async function CreatorPage({params}:{params:Promise<{username:string}>}){
  const {username}=await params;
