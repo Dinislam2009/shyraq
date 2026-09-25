@@ -47,7 +47,7 @@ export async function importAnki(formData:FormData):Promise<void>{
       front=front.replaceAll(token,info.path);
       back=back.replaceAll(token,info.path);
     }
-    return {deck_id:deck.id,owner_id:user.id,kind:"basic" as const,content:{front,back,tags:card.tags},sort_order:index};
+    return {deck_id:deck.id,owner_id:user.id,kind:card.kind,content:{front,back,tags:card.tags},sort_order:index};
   });
   if(rows.length){
     const {data:created,error:cardsError}=await supabase.from("cards").insert(rows).select("id");
