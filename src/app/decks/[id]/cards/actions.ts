@@ -49,11 +49,18 @@ function payload(formData:FormData){
 }
 function tagsFromForm(formData:FormData){return String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);}
 async function uploadMedia(supabase:any,userId:string,workspaceId:string,file:File){
+
  if(!file||file.size===0)return null;
  if(file.size>25*1024*1024)throw new Error("Media file is larger than 25 MB.");
  const safe=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,"-").slice(-120);
  const path=userId+"/"+crypto.randomUUID()+"-"+safe;
- const {error:uploadError}=await supabase.storage.from("user-media").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
+ let uploadError:any=null;
+ for(let attempt=0;attempt<3;attempt++){
+  const result=await supabase.storage.from("user-media").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
+  uploadError=result.error;
+  if(!uploadError)break;
+  if(attempt<2)await new Promise(resolve=>setTimeout(resolve,250*(2**attempt)));
+ }
  if(uploadError)throw new Error(uploadError.message);
  const {data,error}=await supabase.from("media").insert({workspace_id:workspaceId,owner_id:userId,storage_path:path,mime_type:file.type||"application/octet-stream",byte_size:file.size}).select("storage_path,mime_type").single();
  if(error){
