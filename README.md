@@ -604,7 +604,7 @@ Target principle:
 - [x] Collection editing
 - [x] Collection sorting
 - [ ] Collection sharing
-- [ ] Smart collections
+- [x] Smart collections
 - [x] Collection rules
 
 ## Favorites / difficult cards
@@ -651,7 +651,7 @@ Public sharing is a major Shyraq feature.
 - [x] Local-change protection
 - [x] Unfollow management
 - [ ] Copy/update history
-- [ ] Deck version history
+- [x] Deck version history
 - [ ] Visual update diff
 
 ## Public deck update model
@@ -682,7 +682,7 @@ If a local edit conflicts with an author update:
 - [x] Follow/copy
 - [x] Creator avatar
 - [x] Creator statistics
-- [ ] Creator collections
+- [x] Creator collections
 - [ ] Creator activity controls
 - [ ] Block/mute creator
 - [ ] Community moderation/report history
@@ -702,7 +702,7 @@ If a local edit conflicts with an author update:
 - [x] Resolved
 - [x] Dismissed
 - [x] Platform-wide moderation queue
-- [ ] Moderator roles
+- [x] Moderator roles
 - [x] Report escalation
 - [x] Abuse-rate limiting
 - [x] Automated spam protection without AI
@@ -742,7 +742,7 @@ Collaboration is planned after the public sharing foundation.
 - [ ] Restore previous version
 - [ ] Comments
 - [ ] Mentions
-- [ ] Activity feed
+- [x] Activity feed
 - [ ] Workspace audit log
 - [ ] Fine-grained permissions per deck
 - [ ] Fine-grained permissions per collection
