@@ -33,11 +33,19 @@ export async function updateDeckSettings(id:string,formData:FormData){
  revalidatePath("/decks");revalidatePath("/decks/"+id);revalidatePath("/decks/"+id+"/settings");redirect("/decks/"+id+"/settings?saved=1");
 }
 
+export async function restoreDeck(id:string){
+ const {supabase,deck}=await requireAccess(id,false);
+ const {error}=await supabase.from("decks").update({deleted_at:null}).eq("id",id);
+ if(error)redirect("/decks/trash?error="+encodeURIComponent(error.message));
+ await supabase.from("activity_feed").insert({workspace_id:deck.workspace_id,actor_id:(await supabase.auth.getUser()).data.user?.id,event_type:"deck.restored",entity_type:"deck",entity_id:id,metadata:{}});
+ revalidatePath("/decks");revalidatePath("/decks/trash");revalidatePath("/decks/"+id);redirect("/decks/trash?saved=restored");
+}
+
 export async function deleteDeck(id:string,formData:FormData){
  const confirm=String(formData.get("confirm")||"").trim();
  if(confirm!=="DELETE")redirect("/decks/"+id+"/settings?error=Type+DELETE+to+confirm+permanent+deletion.");
- const {supabase}=await requireAccess(id,false);
- const {error}=await supabase.from("decks").delete().eq("id",id);
+ const {supabase,deck}=await requireAccess(id,false);
+ const {error}=await supabase.from("decks").update({deleted_at:new Date().toISOString()}).eq("id",id);
  if(error)redirect("/decks/"+id+"/settings?error="+encodeURIComponent(error.message));
- revalidatePath("/decks");redirect("/decks");
+ await supabase.from("activity_feed").insert({workspace_id:deck.workspace_id,actor_id:(await supabase.auth.getUser()).data.user?.id,event_type:"deck.trashed",entity_type:"deck",entity_id:id,metadata:{}});\n revalidatePath("/decks");revalidatePath("/decks/trash");redirect("/decks");
 }
