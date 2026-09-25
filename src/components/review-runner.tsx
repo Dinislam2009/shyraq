@@ -90,12 +90,14 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  const {front,back,templateCss}=useMemo(()=>{
    const rawFront=card.content?.front||"";
    const rawBack=card.content?.back||"";
-   const maskedFront=card.kind==="cloze"?rawFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"••••"):rawFront;
-   const revealedFront=card.kind==="cloze"?rawFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"$1"):rawFront;
+   const sourceFront=card.kind==="reverse"?rawBack:rawFront;
+   const sourceBack=card.kind==="reverse"?rawFront:rawBack;
+   const maskedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"••••"):sourceFront;
+   const revealedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"$1"):sourceFront;
    const template=templateOne(card.card_templates);
    return {
-     front:template?applyCardTemplate(template.front_template,{front:maskedFront,back:rawBack}):maskedFront,
-     back:template?applyCardTemplate(template.back_template,{front:revealedFront,back:rawBack}):(card.kind==="cloze"?revealedFront||rawBack:rawBack),
+     front:template?applyCardTemplate(template.front_template,{front:maskedFront,back:sourceBack}):maskedFront,
+     back:template?applyCardTemplate(template.back_template,{front:revealedFront,back:sourceBack}):(card.kind==="cloze"?revealedFront||sourceBack:sourceBack),
      templateCss:template?.css||""
    };
  },[card]);
