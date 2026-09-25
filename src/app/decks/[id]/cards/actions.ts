@@ -43,6 +43,12 @@ async function uploadMedia(supabase:any,userId:string,workspaceId:string,file:Fi
  }
  return data;
 }
+async function cleanupMediaPaths(supabase:any,paths:string[]){
+ const unique=[...new Set(paths.filter(Boolean))];
+ if(!unique.length)return;
+ await supabase.from("media").delete().in("storage_path",unique);
+ await supabase.storage.from("user-media").remove(unique);
+}
 async function applyTags(supabase:any,cardId:string,workspaceId:string,names:string[]){
  if(!names.length){await supabase.from("card_tags").delete().eq("card_id",cardId);return;}
  const {data:tags,error:tagError}=await supabase.from("tags").upsert(names.map(name=>({workspace_id:workspaceId,name})),{onConflict:"workspace_id,name"}).select("id");
@@ -58,8 +64,15 @@ export async function createCard(deckId:string,formData:FormData):Promise<void>{
  if(mediaFile instanceof File&&mediaFile.size>0){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;}}catch(error){fail("/decks/"+deckId+"/cards/new",error instanceof Error?error.message:"Unable to upload media.");}}
  const {data:last}=await supabase.from("cards").select("sort_order").eq("deck_id",deckId).order("sort_order",{ascending:false}).limit(1).maybeSingle();
  const {data:card,error}=await supabase.from("cards").insert({deck_id:deckId,owner_id:user.id,kind:p.kind,content:p.content,template_id:p.template_id,sort_order:(last?.sort_order??-1)+1}).select("id").single();
- if(error||!card)fail("/decks/"+deckId+"/cards/new",error?.message||"Unable to create card.");
- try{await applyTags(supabase,card.id,deck.workspace_id,tagsFromForm(formData));}catch(error){fail("/decks/"+deckId+"/cards/new",error instanceof Error?error.message:"Unable to save tags.");}
+ if(error||!card){
+  if(p.content.mediaPath)await cleanupMediaPaths(supabase,[p.content.mediaPath]);
+  fail("/decks/"+deckId+"/cards/new",error?.message||"Unable to create card.");
+ }
+ try{await applyTags(supabase,card.id,deck.workspace_id,tagsFromForm(formData));}catch(error){
+  await supabase.from("cards").delete().eq("id",card.id);
+  if(p.content.mediaPath)await cleanupMediaPaths(supabase,[p.content.mediaPath]);
+  fail("/decks/"+deckId+"/cards/new",error instanceof Error?error.message:"Unable to save tags.");
+ }
  revalidatePath("/decks/"+deckId);redirect(formData.get("continue") === "1" ? "/decks/"+deckId+"/cards/new?created=1" : "/decks/"+deckId);
 }
 export async function updateCard(deckId:string,cardId:string,formData:FormData):Promise<void>{
@@ -69,15 +82,31 @@ export async function updateCard(deckId:string,cardId:string,formData:FormData):
  if(expectedUpdatedAt&&existingCard?.updated_at&&new Date(existingCard.updated_at).getTime()!==new Date(expectedUpdatedAt).getTime()){
   fail("/decks/"+deckId,"This card changed in another session. Reload it before saving.");
  }
+ const oldMediaPath=existingCard?.content&&typeof existingCard.content==="object"?String((existingCard.content as any).mediaPath||""):"";
  if(existingCard?.content&&typeof existingCard.content==="object"){for(const key of ["mediaPath","mediaType","mediaItems"]){if((p.content as any)[key]===undefined&&(existingCard.content as any)[key]!==undefined)(p.content as any)[key]=(existingCard.content as any)[key];}}
+ const submittedImageUrl=String(formData.get("image_url")||"").trim();
+ if(p.kind==="image"&&submittedImageUrl){
+  delete p.content.mediaPath;
+  delete p.content.mediaType;
+  p.content.occlusions=[];
+ }
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
  if(mediaFile instanceof File&&mediaFile.size>0&&deck){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;if(p.kind==="image")p.content.occlusions=[];}}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to upload media.");}}
- const {error}=await supabase.from("cards").update(p).eq("id",cardId);if(error)fail("/decks/"+deckId,error.message);
+ const {error}=await supabase.from("cards").update(p).eq("id",cardId);
+ if(error){
+  if(mediaFile instanceof File&&mediaFile.size>0&&p.content.mediaPath&&p.content.mediaPath!==oldMediaPath)await cleanupMediaPaths(supabase,[p.content.mediaPath]);
+  fail("/decks/"+deckId,error.message);
+ }
+ if(oldMediaPath&&oldMediaPath!==p.content.mediaPath)await cleanupMediaPaths(supabase,[oldMediaPath]);
  if(deck){try{await applyTags(supabase,cardId,deck.workspace_id,tagsFromForm(formData));}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to save tags.");}}
  revalidatePath("/decks/"+deckId);redirect("/decks/"+deckId);
 }
 export async function deleteCard(deckId:string,cardId:string):Promise<void>{
- const supabase=await createClient();const {error}=await supabase.from("cards").delete().eq("id",cardId);if(error)fail("/decks/"+deckId,error.message);
+ const supabase=await createClient();
+ const {data:card}=await supabase.from("cards").select("content").eq("id",cardId).maybeSingle();
+ const mediaPath=card?.content&&typeof card.content==="object"?String((card.content as any).mediaPath||""):"";
+ const {error}=await supabase.from("cards").delete().eq("id",cardId);if(error)fail("/decks/"+deckId,error.message);
+ if(mediaPath)await cleanupMediaPaths(supabase,[mediaPath]);
  revalidatePath("/decks/"+deckId);redirect("/decks/"+deckId);
 }
 export async function setCardFlag(deckId:string,cardId:string,field:"is_marked"|"is_suspended",value:boolean):Promise<void>{
@@ -110,8 +139,11 @@ export async function bulkDeleteCards(deckId:string,cardIds:string[]):Promise<vo
  if(!user)redirect("/login");
  const ids=[...new Set(cardIds)].filter(Boolean).slice(0,500);
  if(!ids.length)redirect("/decks/"+deckId);
+ const {data:cards}=await supabase.from("cards").select("content").eq("deck_id",deckId).in("id",ids);
+ const mediaPaths=(cards??[]).map((card:any)=>card.content&&typeof card.content==="object"?String(card.content.mediaPath||""):"").filter(Boolean);
  const {error}=await supabase.from("cards").delete().eq("deck_id",deckId).in("id",ids);
  if(error)fail("/decks/"+deckId,error.message);
+ if(mediaPaths.length)await cleanupMediaPaths(supabase,mediaPaths);
  revalidatePath("/decks/"+deckId);
  revalidatePath("/review");
  redirect("/decks/"+deckId);
