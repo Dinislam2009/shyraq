@@ -10,7 +10,7 @@ export default async function EditCardPage({params}:{params:Promise<{id:string;c
  const supabase=await createClient();
  const {data:card}=await supabase
   .from("cards")
-  .select("id,kind,content,template_id,deck_id")
+  .select("id,kind,content,template_id,deck_id,updated_at")
   .eq("id",cardId)
   .eq("deck_id",id)
   .maybeSingle();
@@ -45,7 +45,8 @@ export default async function EditCardPage({params}:{params:Promise<{id:string;c
   imageUrl:card.content?.imageUrl||"",
   mediaUrl,
   occlusions:Array.isArray(card.content?.occlusions)?card.content.occlusions:[],
-  templateId:card.template_id||""
+  templateId:card.template_id||"",
+  updatedAt:card.updated_at||""
  };
 
  return <AppShell><div className="mx-auto max-w-5xl px-5 py-8 sm:px-8">
