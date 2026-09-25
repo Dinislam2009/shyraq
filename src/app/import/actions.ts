@@ -16,7 +16,7 @@ function csvLine(line:string){
  out.push(current); return out;
 }
 function safeKind(value:string){
- const allowed=["basic","reverse","cloze","multiple_choice","image","audio","custom"];
+ const allowed=["basic","reverse","cloze","multiple_choice","image","custom"];
  return allowed.includes(value)?value:"basic";
 }
 function contentFromRow(row:any){
