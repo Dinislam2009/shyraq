@@ -36,10 +36,14 @@ export async function POST(request:NextRequest){
     metadata:e.metadata??{}
   }));
 
-  const {error:eventError}=await supabase.from("review_events").upsert(rows,{onConflict:"event_key",ignoreDuplicates:true});
+  const eventKeys=rows.map((row:any)=>row.event_key);
+  const {data:existingEvents}=await supabase.from("review_events").select("event_key").eq("user_id",user.id).in("event_key",eventKeys);
+  const existingKeys=new Set((existingEvents??[]).map((row:any)=>row.event_key));
+  const newRows=rows.filter((row:any)=>!existingKeys.has(row.event_key));
+  const {error:eventError}=await supabase.from("review_events").upsert(newRows,{onConflict:"event_key",ignoreDuplicates:true});
   if(eventError)return NextResponse.json({error:eventError.message},{status:400});
 
-  for(const e of rows){
+  for(const e of newRows){
    const incoming=e.next_state as any;
    if(!incoming?.due)continue;
 
@@ -77,5 +81,5 @@ export async function POST(request:NextRequest){
   }
  }
 
- return NextResponse.json({accepted:batch.length-conflicts.length,conflicts});
+ return NextResponse.json({accepted:Math.max(0,newRows.length-conflicts.length),conflicts});
 }
