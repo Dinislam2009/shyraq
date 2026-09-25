@@ -57,3 +57,14 @@ export async function setDeckUpdatePolicy(copiedDeckId:string,policy:"ask"|"acce
  if(error)fail("/decks/"+copiedDeckId,error.message);
  revalidatePath("/decks/"+copiedDeckId);redirect("/decks/"+copiedDeckId);
 }
+export async function reportDeck(deckId:string,formData:FormData):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login?next="+encodeURIComponent("/explore/"+deckId));
+ const reason=String(formData.get("reason")||"").trim();
+ const details=String(formData.get("details")||"").trim().slice(0,1000);
+ if(!reason)fail("/explore/"+deckId,"Choose a report reason.");
+ const {error}=await supabase.from("deck_reports").insert({deck_id:deckId,reporter_id:user.id,reason,details});
+ if(error)fail("/explore/"+deckId,error.message);
+ revalidatePath("/explore/"+deckId);redirect("/explore/"+deckId+"?reported=1");
+}
