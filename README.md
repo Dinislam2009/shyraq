@@ -443,12 +443,12 @@ Conflict handling:
 - [x] Elapsed review time
 - [x] Event metadata
 - [x] Conflict preservation
-- [ ] Dedicated review-history UI
-- [ ] Per-card review timeline
-- [ ] Per-deck review timeline
-- [ ] Event filtering
-- [ ] Event export
-- [ ] Advanced audit/debug view
+- [x] Dedicated review-history UI
+- [x] Per-card review timeline
+- [x] Per-deck review timeline
+- [x] Event filtering
+- [x] Event export
+- [x] Advanced audit/debug view
 
 ---
 
