@@ -1,6 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { offlineStore, queueMutation } from "@/lib/offline/store";
+import { parseCardFormData } from "@/lib/offline/form-payload";
 import { RichContent } from "@/components/rich-content";
 import { BlockEditor } from "@/components/block-editor";
 import { OcclusionEditor, type OcclusionRect } from "@/components/image-occlusion";
@@ -23,7 +26,8 @@ export function CardEditor({
   templates = [],
   mediaLibrary = [],
   initial,
-  submitLabel = "Save card"
+  submitLabel = "Save card",
+  offlineContext
 }: {
   action: CardAction;
   templates?: Template[];
@@ -45,6 +49,7 @@ export function CardEditor({
     updatedAt?: string;
   };
   submitLabel?: string;
+  offlineContext?: {userId:string;deckId:string;existing?:{id:string;sortOrder?:number;createdAt?:string;updatedAt?:string}};
 }) {
   const [templateId, setTemplateId] = useState(initial?.templateId || "");
   const [kind, setKind] = useState(initial?.kind || "basic");
@@ -62,6 +67,8 @@ export function CardEditor({
   const [activeField, setActiveField] = useState<FieldName>("front");
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [offlineError,setOfflineError] = useState("");
 
   const selectedTemplate = templates.find(template => template.id === templateId);
   const imageSrc = imageUrl || imagePreview;
@@ -97,10 +104,35 @@ export function CardEditor({
   }
 
   return (
-    <form action={action} encType="multipart/form-data" className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6">
+    <form action={action} encType="multipart/form-data" className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6" onSubmit={async event=>{
+ if(!offlineContext||typeof navigator==="undefined"||navigator.onLine)return;
+ event.preventDefault();
+ setOfflineError("");
+ const formData=new FormData(event.currentTarget);
+ const mediaFile=formData.get("media_file");
+ if(mediaFile instanceof File&&mediaFile.size>0){setOfflineError("Media upload requires a connection. Your text/card changes can still be saved offline.");return;}
+ const parsed=parseCardFormData(formData);
+ const id=offlineContext.existing?.id||crypto.randomUUID();
+ const now=new Date().toISOString();
+ const existing=offlineContext.existing;
+ await offlineStore.cards.put({
+  id,userId:offlineContext.userId,deckId:offlineContext.deckId,templateId:parsed.template_id,kind:parsed.kind,
+  content:parsed.content,sortOrder:existing?.sortOrder??0,isSuspended:false,isMarked:false,
+  createdAt:existing?.createdAt||now,updatedAt:now
+ });
+ await queueMutation({
+  id:crypto.randomUUID(),userId:offlineContext.userId,entityType:"cards",operation:"upsert",entityId:id,payload:{
+   id,deck_id:offlineContext.deckId,template_id:parsed.template_id,kind:parsed.kind,content:parsed.content,
+   sort_order:existing?.sortOrder??0,is_suspended:existing?false:false,is_marked:existing?false:false
+  }
+ });
+ router.push("/decks/"+offlineContext.deckId+"?offline_saved=1");
+ router.refresh();
+}}>
       {initial?.updatedAt && <input type="hidden" name="expected_updated_at" value={initial.updatedAt} />}
       <input type="hidden" name="fields" value={JSON.stringify(fields)} />
       <input type="hidden" name="review_preferences" value={JSON.stringify(reviewPreferences)} />
+      {offlineError?<div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{offlineError}</div>:null}
       <input type="hidden" name="media_items" value={JSON.stringify(mediaItems.map(item => ({ path: item.path, mimeType: item.mimeType, name: item.name })))} />
       <div className="grid gap-4 sm:grid-cols-4">
         <label className="block text-sm font-medium">
