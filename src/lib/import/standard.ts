@@ -94,7 +94,12 @@ export function parseStandardText(text: string, filename = ""): ImportRow[] {
     const cards = Array.isArray(data) ? data : Array.isArray(data.cards) ? data.cards : Array.isArray(data.decks) ? data.decks.flatMap((deck: any) => deck.cards || []) : [];
     return cards.map((card: any, index: number) => rowFromObject(card, index + 1)).filter((row: ImportRow) => row.front || row.back);
   }
-  const delimiter = lower.endsWith(".tsv") || lower.endsWith(".txt") || text.split(/\r?\n/)[0]?.includes("\t") ? "\t" : ",";
+  const firstLine = text.split(/\r?\n/).find(line => line.trim()) || "";
+  const headerText = firstLine.toLowerCase();
+  let delimiter = ",";
+  if (lower.endsWith(".tsv") || headerText.includes("\t")) delimiter = "\t";
+  else if (headerText.includes("||") && headerText.includes("front") && headerText.includes("back")) delimiter = "||";
+  else if (lower.endsWith(".txt") && headerText.includes("|")) delimiter = "|";
   return parseDelimited(text, delimiter);
 }
 
