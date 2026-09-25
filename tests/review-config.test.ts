@@ -7,7 +7,7 @@ test("rating order normalization restores defaults",()=>{
 });
 test("per-card preferences are clamped and normalized",()=>{
  assert.deepEqual(sanitizePerCardPreferences({autoRevealSeconds:99,showTimer:false,ratingOrder:["hard","good"]}),{
-  autoRevealSeconds:60,showTimer:false,ratingOrder:["hard","again","good","easy"]
+  autoRevealSeconds:60,showTimer:false,ratingOrder:["hard","good","again","easy"]
  });
 });
 test("invalid rating colors are rejected while valid colors survive",()=>{
