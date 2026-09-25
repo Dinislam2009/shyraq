@@ -9,7 +9,7 @@ export default async function CreatorPage({params}:{params:Promise<{username:str
  if(!profile)notFound();
  const {data:decks}=await supabase.from("decks").select("id,name,description,updated_at,cards(count),settings").eq("owner_id",profile.id).eq("visibility","public").order("updated_at",{ascending:false});
  const publicDeckIds=(decks??[]).map((deck:any)=>deck.id);
- const [{data:followRows},{data:copyRows}]=await Promise.all([
+ const {data:publicCollections}=await supabase.from("collections").select("id,name,kind,is_public,collection_cards(card_id)").eq("owner_id",profile.id).eq("is_public",true).order("created_at",{ascending:false}).limit(20);\n const [{data:followRows},{data:copyRows}]=await Promise.all([
   publicDeckIds.length?supabase.from("public_deck_follows").select("deck_id").in("deck_id",publicDeckIds):Promise.resolve({data:[]}),
   publicDeckIds.length?supabase.from("deck_copies").select("source_deck_id").in("source_deck_id",publicDeckIds):Promise.resolve({data:[]})
  ]);
