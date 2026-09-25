@@ -2,9 +2,12 @@
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
+import {normalizeCustomFields,normalizeMediaItems} from "@/lib/card-fields";
 
 function fail(path:string,message:string):never{redirect(path+"?error="+encodeURIComponent(message));}
 function payload(formData:FormData){
+ const rawFields=String(formData.get("fields")||"");
+ const rawMediaItems=String(formData.get("media_items")||"");
  const kind=String(formData.get("kind")||"basic");
  const content:any={front:String(formData.get("front")||""),back:String(formData.get("back")||"")};
  const templateId=String(formData.get("template_id")||"").trim();
@@ -26,6 +29,12 @@ function payload(formData:FormData){
    }catch{}
   }
  }
+ let fields:Record<string,string>={};
+ try{fields=normalizeCustomFields(rawFields?JSON.parse(rawFields):{});}catch{}
+ let mediaItems:Array<{path:string;mimeType?:string;name?:string}>=[];
+ try{mediaItems=normalizeMediaItems(rawMediaItems?JSON.parse(rawMediaItems):[]);}catch{}
+ if(Object.keys(fields).length)content.fields=fields;
+ if(mediaItems.length)content.mediaItems=mediaItems;
  return {kind,content,template_id:templateId||null};
 }
 function tagsFromForm(formData:FormData){return String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);}
@@ -42,6 +51,13 @@ async function uploadMedia(supabase:any,userId:string,workspaceId:string,file:Fi
   throw new Error(error.message);
  }
  return data;
+}
+async function validateLibraryMedia(supabase:any,userId:string,items:Array<{path:string;mimeType?:string;name?:string}>){
+ if(!items.length)return [];
+ const {data,error}=await supabase.from("media").select("storage_path,mime_type").eq("owner_id",userId).in("storage_path",items.map(item=>item.path));
+ if(error)throw new Error(error.message);
+ const allowed=new Map((data??[]).map((item:any)=>[String(item.storage_path),String(item.mime_type||"")]));
+ return items.filter(item=>allowed.has(item.path)).map(item=>({...item,mimeType:item.mimeType||allowed.get(item.path)||""}));
 }
 async function cleanupMediaPaths(supabase:any,paths:string[]){
  const unique=[...new Set(paths.filter(Boolean))];
@@ -61,6 +77,7 @@ export async function createCard(deckId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();if(!deck)fail("/decks/"+deckId,"Deck not found.");
  const p=payload(formData);const mediaFile=formData.get("media_file");
+ const libraryMedia=await validateLibraryMedia(supabase,user.id,p.content.mediaItems||[]); if(libraryMedia.length)p.content.mediaItems=libraryMedia; else delete p.content.mediaItems;
  if(mediaFile instanceof File&&mediaFile.size>0){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;}}catch(error){fail("/decks/"+deckId+"/cards/new",error instanceof Error?error.message:"Unable to upload media.");}}
  const {data:last}=await supabase.from("cards").select("sort_order").eq("deck_id",deckId).order("sort_order",{ascending:false}).limit(1).maybeSingle();
  const {data:card,error}=await supabase.from("cards").insert({deck_id:deckId,owner_id:user.id,kind:p.kind,content:p.content,template_id:p.template_id,sort_order:(last?.sort_order??-1)+1}).select("id").single();
@@ -77,6 +94,7 @@ export async function createCard(deckId:string,formData:FormData):Promise<void>{
 }
 export async function updateCard(deckId:string,cardId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");const p=payload(formData);const mediaFile=formData.get("media_file");
+ const libraryMedia=await validateLibraryMedia(supabase,user.id,p.content.mediaItems||[]); if(libraryMedia.length)p.content.mediaItems=libraryMedia; else delete p.content.mediaItems;
  const {data:existingCard}=await supabase.from("cards").select("content,updated_at").eq("id",cardId).maybeSingle();
  const expectedUpdatedAt=String(formData.get("expected_updated_at")||"").trim();
  if(expectedUpdatedAt&&existingCard?.updated_at&&new Date(existingCard.updated_at).getTime()!==new Date(expectedUpdatedAt).getTime()){
