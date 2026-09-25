@@ -160,6 +160,22 @@ async function restoreBackup(supabase:any,userId:string,workspaceId:string,paylo
   if(error)throw new Error(error.message);
  }
 
+ const deckCopies=Array.isArray(payload.deckCopies)?payload.deckCopies:[];
+ for(const copy of deckCopies){
+  const sourceDeckId=deckMap.get(String(copy.source_deck_id));
+  const copiedDeckId=deckMap.get(String(copy.copied_deck_id));
+  if(!sourceDeckId||!copiedDeckId)continue;
+  const {error}=await supabase.from("deck_copies").upsert({
+   user_id:userId,
+   source_deck_id:sourceDeckId,
+   copied_deck_id:copiedDeckId,
+   source_updated_at:copy.source_updated_at??null,
+   last_synced_source_updated_at:copy.last_synced_source_updated_at??null,
+   update_policy:copy.update_policy==="accept_all"?"accept_all":"ask"
+  },{onConflict:"user_id,source_deck_id,copied_deck_id"});
+  if(error)throw new Error(error.message);
+ }
+
  const follows=Array.isArray(payload.publicDeckFollows)?payload.publicDeckFollows:[];
  for(const follow of follows){
   const deckId=deckMap.get(String(follow.deck_id)); if(!deckId)continue;
