@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {createEmptyCard,fsrs,Rating} from "ts-fsrs";
 import {queueReview,syncReviews} from "@/lib/sync/client";
+import {undoReview} from "@/app/review/actions";
 import {getDeviceId,cacheReviewSession} from "@/lib/offline/store";
 import {useRouter} from "next/navigation";
 import {RichContent} from "@/components/rich-content";
@@ -14,7 +15,7 @@ function templateOne(template:QueueItem["card"]["card_templates"]){if(Array.isAr
 function applyCardTemplate(source:string,fields:{front:string;back:string}){return String(source||"").replace(/\{\{\s*front\s*\}\}/gi,fields.front).replace(/\{\{\s*back\s*\}\}/gi,fields.back).replace(/\{\{\s*FrontSide\s*\}\}/g,fields.front);}
 type QueueItem={card:{id:string;content:CardContent;kind:string;template_id?:string;card_templates?:{id:string;name:string;front_template:string;back_template:string;css?:string|null}|{id:string;name:string;front_template:string;back_template:string;css?:string|null}[]};stateData:any;isNew:boolean};
 
-type CompletedReview={cardId:string;rating:"again"|"hard"|"good"|"easy";elapsedMs:number;previousState:any;nextState:any;queueIndex:number};
+type CompletedReview={cardId:string;rating:"again"|"hard"|"good"|"easy";elapsedMs:number;previousState:any;nextState:any;hadPreviousState:boolean;queueIndex:number};
 
 export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:QueueItem[];preferences:Preferences}){
  const router=useRouter();
@@ -77,7 +78,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
      nextState:result.card as unknown as Record<string,unknown>,status:"pending",
      metadata:{event_kind:current.isNew?"new-card":"review"}
    });
-   const entry={cardId:card.id,rating,elapsedMs,previousState:previous,nextState:result.card,queueIndex:index};
+   const entry={cardId:card.id,rating,elapsedMs,previousState:previous,nextState:result.card,hadPreviousState:Boolean(current.stateData),queueIndex:index};
    setCompleted(items=>[...items,entry]);
    try{await cacheReviewSession(userId,queue.slice(index+1),preferences);}catch{}
    try{
@@ -91,15 +92,25 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  const undo=useCallback(async()=>{
    if(busy||completed.length===0)return;
    const last=completed[completed.length-1];
-   const pending=await (async()=>{try{return await import("@/lib/offline/store").then(m=>m.offlineStore.reviews.toArray())}catch{return []}})();
-   const candidates=pending.filter((event:any)=>event.cardId===last.cardId&&event.status!=="synced").sort((a:any,b:any)=>b.sequence-a.sequence);
-   if(candidates[0])await (async()=>{const {offlineStore}=await import("@/lib/offline/store");await offlineStore.reviews.delete(candidates[0].id)})();
-   setCompleted(items=>items.slice(0,-1));
-   setIndex(last.queueIndex);
-   setDone(false);
-   setPaused(false);
-   setRevealed(true);
-   startedAt.current=Date.now();
+   try{
+     const {offlineStore}=await import("@/lib/offline/store");
+     const pending=await offlineStore.reviews.toArray();
+     const candidates=pending.filter((event:any)=>event.cardId===last.cardId&&event.status!=="synced").sort((a:any,b:any)=>b.sequence-a.sequence);
+     if(candidates[0]){
+       await offlineStore.reviews.delete(candidates[0].id);
+     }else if(typeof navigator!=="undefined"&&navigator.onLine){
+       const result=await undoReview(last.cardId,last.previousState,last.hadPreviousState,last.rating);
+       if(result.error)throw new Error(result.error);
+     }else{
+       return;
+     }
+     setCompleted(items=>items.slice(0,-1));
+     setIndex(last.queueIndex);
+     setDone(false);
+     setPaused(false);
+     setRevealed(true);
+     startedAt.current=Date.now();
+   }catch{}
  },[busy,completed]);
 
  useEffect(()=>{
