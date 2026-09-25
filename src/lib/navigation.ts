@@ -12,6 +12,7 @@ export const secondaryNavigation:NavItem[]=[
  {href:"/notifications",label:"Notifications",icon:"settings"},
  {href:"/import",label:"Import",icon:"settings"},
  {href:"/export",label:"Export",icon:"settings"},
+ {href:"/media",label:"Media library",icon:"settings"},
  {href:"/settings/profile",label:"Profile",icon:"settings"},
  {href:"/settings/review",label:"Review settings",icon:"settings"},
  {href:"/settings/sync",label:"Sync",icon:"settings"},
