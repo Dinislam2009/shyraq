@@ -650,9 +650,9 @@ Public sharing is a major Shyraq feature.
 - [x] Ask before updates
 - [x] Local-change protection
 - [x] Unfollow management
-- [ ] Copy/update history
+- [x] Copy/update history
 - [x] Deck version history
-- [ ] Visual update diff
+- [x] Visual update diff
 
 ## Public deck update model
 
