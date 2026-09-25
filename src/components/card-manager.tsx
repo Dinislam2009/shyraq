@@ -168,25 +168,25 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  {canEdit&&<Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link>}
+                  {canEdit ? <Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link> : null}
                   <form action={toggleFavorite.bind(null, card.id, deckId)}>
                     <button className={"text-xs font-semibold " + (favoriteSet.has(card.id) ? "text-amber-600" : "text-slate-400")}>
                       {favoriteSet.has(card.id) ? "★ Favorite" : "☆ Favorite"}
                     </button>
                   </form>
-                  {canEdit&&<form action={setCardFlag.bind(null, deckId, card.id, "is_marked", !card.is_marked)}>
+                  {canEdit ? <form action={setCardFlag.bind(null, deckId, card.id, "is_marked", !card.is_marked)}>
                     <button className="text-xs font-semibold text-slate-500">{card.is_marked ? "Unmark" : "Mark"}</button>
-                  </form>}
-                  {canEdit&&<form action={setCardFlag.bind(null, deckId, card.id, "is_suspended", !card.is_suspended)}>
+                  </form> : null}
+                  {canEdit ? <form action={setCardFlag.bind(null, deckId, card.id, "is_suspended", !card.is_suspended)}>
                     <button className="text-xs font-semibold text-slate-500">{card.is_suspended ? "Unsuspend" : "Suspend"}</button>
-                  </form>}
-                  {canEdit&&<form action={deleteCard.bind(null, deckId, card.id)}>
+                  </form> : null}
+                  {canEdit ? <form action={deleteCard.bind(null, deckId, card.id)}>
                     <button className="text-xs font-medium text-slate-400 hover:text-red-600">Delete</button>
-                  </form>}
+                  </form> : null}
                 </div>
               </div>
 
-              {canEdit&&<form action={updateCard.bind(null, deckId, card.id)}>
+              {canEdit ? <form action={updateCard.bind(null, deckId, card.id)}>
                 <div className="grid gap-4 md:grid-cols-2">
                   <textarea name="front" defaultValue={card.content?.front || ""} className="min-h-28 rounded-xl border border-slate-200 p-3 font-mono text-sm outline-none focus:border-slate-400" />
                   <textarea name="back" defaultValue={card.content?.back || ""} className="min-h-28 rounded-xl border border-slate-200 p-3 font-mono text-sm outline-none focus:border-slate-400" />
@@ -199,7 +199,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                 <div className="mt-3 flex justify-end">
                   <button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold hover:bg-slate-50">Save changes</button>
                 </div>
-              </form>}
+              </form> : null}
             </div>
           ))}
         </div>
