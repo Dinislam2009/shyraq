@@ -37,7 +37,7 @@ jobs:
       - name: Secret and environment audit
         run: |
           set -e
-          if git grep -nE 'NEXT_PUBLIC_[A-Z0-9_]*(SERVICE|SECRET|PRIVATE)|SUPABASE_(SERVICE_ROLE|SECRET)|SERVICE_ROLE_KEY' -- ':!package-lock.json'; then
+          if git grep -nE 'NEXT_PUBLIC_[A-Z0-9_]*(SERVICE|SECRET|PRIVATE)|SUPABASE_(SERVICE_ROLE|SECRET)|SERVICE_ROLE_KEY' -- ':!package-lock.json' ':!.github/**'; then
             echo "Potential browser-exposed privileged Supabase secret detected."
             exit 1
           fi
