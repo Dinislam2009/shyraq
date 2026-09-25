@@ -1,0 +1,4 @@
+import Link from "next/link";
+export default function NotFound(){
+ return <div className="flex min-h-screen items-center justify-center bg-slate-50 px-5"><div className="max-w-md rounded-3xl border border-black/[0.06] bg-white p-8 text-center"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Shyraq</p><h1 className="mt-3 text-2xl font-semibold">Page not found</h1><p className="mt-2 text-sm leading-6 text-slate-500">This route does not exist or the resource is no longer available.</p><Link href="/dashboard" className="mt-6 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Back to dashboard</Link></div></div>;
+}
