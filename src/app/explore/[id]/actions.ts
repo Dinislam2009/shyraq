@@ -15,6 +15,27 @@ export async function followDeck(deckId:string):Promise<void>{
  revalidatePath("/explore/"+deckId);redirect("/explore/"+deckId);
 }
 
+export async function copyDeckWithOptions(deckId:string,formData:FormData):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login?next="+encodeURIComponent("/explore/"+deckId));
+ const requestedName=String(formData.get("name")||"").trim().slice(0,120);
+ const updatePolicy=String(formData.get("update_policy")||"ask")==="accept_all"?"accept_all":"ask";
+ const {data:source}=await supabase.from("decks").select("id,name,description,settings,updated_at,cards(*)").eq("id",deckId).eq("visibility","public").maybeSingle();
+ if(!source)fail("/explore/"+deckId,"Public deck not found.");
+ const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
+ if(!workspace)fail("/explore/"+deckId,"Personal workspace not found.");
+ const copyName=requestedName||String(source.name)+" (copy)";
+ const {data:deck,error}=await supabase.from("decks").insert({workspace_id:workspace.id,owner_id:user.id,name:copyName,description:source.description,visibility:"private",settings:source.settings}).select("id").single();
+ if(error||!deck)fail("/explore/"+deckId,error?.message||"Unable to copy deck.");
+ const rows=(source.cards??[]).map((card:any)=>({deck_id:deck.id,owner_id:user.id,kind:card.kind,content:{...card.content,_sourceCardId:card.id},sort_order:card.sort_order,is_suspended:false,is_marked:false}));
+ if(rows.length){const {error:cardsError}=await supabase.from("cards").insert(rows);if(cardsError)fail("/explore/"+deckId,cardsError.message);}
+ const {error:copyError}=await supabase.from("deck_copies").insert({user_id:user.id,source_deck_id:deckId,copied_deck_id:deck.id,source_updated_at:source.updated_at,last_synced_source_updated_at:source.updated_at,update_policy:updatePolicy});
+ if(copyError)fail("/explore/"+deckId,copyError.message);
+ revalidatePath("/decks");
+ redirect("/decks/"+deck.id);
+}
+
 export async function copyDeck(deckId:string):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login?next="+encodeURIComponent("/explore/"+deckId));
  const {data:source}=await supabase.from("decks").select("id,name,description,settings,updated_at,cards(*)").eq("id",deckId).eq("visibility","public").maybeSingle();if(!source)fail("/explore/"+deckId,"Public deck not found.");
