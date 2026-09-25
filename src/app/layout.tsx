@@ -17,7 +17,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="min-h-screen bg-[#f8fafc] text-slate-950 antialiased">
-        <I18nProvider><GlobalTranslator /><OfflineBootstrap />{children}</I18nProvider>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
+        <I18nProvider><GlobalTranslator /><OfflineBootstrap /><main id="main-content" tabIndex={-1} className="min-h-screen outline-none">{children}</main></I18nProvider>
       </body>
     </html>
   );
