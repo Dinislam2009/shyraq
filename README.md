@@ -202,7 +202,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Suspended cards
 - [ ] Nested/tag hierarchy
 - [ ] Saved filters
-- [ ] Smart collections
+- [x] Smart collections
 - [ ] Custom deck sorting
 - [ ] Drag-and-drop organization
 
@@ -588,24 +588,24 @@ Target principle:
 - [x] Card tags
 - [x] Tag filtering
 - [x] Tag display
-- [ ] Tag manager
-- [ ] Rename tag globally
-- [ ] Merge tags
-- [ ] Delete tags
-- [ ] Tag hierarchy
-- [ ] Tag usage statistics
+- [x] Tag manager
+- [x] Rename tag globally
+- [x] Merge tags
+- [x] Delete tags
+- [x] Tag hierarchy
+- [x] Tag usage statistics
 
 ## Collections
 
 - [x] Collections
 - [x] Collection cards
 - [x] Collection creation
-- [ ] Collection detail page
-- [ ] Collection editing
-- [ ] Collection sorting
+- [x] Collection detail page
+- [x] Collection editing
+- [x] Collection sorting
 - [ ] Collection sharing
 - [ ] Smart collections
-- [ ] Collection rules
+- [x] Collection rules
 
 ## Favorites / difficult cards
 
@@ -613,9 +613,9 @@ Target principle:
 - [x] Marked cards
 - [x] Suspended cards
 - [x] Difficult-card foundation
-- [ ] Custom markers
-- [ ] Marker manager
-- [ ] Saved difficult-card filters
+- [x] Custom markers
+- [x] Marker manager
+- [x] Saved difficult-card filters
 
 ---
 
