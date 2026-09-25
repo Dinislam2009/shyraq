@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@/lib/supabase/server";
+import {shouldPreserveRemoteState} from "@/lib/sync/conflicts";
 
 function isPlainObject(value:unknown):value is Record<string,unknown>{
  return Boolean(value)&&typeof value==="object"&&!Array.isArray(value);
@@ -104,7 +105,7 @@ export async function POST(request:NextRequest){
    const {data:existing}=await supabase.from("review_states").select("state_data,last_reviewed_at").eq("user_id",user.id).eq("card_id",e.card_id).maybeSingle();
    const currentReviewedAt=existing?.last_reviewed_at?new Date(existing.last_reviewed_at).getTime():0;
    const incomingReviewedAt=new Date(e.reviewed_at).getTime();
-   if(currentReviewedAt>incomingReviewedAt){
+   if(shouldPreserveRemoteState(existing?.last_reviewed_at??null,e.reviewed_at)){
     const {error:conflictError}=await supabase.from("sync_conflicts").insert({
      user_id:user.id,card_id:e.card_id,event_key:e.event_key,incoming_state:incoming,current_state:existing?.state_data??{},
      incoming_reviewed_at:e.reviewed_at,current_reviewed_at:existing?.last_reviewed_at??null
