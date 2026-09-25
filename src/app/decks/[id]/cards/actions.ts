@@ -12,7 +12,8 @@ function payload(formData:FormData){
  if(tags.length)content.tags=tags;
  if(kind==="multiple_choice"){
   content.options=String(formData.get("options")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,10);
-  content.answer=Math.max(0,Number(formData.get("answer")||0));
+  const requestedAnswer=Number(formData.get("answer")||0);
+  content.answer=content.options.length?Math.max(0,Math.min(content.options.length-1,Number.isFinite(requestedAnswer)?Math.trunc(requestedAnswer):0)):0;
  }
  if(kind==="image"){
   const imageUrl=String(formData.get("image_url")||"").trim();
@@ -36,10 +37,12 @@ async function uploadMedia(supabase:any,userId:string,workspaceId:string,file:Fi
  const {error:uploadError}=await supabase.storage.from("user-media").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
  if(uploadError)throw new Error(uploadError.message);
  const {data,error}=await supabase.from("media").insert({workspace_id:workspaceId,owner_id:userId,storage_path:path,mime_type:file.type||"application/octet-stream",byte_size:file.size}).select("storage_path,mime_type").single();
- if(error)throw new Error(error.message);
+ if(error){
+  await supabase.storage.from("user-media").remove([path]);
+  throw new Error(error.message);
+ }
  return data;
 }
-
 async function applyTags(supabase:any,cardId:string,workspaceId:string,names:string[]){
  if(!names.length){await supabase.from("card_tags").delete().eq("card_id",cardId);return;}
  const {data:tags,error:tagError}=await supabase.from("tags").upsert(names.map(name=>({workspace_id:workspaceId,name})),{onConflict:"workspace_id,name"}).select("id");
@@ -68,7 +71,7 @@ export async function updateCard(deckId:string,cardId:string,formData:FormData):
  }
  if(existingCard?.content&&typeof existingCard.content==="object"){for(const key of ["mediaPath","mediaType","mediaItems"]){if((p.content as any)[key]===undefined&&(existingCard.content as any)[key]!==undefined)(p.content as any)[key]=(existingCard.content as any)[key];}}
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
- if(mediaFile instanceof File&&mediaFile.size>0&&deck){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;}}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to upload media.");}}
+ if(mediaFile instanceof File&&mediaFile.size>0&&deck){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;if(p.kind==="image")p.content.occlusions=[];}}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to upload media.");}}
  const {error}=await supabase.from("cards").update(p).eq("id",cardId);if(error)fail("/decks/"+deckId,error.message);
  if(deck){try{await applyTags(supabase,cardId,deck.workspace_id,tagsFromForm(formData));}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to save tags.");}}
  revalidatePath("/decks/"+deckId);redirect("/decks/"+deckId);
