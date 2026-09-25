@@ -56,7 +56,7 @@ export async function getReviewCard(deckId?:string){
 
  const {data:dueStates}=await supabase.from("review_states").select("card_id,state_data,due_at").eq("user_id",user.id).lte("due_at",new Date().toISOString()).order("due_at",{ascending:true}).limit(20);
  for(const due of dueStates??[]){
-   const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content").eq("id",due.card_id).maybeSingle();
+   const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content,is_suspended").eq("id",due.card_id).maybeSingle();
    if(card&&!card.is_suspended&&(!deckId||card.deck_id===deckId))return {card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false};
  }
 
