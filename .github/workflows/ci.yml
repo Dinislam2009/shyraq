@@ -41,13 +41,7 @@ jobs:
             echo "Potential browser-exposed privileged Supabase secret detected."
             exit 1
           fi
-          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example
-      - name: Unit tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
-; then
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example$'; then
             echo "A non-example environment file is tracked."
             exit 1
           fi
