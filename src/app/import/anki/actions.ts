@@ -43,8 +43,8 @@ export async function importAnki(formData:FormData):Promise<void>{
     let back=card.back;
     for(const [name,path] of mediaPaths.entries()){
       const token="__SHYRAQ_MEDIA__"+encodeURIComponent(name);
-      front=front.replaceAll(token,path);
-      back=back.replaceAll(token,path);
+      front=front.replaceAll(token,info.path);
+      back=back.replaceAll(token,info.path);
     }
     return {deck_id:deck.id,owner_id:user.id,kind:"basic" as const,content:{front,back,tags:card.tags},sort_order:index};
   });
