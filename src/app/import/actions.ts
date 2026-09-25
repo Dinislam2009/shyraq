@@ -44,7 +44,7 @@ function verifyArchiveChecksums(archive:Record<string,Uint8Array>){
   if(actual!==String(expected))throw new Error("Backup integrity check failed for "+name+".");
  }
 }
-async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>){
+async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>,conflictMode:"duplicate"|"skip"="duplicate"){
  if(payload?.format!=="shyraq-backup-v2")throw new Error("Unsupported Shyraq backup format.");
  const deckMap=new Map<string,string>();
  const templateMap=new Map<string,string>();
@@ -73,7 +73,12 @@ async function restoreBackup(supabase:any,userId:string,workspaceId:string,paylo
  }
 
  const allSourceDecks=Array.isArray(payload.decks)?payload.decks:[];
- const sourceDecks=selectedDeckIds&&selectedDeckIds.size?allSourceDecks.filter((deck:any)=>selectedDeckIds.has(String(deck.id))):allSourceDecks;
+ const selectedSourceDecks=selectedDeckIds&&selectedDeckIds.size?allSourceDecks.filter((deck:any)=>selectedDeckIds.has(String(deck.id))):allSourceDecks;
+ const names=selectedSourceDecks.map((deck:any)=>String(deck.name||"Imported deck")).filter(Boolean);
+ const {data:existingDecks}=await supabase.from("decks").select("name").eq("owner_id",userId).eq("workspace_id",workspaceId).in("name",names.length?names:["__none__"]);
+ const conflictNames=new Set((existingDecks??[]).map((deck:any)=>String(deck.name||"")));
+ const conflicts=selectedSourceDecks.filter((deck:any)=>conflictNames.has(String(deck.name||""))).length;
+ const sourceDecks=conflictMode==="skip"?selectedSourceDecks.filter((deck:any)=>!conflictNames.has(String(deck.name||""))):selectedSourceDecks;
  for(const deck of sourceDecks){ await createDeckWithTemplate(supabase,userId,workspaceId,deck,deckMap); }
 
  const templates=Array.isArray(payload.templates)?payload.templates:[];
@@ -180,7 +185,7 @@ async function restoreBackup(supabase:any,userId:string,workspaceId:string,paylo
   if(error)throw new Error(error.message);
  }
 
- return {restoredCards,restoredMedia};
+ return {restoredCards,restoredMedia,conflicts};
 }
 
 async function importStandardRows(supabase:any,userId:string,workspaceId:string,rows:ImportRow[],mode:"create"|"skip"|"replace"){
@@ -245,7 +250,7 @@ export async function importCards(formData:FormData):Promise<void>{
    const payload=JSON.parse(new TextDecoder().decode(backup));
    const result=await restoreBackup(supabase,user.id,workspace.id,payload,archive);
    revalidatePath("/decks");revalidatePath("/statistics");
-   redirect("/decks?restored="+result.restoredCards+"&media="+result.restoredMedia);
+   redirect("/decks?restored="+result.restoredCards+"&media="+result.restoredMedia+"&conflicts="+result.conflicts);
   }
 
   const text=await file.text();
@@ -260,7 +265,9 @@ export async function importCards(formData:FormData):Promise<void>{
    if(data?.format==="shyraq-backup-v2"){
     let selectedDeckIds:Set<string>|undefined;
     try{const raw=String(formData.get("restore_decks")||"");const parsed=raw?JSON.parse(raw):[];if(Array.isArray(parsed)&&parsed.length)selectedDeckIds=new Set(parsed.map(value=>String(value)));}catch{}
-    const result=await restoreBackup(supabase,user.id,workspace.id,data,undefined,selectedDeckIds);
+    const rawConflictMode=String(formData.get("conflict_mode")||"duplicate");
+    const conflictMode: "duplicate"|"skip" = rawConflictMode==="skip" ? "skip" : "duplicate";
+    const result=await restoreBackup(supabase,user.id,workspace.id,data,undefined,selectedDeckIds,conflictMode);
     revalidatePath("/decks");revalidatePath("/statistics");
     redirect("/decks?restored="+result.restoredCards+"&media="+result.restoredMedia);
    }
