@@ -145,16 +145,30 @@ export async function getReviewCard(deckId?:string){
  if(!cards?.[0])return null;
  return {card:await withMediaUrl(supabase,cards[0]),stateData:null,isNew:true};
 }
-export async function getReviewStats(){
+export async function getReviewStats(workspaceId?:string){
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return {reviews:0,accuracy:null,studyMinutes:0,averageSeconds:0,ratings:{again:0,hard:0,good:0,easy:0},daily:[],deckBreakdown:[],retentionCurve:[],dueForecast:[],newReviewBalance:[],difficultyDistribution:[],learningBreakdown:{learning:0,relearning:0,review:0},cardPerformance:[],tagPerformance:[],collectionPerformance:[],historicalComparison:{current:0,previous:0,currentAccuracy:null,previousAccuracy:null},scheduler:{averageStability:null,averageDifficulty:null}};
 
+ let workspaceCardIds:string[]|null=null;
+ if(workspaceId){
+  const {data:{user:workspaceUser}}=await supabase.auth.getUser();
+  if(workspaceUser){
+   const {data:member}=await supabase.from("workspace_members").select("workspace_id").eq("workspace_id",workspaceId).eq("user_id",workspaceUser.id).maybeSingle();
+   if(member){
+    const {data:workspaceDecks}=await supabase.from("decks").select("id").eq("workspace_id",workspaceId).is("deleted_at",null);
+    const deckIds=(workspaceDecks??[]).map((row:any)=>row.id);
+    const {data:workspaceCards}=deckIds.length?await supabase.from("cards").select("id").in("deck_id",deckIds).eq("owner_id",workspaceUser.id).limit(20000):{data:[]};
+    workspaceCardIds=(workspaceCards??[]).map((row:any)=>row.id);
+   }
+  }
+ }
  const [{data:events},{data:states}]=await Promise.all([
   supabase.from("review_events").select("id,card_id,rating,elapsed_ms,reviewed_at,metadata,next_state").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").order("reviewed_at",{ascending:true}).limit(50000),
   supabase.from("review_states").select("card_id,state_data,due_at,stability,difficulty,queue").eq("user_id",user.id).limit(50000)
  ]);
- const list=events??[];
+ let list=events??[];
+ if(workspaceCardIds)list=list.filter((event:any)=>workspaceCardIds!.includes(String(event.card_id)));
  const stateList=states??[];
  const cardIds=[...new Set(list.map((event:any)=>event.card_id).filter(Boolean))];
  const {data:cards}=cardIds.length
