@@ -41,6 +41,7 @@ export function CardEditor({
     occlusions?: OcclusionRect[];
     templateId?: string;
     fields?: Record<string, string>;
+    reviewPreferences?: {autoRevealSeconds?:number;showTimer?:boolean;swipeEnabled?:boolean;ratingOrder?:string[]};
     updatedAt?: string;
   };
   submitLabel?: string;
@@ -57,6 +58,7 @@ export function CardEditor({
   const [mediaItems, setMediaItems] = useState(initial?.mediaItems || []);
   const [occlusions, setOcclusions] = useState<OcclusionRect[]>(initial?.occlusions || []);
   const [fields, setFields] = useState<Record<string, string>>(initial?.fields || {});
+  const [reviewPreferences, setReviewPreferences] = useState(initial?.reviewPreferences || {});
   const [activeField, setActiveField] = useState<FieldName>("front");
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -98,6 +100,7 @@ export function CardEditor({
     <form action={action} encType="multipart/form-data" className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6">
       {initial?.updatedAt && <input type="hidden" name="expected_updated_at" value={initial.updatedAt} />}
       <input type="hidden" name="fields" value={JSON.stringify(fields)} />
+      <input type="hidden" name="review_preferences" value={JSON.stringify(reviewPreferences)} />
       <input type="hidden" name="media_items" value={JSON.stringify(mediaItems.map(item => ({ path: item.path, mimeType: item.mimeType, name: item.name })))} />
       <div className="grid gap-4 sm:grid-cols-4">
         <label className="block text-sm font-medium">
@@ -138,6 +141,15 @@ export function CardEditor({
       </div>
 
       <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div><p className="text-sm font-semibold">Per-card review controls</p><p className="mt-1 text-xs text-slate-500">These overrides apply only to this card during review.</p></div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="block"><span className="text-xs font-medium">Auto reveal (sec)</span><input type="number" min="0" max="60" value={Number(reviewPreferences.autoRevealSeconds||0)} onChange={event=>setReviewPreferences((current:any)=>({...current,autoRevealSeconds:Math.min(60,Math.max(0,Number(event.target.value)||0))}))} className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"/></label>
+          <label className="flex items-center gap-2 pt-7 text-sm"><input type="checkbox" checked={reviewPreferences.showTimer!==false} onChange={event=>setReviewPreferences((current:any)=>({...current,showTimer:event.target.checked}))} className="h-4 w-4 rounded border-slate-300"/> Show timer</label>
+          <label className="flex items-center gap-2 pt-7 text-sm"><input type="checkbox" checked={reviewPreferences.swipeEnabled!==false} onChange={event=>setReviewPreferences((current:any)=>({...current,swipeEnabled:event.target.checked}))} className="h-4 w-4 rounded border-slate-300"/> Swipe enabled</label>
+          <label className="block"><span className="text-xs font-medium">Rating order</span><input value={(reviewPreferences.ratingOrder||[]).join(",")} onChange={event=>setReviewPreferences((current:any)=>({...current,ratingOrder:event.target.value.split(",").map(item=>item.trim().toLowerCase()).filter(Boolean)}))} placeholder="again, hard, good, easy" className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"/></label>
+        </div>
+      </div>
+<div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold">Custom fields</p>
