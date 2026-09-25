@@ -744,8 +744,8 @@ Collaboration is planned after the public sharing foundation.
 - [x] Mentions
 - [x] Activity feed
 - [x] Workspace audit log
-- [ ] Fine-grained permissions per deck
-- [ ] Fine-grained permissions per collection
+- [x] Fine-grained permissions per deck
+- [x] Fine-grained permissions per collection
 
 Conflict model target:
 
