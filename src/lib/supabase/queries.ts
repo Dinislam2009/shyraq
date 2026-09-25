@@ -25,24 +25,76 @@ export async function getReviewBatch(deckId?:string,limit=20){
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return [];
- const now=new Date().toISOString();
- const dueQuery=supabase.from("review_states").select("card_id,state_data,due_at").eq("user_id",user.id).lte("due_at",now).order("due_at",{ascending:true}).limit(limit);
- const {data:dueStates}=await dueQuery;
+
+ const todayStart=new Date();
+ todayStart.setHours(0,0,0,0);
+ const todayIso=todayStart.toISOString();
+
+ const {data:prefs}=await supabase
+  .from("review_preferences")
+  .select("new_cards_per_day,reviews_per_day")
+  .eq("user_id",user.id)
+  .maybeSingle();
+
+ const reviewsPerDay=Number(prefs?.reviews_per_day??9999);
+ const newCardsPerDay=Number(prefs?.new_cards_per_day??20);
+
+ const [{count:todayReviews},{count:todayNew}] = await Promise.all([
+  supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id).gte("reviewed_at",todayIso),
+  supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id).eq("metadata->>event_kind","new-card").gte("reviewed_at",todayIso)
+ ]);
+
+ const remainingReviews=Math.max(0,reviewsPerDay-(todayReviews??0));
+ if(remainingReviews<=0)return [];
+
+ const batchLimit=Math.min(limit,remainingReviews);
+ const remainingNewCards=Math.max(0,newCardsPerDay-(todayNew??0));
  const result:any[]=[];
- for(const due of dueStates??[]){
-   const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content,is_suspended").eq("id",due.card_id).maybeSingle();
-   if(card&&(!deckId||card.deck_id===deckId))result.push({card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false});
-   if(result.length>=limit)break;
+ const now=new Date().toISOString();
+
+ const dueFetchLimit=Math.min(Math.max(batchLimit*5,50),500);
+ const {data:dueStates}=await supabase
+  .from("review_states")
+  .select("card_id,state_data,due_at")
+  .eq("user_id",user.id)
+  .lte("due_at",now)
+  .order("due_at",{ascending:true})
+  .limit(dueFetchLimit);
+
+ const dueIds=(dueStates??[]).map((row:any)=>row.card_id).filter(Boolean);
+ if(dueIds.length){
+  const {data:dueCards}=await supabase
+   .from("cards")
+   .select("id,deck_id,kind,content,is_suspended")
+   .in("id",dueIds)
+   .eq("is_suspended",false);
+
+  const byId=new Map((dueCards??[]).map((card:any)=>[card.id,card]));
+  for(const due of dueStates??[]){
+   const card=byId.get(due.card_id);
+   if(card&&(!deckId||card.deck_id===deckId)){
+    result.push({card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false});
+   }
+   if(result.length>=batchLimit)break;
+  }
  }
- if(result.length<limit){
-   const {data:tracked}=await supabase.from("review_states").select("card_id").eq("user_id",user.id).limit(5000);
-   const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
-   let query=supabase.from("cards").select("id,deck_id,kind,content").eq("is_suspended",false).order("updated_at",{ascending:true}).limit(limit-result.length);
-   if(deckId)query=query.eq("deck_id",deckId);
-   if(trackedIds.length)query=query.not("id","in","("+trackedIds.join(",")+")");
-   const {data:cards}=await query;
-   for(const card of cards??[])result.push({card:await withMediaUrl(supabase,card),stateData:null,isNew:true});
+
+ const newLimit=Math.min(batchLimit-result.length,remainingNewCards);
+ if(newLimit>0&&result.length<batchLimit){
+  const {data:tracked}=await supabase.from("review_states").select("card_id").eq("user_id",user.id).limit(5000);
+  const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
+  let query=supabase
+   .from("cards")
+   .select("id,deck_id,kind,content")
+   .eq("is_suspended",false)
+   .order("updated_at",{ascending:true})
+   .limit(newLimit);
+  if(deckId)query=query.eq("deck_id",deckId);
+  if(trackedIds.length)query=query.not("id","in","("+trackedIds.join(",")+")");
+  const {data:cards}=await query;
+  for(const card of cards??[])result.push({card:await withMediaUrl(supabase,card),stateData:null,isNew:true});
  }
+
  return result;
 }
 
