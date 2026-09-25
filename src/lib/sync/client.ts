@@ -13,7 +13,8 @@ export async function syncReviews(){
  const response=await fetch("/api/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({events})});
  if(!response.ok)throw new Error("Sync failed");
  const result=(await response.json()) as {accepted:number;conflicts:string[]};
- await offlineStore.reviews.bulkPut(events.map(e=>({...e,status:"synced" as const})));
+ const conflictSet=new Set(result.conflicts??[]);
+ await offlineStore.reviews.bulkPut(events.map(e=>({...e,status:conflictSet.has(e.id)?"failed" as const:"synced" as const})));
  return result;
 }
 
