@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { unzipSync } from "fflate";
 import { importCards } from "@/app/import/actions";
 import { duplicateKey, parseStandardText, validateImportRows, type ImportRow } from "@/lib/import/standard";
 
@@ -11,6 +12,8 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
   const [parseError, setParseError] = useState("");
   const [mode, setMode] = useState<"create"|"skip"|"replace">("skip");
   const [ready, setReady] = useState(false);
+  const [backupDecks, setBackupDecks] = useState<Array<{id:string;name:string;cards:number}>>([]);
+  const [selectedDecks, setSelectedDecks] = useState<string[]>([]);
 
   const duplicates = useMemo(() => {
     const seen = new Set<string>();
@@ -30,14 +33,36 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
     setParseError("");
     setIssues([]);
     setRows([]);
+    setBackupDecks([]);
+    setSelectedDecks([]);
     if (!next) return;
     const lower = next.name.toLowerCase();
-    if (lower.endsWith(".zip")) {
-      setReady(true);
-      return;
-    }
     try {
-      const parsed = parseStandardText(await next.text(), next.name);
+      let sourceText = "";
+      if (lower.endsWith(".zip")) {
+        const archive = unzipSync(new Uint8Array(await next.arrayBuffer()));
+        const raw = archive["shyraq-backup.json"];
+        if (!raw) throw new Error("This ZIP does not contain shyraq-backup.json.");
+        const backup = JSON.parse(new TextDecoder().decode(raw));
+        if (backup?.format !== "shyraq-backup-v2") throw new Error("Unsupported Shyraq backup format.");
+        const decks = Array.isArray(backup.decks) ? backup.decks : [];
+        const selected = decks.map((deck: any) => ({ id: String(deck.id), name: String(deck.name || "Untitled deck"), cards: (Array.isArray(backup.cards) ? backup.cards : []).filter((card: any) => String(card.deck_id) === String(deck.id)).length }));
+        setBackupDecks(selected);
+        setSelectedDecks(selected.map(deck => deck.id));
+        setReady(selected.length > 0);
+        return;
+      }
+      sourceText = await next.text();
+      const data = lower.endsWith(".json") || sourceText.trim().startsWith("{") || sourceText.trim().startsWith("[") ? JSON.parse(sourceText) : null;
+      if (data?.format === "shyraq-backup-v2") {
+        const decks = Array.isArray(data.decks) ? data.decks : [];
+        const selected = decks.map((deck: any) => ({ id: String(deck.id), name: String(deck.name || "Untitled deck"), cards: (Array.isArray(data.cards) ? data.cards : []).filter((card: any) => String(card.deck_id) === String(deck.id)).length }));
+        setBackupDecks(selected);
+        setSelectedDecks(selected.map(deck => deck.id));
+        setReady(selected.length > 0);
+        return;
+      }
+      const parsed = parseStandardText(sourceText, next.name);
       const problems = validateImportRows(parsed);
       setRows(parsed);
       setIssues(problems);
@@ -48,7 +73,7 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
     }
   }
 
-  const disabled = !file || !ready;
+  const disabled = !file || !ready || (backupDecks.length > 0 && selectedDecks.length === 0);
 
   return (
     <div className="space-y-6">
@@ -87,7 +112,24 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
           </div>
         )}
 
-        {file && file.name.toLowerCase().endsWith(".zip") && <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">ZIP will be checksum-verified and restored with an automatic rollback on failure.</div>}
+        {backupDecks.length > 0 && (
+          <div className="mt-5 rounded-2xl border border-slate-200 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div><p className="text-sm font-semibold">Restore preview</p><p className="mt-1 text-xs text-slate-500">Choose which decks should be restored. Review history and cards are limited to selected decks.</p></div>
+              <button type="button" onClick={() => setSelectedDecks(backupDecks.map(deck => deck.id))} className="text-xs font-semibold text-slate-600">Select all</button>
+            </div>
+            <div className="mt-3 space-y-2">
+              {backupDecks.map(deck => (
+                <label key={deck.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                  <span className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectedDecks.includes(deck.id)} onChange={() => setSelectedDecks(current => current.includes(deck.id) ? current.filter(id => id !== deck.id) : [...current, deck.id])} className="h-4 w-4 rounded border-slate-300"/>{deck.name}</span>
+                  <span className="text-xs text-slate-400">{deck.cards} cards</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+        <input type="hidden" name="restore_decks" value={JSON.stringify(selectedDecks)} />
+        {file && file.name.toLowerCase().endsWith(".zip") && <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">ZIP integrity is checksum-verified on the server and restore rolls back newly created data if an import step fails.</div>}
         {parseError && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{parseError}</div>}
 
         <div className="mt-5 rounded-2xl border border-slate-200 p-4">
