@@ -28,13 +28,14 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  const [revealed,setRevealed]=useState(false);
  const [busy,setBusy]=useState(false);
  const [done,setDone]=useState(false);
+ const [selectedOption,setSelectedOption]=useState<number|null>(null);
  const shellRef=useRef<HTMLDivElement>(null);
  const startedAt=useRef(Date.now());
  const swipeStartX=useRef<number|null>(null);
  const current=queue[index];
  const card=current.card;
 
- useEffect(()=>{shellRef.current?.focus();startedAt.current=Date.now();setRevealed(false);},[index]);
+ useEffect(()=>{shellRef.current?.focus();startedAt.current=Date.now();setRevealed(false);setSelectedOption(null);},[index]);
  const answer=useCallback(async(rating:"again"|"hard"|"good"|"easy")=>{
    if(busy||!revealed)return;
    setBusy(true);
@@ -118,8 +119,12 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
     {card.content.mediaUrl&&card.content.mediaType?.startsWith("audio/")&&<audio controls src={card.content.mediaUrl} className="mx-auto mt-8 w-full max-w-xl"/>}
     {card.content.mediaUrl&&card.content.mediaType?.startsWith("video/")&&<video controls src={card.content.mediaUrl} className="mx-auto mt-8 max-h-72 w-full rounded-2xl"/>}
     {card.content.mediaItems?.map((item,i)=><div key={item.path+i} className="mt-8">{item.mime_type.startsWith("image/")&&item.url&&<img src={item.url} alt="" className="mx-auto max-h-72 rounded-2xl object-contain"/>}{item.mime_type.startsWith("audio/")&&item.url&&<audio controls src={item.url} className="mx-auto w-full max-w-xl"/>}{item.mime_type.startsWith("video/")&&item.url&&<video controls src={item.url} className="mx-auto max-h-72 w-full rounded-2xl"/>}</div>)}
-    {card.kind==="multiple_choice"&&<div className="mx-auto mt-8 max-w-xl space-y-2 text-left">{(card.content.options??[]).map((option,i)=><div key={option+i} className="rounded-xl border border-slate-200 px-4 py-3 text-sm"><RichContent content={option} /></div>)}</div>}
-    {revealed?<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>{card.kind==="multiple_choice"&&<p className="mt-5 text-sm font-semibold text-slate-900">Correct option: {(card.content.options??[])[card.content.answer??0]||"—"}</p>}<RichContent content={back} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600" /></div>:<button onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-50">Show answer <span className="ml-2 text-xs text-slate-400">Space</span></button>}
+    {card.kind==="multiple_choice"&&<div className="mx-auto mt-8 max-w-xl space-y-2 text-left">{(card.content.options??[]).map((option,i)=>{
+      const correct=i===(card.content.answer??0);
+      const selected=i===selectedOption;
+      return <button type="button" key={option+i} disabled={revealed||busy} onClick={()=>{if(!revealed&&!busy){setSelectedOption(i);setRevealed(true);}}} className={"w-full rounded-xl border px-4 py-3 text-left text-sm transition "+(revealed&&correct?"border-emerald-300 bg-emerald-50":revealed&&selected&&!correct?"border-red-300 bg-red-50":"border-slate-200 bg-white hover:bg-slate-50 disabled:hover:bg-white")}><RichContent content={option} /><span className="mt-1 block text-[11px] font-medium text-slate-400">{revealed&&correct?"Correct":revealed&&selected&&!correct?"Your choice":"Choose this answer"}</span></button>;
+    })}</div>}
+    {revealed?<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>{card.kind==="multiple_choice"&&<p className="mt-5 text-sm font-semibold text-slate-900">Correct option: {(card.content.options??[])[card.content.answer??0]||"—"}</p>}<RichContent content={back} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600" /></div>:card.kind!=="multiple_choice"&&<button onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-50">Show answer <span className="ml-2 text-xs text-slate-400">Space</span></button>}
    </div>
   </div>
   {revealed&&<div className="mt-5 grid grid-cols-4 gap-2">{(["again","hard","good","easy"] as const).map(r=><button key={r} disabled={busy} onClick={()=>void answer(r)} className="rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold capitalize hover:bg-slate-50 disabled:opacity-50">{r}<span className="ml-2 text-xs text-slate-400">{["again","hard","good","easy"].indexOf(r)+1}</span></button>)}</div>}
