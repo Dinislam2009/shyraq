@@ -77,5 +77,5 @@ export async function POST(request:NextRequest){
   }
  }
 
- return NextResponse.json({accepted:batch.length,conflicts});
+ return NextResponse.json({accepted:batch.length-conflicts.length,conflicts});
 }
