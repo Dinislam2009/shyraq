@@ -68,3 +68,11 @@ export async function reportDeck(deckId:string,formData:FormData):Promise<void>{
  if(error)fail("/explore/"+deckId,error.message);
  revalidatePath("/explore/"+deckId);redirect("/explore/"+deckId+"?reported=1");
 }
+
+
+export async function unfollowDeck(deckId:string):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const {error}=await supabase.from("public_deck_follows").delete().eq("user_id",user.id).eq("deck_id",deckId);
+ if(error)fail("/explore/"+deckId,error.message);
+ revalidatePath("/explore");revalidatePath("/explore/"+deckId);revalidatePath("/explore/following");redirect("/explore/following");
+}
