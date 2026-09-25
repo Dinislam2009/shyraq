@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { unzipSync } from "fflate";
-import { createHash } from "node:crypto";
+import { verifyArchiveChecksums } from "@/lib/backup/integrity";
 import { parseStandardText, validateImportRows, duplicateKey, type ImportRow } from "@/lib/import/standard";
 
 function fail(message:string):never{ redirect("/import?error="+encodeURIComponent(message)); }
@@ -30,21 +30,7 @@ async function createDeckWithTemplate(supabase:any,userId:string,workspaceId:str
  deckMap.set(String(sourceDeck.id),deck.id);
  return deck.id;
 }
-function verifyArchiveChecksums(archive:Record<string,Uint8Array>){
- const raw=archive["checksums.json"];
- if(!raw)return;
- let manifest:any;
- try{manifest=JSON.parse(new TextDecoder().decode(raw));}catch{throw new Error("Invalid backup integrity manifest.");}
- if(manifest?.algorithm!=="sha256"||!manifest?.files||typeof manifest.files!=="object")throw new Error("Unsupported backup integrity manifest.");
- for(const [name,expected] of Object.entries(manifest.files)){
-  if(name==="checksums.json")continue;
-  const bytes=archive[name];
-  if(!bytes)throw new Error("Backup is incomplete: missing "+name+".");
-  const actual=createHash("sha256").update(bytes).digest("hex");
-  if(actual!==String(expected))throw new Error("Backup integrity check failed for "+name+".");
- }
-}
-export async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>,conflictMode:"duplicate"|"skip"="duplicate"){
+async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>,conflictMode:"duplicate"|"skip"="duplicate"){
  if(payload?.format!=="shyraq-backup-v2")throw new Error("Unsupported Shyraq backup format.");
  const deckMap=new Map<string,string>();
  const templateMap=new Map<string,string>();
