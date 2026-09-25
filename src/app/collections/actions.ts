@@ -100,3 +100,17 @@ export async function addCardToCollection(collectionId:string,formData:FormData)
  if(error)fail("/collections/"+collectionId,error.message);
  revalidatePath("/collections/"+collectionId);redirect("/collections/"+collectionId);
 }
+
+export async function toggleFeaturedCollection(collectionId:string,featured:boolean):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const {data:isModerator}=await supabase.rpc("is_platform_moderator");
+ if(!isModerator)fail("/collections","Platform moderation access required.");
+ const {error}=await supabase.from("collections").update({is_featured:featured}).eq("id",collectionId).eq("is_public",true);
+ if(error)fail("/collections",error.message);
+ revalidatePath("/collections");
+ revalidatePath("/collections/public/"+collectionId);
+ revalidatePath("/explore");
+ redirect("/collections/public/"+collectionId);
+}
