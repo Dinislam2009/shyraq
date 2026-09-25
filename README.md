@@ -105,7 +105,7 @@ Create a stable technical foundation before adding advanced product features.
 - [x] Bio
 - [x] Public creator profile
 - [x] Profile settings
-- [ ] Avatar upload
+- [x] Avatar upload
 - [x] Profile statistics
 - [x] Public creator deck collections
 - [x] Creator activity/history controls
