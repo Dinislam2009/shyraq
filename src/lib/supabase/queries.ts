@@ -131,7 +131,7 @@ export async function getReviewStats(){
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return {reviews:0,accuracy:null,studyMinutes:0,averageSeconds:0,ratings:{again:0,hard:0,good:0,easy:0},daily:[],deckBreakdown:[]};
 
- const {data:events}=await supabase.from("review_events").select("card_id,rating,elapsed_ms,reviewed_at").eq("user_id",user.id);
+ const {data:events}=await supabase.from("review_events").select("card_id,rating,elapsed_ms,reviewed_at,metadata").eq("user_id",user.id).neq("metadata->>event_kind","review-undo");
  const list=events??[];
  const cardIds=[...new Set(list.map((event:any)=>event.card_id).filter(Boolean))];
  const {data:cards}=cardIds.length
@@ -203,6 +203,7 @@ export async function getDashboardStats(){
   .from("review_events")
   .select("rating,elapsed_ms,metadata")
   .eq("user_id",user.id)
+  .neq("metadata->>event_kind","review-undo")
   .gte("reviewed_at",start.toISOString())
   .lt("reviewed_at",tomorrow.toISOString());
 
