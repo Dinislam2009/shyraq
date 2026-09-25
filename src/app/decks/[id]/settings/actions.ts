@@ -28,6 +28,7 @@ export async function updateDeckSettings(id:string,formData:FormData){
  };
  const {error}=await supabase.from("decks").update({name:String(formData.get("name")||deck.name).trim().slice(0,120),description:String(formData.get("description")||"").trim().slice(0,2000),visibility:String(formData.get("visibility")||"private"),settings:next}).eq("id",id);
  if(error)redirect("/decks/"+id+"/settings?error="+encodeURIComponent(error.message));
+ await supabase.from("activity_feed").insert({workspace_id:deck.workspace_id,actor_id:user.id,entity_type:"deck",entity_id:id,event_type:"deck.settings.updated",metadata:{name:String(formData.get("name")||deck.name).trim().slice(0,120)}});
  revalidatePath("/decks");revalidatePath("/decks/"+id);revalidatePath("/decks/"+id+"/settings");redirect("/decks/"+id+"/settings?saved=1");
 }
 
