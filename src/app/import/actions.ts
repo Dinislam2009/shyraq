@@ -44,7 +44,7 @@ function verifyArchiveChecksums(archive:Record<string,Uint8Array>){
   if(actual!==String(expected))throw new Error("Backup integrity check failed for "+name+".");
  }
 }
-async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>,conflictMode:"duplicate"|"skip"="duplicate"){
+export async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>,conflictMode:"duplicate"|"skip"="duplicate"){
  if(payload?.format!=="shyraq-backup-v2")throw new Error("Unsupported Shyraq backup format.");
  const deckMap=new Map<string,string>();
  const templateMap=new Map<string,string>();
