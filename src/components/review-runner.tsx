@@ -94,10 +94,11 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
    const sourceBack=card.kind==="reverse"?rawFront:rawBack;
    const maskedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"••••"):sourceFront;
    const revealedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"$1"):sourceFront;
+   const clozeBack=card.kind==="cloze"?[revealedFront,sourceBack].filter(Boolean).join("\n\n"):sourceBack;
    const template=templateOne(card.card_templates);
    return {
      front:template?applyCardTemplate(template.front_template,{front:maskedFront,back:sourceBack}):maskedFront,
-     back:template?applyCardTemplate(template.back_template,{front:revealedFront,back:sourceBack}):(card.kind==="cloze"?revealedFront||sourceBack:sourceBack),
+     back:template?applyCardTemplate(template.back_template,{front:revealedFront,back:clozeBack}):clozeBack,
      templateCss:template?.css||""
    };
  },[card]);
