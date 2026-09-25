@@ -56,3 +56,18 @@ export async function getReviewStats(){
  for(const event of list){const key=new Date(event.reviewed_at).toISOString().slice(0,10);const day=dailyMap.get(key);if(day){day.reviews+=1;day.minutes+=Number(event.elapsed_ms||0)/60000;if(event.rating==="again")day.again+=1;}}
  return {reviews:reviews??0,accuracy:list.length?Math.round(good/list.length*100):null,studyMinutes,daily:[...dailyMap.entries()].map(([date,value])=>({date,...value}))};
 }
+export async function getDashboardStats(){
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return {dueToday:0,newToday:0,reviewsToday:0,streak:0};
+ const start=new Date();start.setHours(0,0,0,0);
+ const tomorrow=new Date(start);tomorrow.setDate(tomorrow.getDate()+1);
+ const {count:dueToday}=await supabase.from("review_states").select("*",{count:"exact",head:true}).eq("user_id",user.id).lte("due_at",tomorrow.toISOString()).gte("due_at",start.toISOString());
+ const {count:reviewsToday}=await supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id).gte("reviewed_at",start.toISOString()).lt("reviewed_at",tomorrow.toISOString());
+ const {count:newToday}=await supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id).eq("metadata->>event_kind","new-card").gte("reviewed_at",start.toISOString()).lt("reviewed_at",tomorrow.toISOString());
+ const {data:events}=await supabase.from("review_events").select("reviewed_at").eq("user_id",user.id).order("reviewed_at",{ascending:false}).limit(5000);
+ const dates=new Set((events??[]).map((e:any)=>new Date(e.reviewed_at).toISOString().slice(0,10)));
+ let streak=0;
+ for(let i=0;;i++){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);if(dates.has(d.toISOString().slice(0,10)))streak++;else break;}
+ return {dueToday:dueToday??0,newToday:newToday??0,reviewsToday:reviewsToday??0,streak};
+}
