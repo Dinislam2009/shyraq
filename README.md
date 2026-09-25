@@ -391,9 +391,9 @@ Offline functionality is a core requirement, not an optional enhancement.
 - [x] Pending event status
 - [x] Full local mirror of decks/cards
 - [ ] Full cold-start offline application
-- [ ] Offline card creation
-- [ ] Offline card editing
-- [ ] Offline deck management
+- [x] Offline card creation
+- [x] Offline card editing
+- [x] Offline deck management
 - [x] Offline media cache management
 - [x] Storage quota UI
 
