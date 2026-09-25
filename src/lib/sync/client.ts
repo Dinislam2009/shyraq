@@ -200,3 +200,16 @@ export async function createOfflineMutation(userId:string,operation:SyncOperatio
 }
 
 export {getCachedReviewSession,getDeviceId};
+
+
+export async function bootstrapOfflineMirror(){
+ const response=await fetch("/api/sync?bootstrap=1",{cache:"no-store"});
+ if(!response.ok)throw new Error("Offline bootstrap failed.");
+ const data=await response.json() as {user_id:string;decks:Record<string,unknown>[];cards:Record<string,unknown>[]};
+ const userId=String(data.user_id||"");
+ if(!userId)throw new Error("No authenticated user.");
+ if(typeof window!=="undefined")localStorage.setItem("shyraq:last-user-id",userId);
+ await cacheMirror(userId,(data.decks??[]).map(item=>mapDeck(item,userId)),(data.cards??[]).map(item=>mapCard(item,userId)));
+ await setSyncMeta(userId,{lastSyncAt:new Date().toISOString(),lastError:null});
+ return {userId,decks:data.decks??[],cards:data.cards??[]};
+}
