@@ -50,7 +50,7 @@ export async function createCard(deckId:string,formData:FormData):Promise<void>{
  const {data:card,error}=await supabase.from("cards").insert({deck_id:deckId,owner_id:user.id,kind:p.kind,content:p.content,template_id:p.template_id,sort_order:(last?.sort_order??-1)+1}).select("id").single();
  if(error||!card)fail("/decks/"+deckId+"/cards/new",error?.message||"Unable to create card.");
  try{await applyTags(supabase,card.id,deck.workspace_id,tagsFromForm(formData));}catch(error){fail("/decks/"+deckId+"/cards/new",error instanceof Error?error.message:"Unable to save tags.");}
- revalidatePath("/decks/"+deckId);redirect("/decks/"+deckId);
+ revalidatePath("/decks/"+deckId);redirect(formData.get("continue") === "1" ? "/decks/"+deckId+"/cards/new?created=1" : "/decks/"+deckId);
 }
 export async function updateCard(deckId:string,cardId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");const p=payload(formData);const mediaFile=formData.get("media_file");
