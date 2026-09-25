@@ -21,11 +21,13 @@ export default async function HistoryPage({searchParams}:{searchParams:Promise<P
  const events=data??[];
  const {data:decks}=await supabase.from("decks").select("id,name").eq("owner_id",user.id).order("name");
  const eventKinds=[...new Set(events.map((event:any)=>String(event.metadata?.event_kind||"review")))].sort();
+ const exportQuery=new URLSearchParams();
+ if(params.deck)exportQuery.set("deck",params.deck);if(params.card)exportQuery.set("card",params.card);if(params.rating)exportQuery.set("rating",params.rating);if(params.event)exportQuery.set("event",params.event);if(params.from)exportQuery.set("from",params.from);if(params.to)exportQuery.set("to",params.to);
 
  return <AppShell><div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
   <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
    <div><p className="text-sm text-slate-400">Audit</p><h1 className="mt-1 text-3xl font-semibold tracking-tight">Review history</h1><p className="mt-2 text-sm text-slate-500">Append-only review events preserved across devices and sync conflicts.</p></div>
-   <div className="flex flex-wrap gap-2"><Link href="/history/audit" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold">Audit debugger</Link><a href={"/api/export/history?"+new URLSearchParams(Object.entries(params).filter(([,v])=>Boolean(v)) as [string,string][]).toString()} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold">Export filtered history</a><Link href="/review" className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Review now</Link></div>
+   <div className="flex flex-wrap gap-2"><Link href="/history/audit" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold">Audit debugger</Link><a href={"/api/export/history?"+exportQuery.toString()} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold">Export filtered history</a><Link href="/review" className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Review now</Link></div>
   </div>
   <form className="mt-7 grid gap-3 rounded-2xl border border-black/[0.06] bg-white p-4 md:grid-cols-7">
    <select name="deck" defaultValue={params.deck||""} className="h-10 rounded-xl border border-slate-200 px-3 text-sm md:col-span-2"><option value="">All decks</option>{(decks??[]).map((d:any)=><option key={d.id} value={d.id}>{d.name}</option>)}</select>
