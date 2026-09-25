@@ -61,6 +61,27 @@ const translations: Record<string, Record<"kk" | "ru" | "en", string>> = {
   "hard": { kk: "қиын", ru: "сложно", en: "hard" },
   "good": { kk: "жақсы", ru: "хорошо", en: "good" },
   "easy": { kk: "оңай", ru: "легко", en: "easy" },
+  "Personal workspace": { kk: "Жеке жұмыс кеңістігі", ru: "Личное рабочее пространство", en: "Personal workspace" },
+  "Your learning workspace is ready.": { kk: "Оқу жұмыс кеңістігіңіз дайын.", ru: "Ваше учебное пространство готово.", en: "Your learning workspace is ready." },
+  "Start review": { kk: "Қайталауды бастау", ru: "Начать повторение", en: "Start review" },
+  "Due": { kk: "Мерзімі келген", ru: "К повторению", en: "Due" },
+  "cards due or overdue": { kk: "қайталауға келген карта", ru: "карточек к повторению", en: "cards due or overdue" },
+  "New today": { kk: "Бүгінгі жаңа", ru: "Новые сегодня", en: "New today" },
+  "new cards reviewed": { kk: "жаңа карта қайталанды", ru: "новых карточек повторено", en: "new cards reviewed" },
+  "Reviews today": { kk: "Бүгінгі қайталаулар", ru: "Повторения сегодня", en: "Reviews today" },
+  "responses recorded": { kk: "жауап тіркелді", ru: "ответов записано", en: "responses recorded" },
+  "Study streak": { kk: "Оқу сериясы", ru: "Серия обучения", en: "Study streak" },
+  "days in a row": { kk: "күн қатарынан", ru: "дней подряд", en: "days in a row" },
+  "30-day reviews": { kk: "30 күндік қайталау", ru: "Повторения за 30 дней", en: "30-day reviews" },
+  "See statistics": { kk: "Статистиканы көру", ru: "Смотреть статистику", en: "See statistics" },
+  "open detailed analytics": { kk: "Толық талдауды ашу", ru: "Открыть подробную аналитику", en: "open detailed analytics" },
+  "Continue": { kk: "Жалғастыру", ru: "Продолжить", en: "Continue" },
+  "resume your queue": { kk: "кезегіңізді жалғастырыңыз", ru: "продолжить очередь", en: "resume your queue" },
+  "Your decks": { kk: "Сіздің колодаларыңыз", ru: "Ваши колоды", en: "Your decks" },
+  "View all": { kk: "Барлығын көру", ru: "Посмотреть все", en: "View all" },
+  "No decks yet": { kk: "Әзірге колода жоқ", ru: "Колод пока нет", en: "No decks yet" },
+  "Create your first deck and start adding cards.": { kk: "Алғашқы колодаңызды жасап, карталар қосуды бастаңыз.", ru: "Создайте первую колоду и начните добавлять карточки.", en: "Create your first deck and start adding cards." },
+  "Welcome back,": { kk: "Қайта қош келдіңіз,", ru: "С возвращением,", en: "Welcome back," },
   "Library": { kk: "Кітапхана", ru: "Библиотека", en: "Library" },
   "Collections": { kk: "Жинақтар", ru: "Коллекции", en: "Collections" },
   "Group important cards without changing their deck.": { kk: "Маңызды карталарды колодасын өзгертпей топтаңыз.", ru: "Группируйте важные карточки без изменения их колоды.", en: "Group important cards without changing their deck." },
@@ -175,7 +196,7 @@ const translations: Record<string, Record<"kk" | "ru" | "en", string>> = {
   "Sign out": { kk: "Шығу", ru: "Выйти", en: "Sign out" },
 };
 
-function normalize(s: string) { return s.replace(/\s+/g, " ").trim(); }
+function normalize(s: string) { return s.replace(/\s+/g, " ").trim(); }\n\nfunction dynamicTranslation(raw: string, locale: "kk" | "ru" | "en") {\n  let m = raw.match(/^(\\d+) cards$/); if (m) return `${m[1]} ${locale === "kk" ? "карта" : locale === "ru" ? "карточек" : "cards"}`;\n  m = raw.match(/^(\\d+) reviews$/); if (m) return `${m[1]} ${locale === "kk" ? "қайталау" : locale === "ru" ? "повторений" : "reviews"}`;\n  m = raw.match(/^(\\d+) responses recorded$/); if (m) return `${m[1]} ${locale === "kk" ? "жауап тіркелді" : locale === "ru" ? "ответов записано" : "responses recorded"}`;\n  m = raw.match(/^(\\d+) min$/); if (m) return `${m[1]} ${locale === "kk" ? "мин" : "min"}`;\n  return null;\n}
 
 export function GlobalTranslator() {
   const { locale } = useI18n();
