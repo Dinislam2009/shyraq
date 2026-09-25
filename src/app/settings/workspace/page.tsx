@@ -3,13 +3,14 @@ import {createClient} from "@/lib/supabase/server";
 import {WorkspaceInviteForm} from "@/components/workspace-invite-form";
 import {createTeamWorkspace,updateMemberRole,removeMember} from "@/app/settings/workspace/actions";
 
-export default async function WorkspacePage(){
+export default async function WorkspacePage({searchParams}:{searchParams:Promise<{workspace?:string}>}){
+ const {workspace:workspaceParam}=await searchParams;
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return null;
  const {data:workspaces}=await supabase.from("workspaces").select("id,name,kind,description,owner_id").order("kind").order("created_at");
  const workspaceList=workspaces??[];
- const selected=workspaceList.find(w=>w.kind==="team")??workspaceList.find(w=>w.kind==="personal");
+ const selected=workspaceList.find(w=>w.id===workspaceParam)??workspaceList.find(w=>w.kind==="team")??workspaceList.find(w=>w.kind==="personal");
  if(!selected)return <AppShell><div className="mx-auto max-w-4xl px-5 py-10">No workspace found.</div></AppShell>;
  const {data:members}=await supabase.from("workspace_members").select("user_id,role,created_at").eq("workspace_id",selected.id).order("created_at");
  const myMember=(members??[]).find(m=>m.user_id===user.id);
