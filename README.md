@@ -158,7 +158,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Global workspace switcher in the main application shell
 - [x] Persist selected workspace
 - [ ] Workspace-aware global search
-- [ ] Workspace-aware dashboard
+- [x] Workspace-aware dashboard
 - [ ] Workspace-aware analytics
 
 ---
