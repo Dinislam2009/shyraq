@@ -178,6 +178,8 @@ create index if not exists media_owner_id_idx on public.media(owner_id);
 create index if not exists media_workspace_id_idx on public.media(workspace_id);
 create index if not exists public_deck_follows_deck_id_idx on public.public_deck_follows(deck_id);
 create index if not exists deck_reports_deck_idx on public.deck_reports(deck_id,status,created_at desc);
+create index if not exists deck_reports_reporter_idx on public.deck_reports(reporter_id);
+create index if not exists sync_conflicts_card_idx on public.sync_conflicts(card_id);
 create index if not exists review_states_due_idx on public.review_states(user_id,due_at);
 create index if not exists review_states_card_id_idx on public.review_states(card_id);
 create index if not exists review_events_user_idx on public.review_events(user_id,reviewed_at desc);
@@ -292,9 +294,11 @@ alter table public.deck_copies enable row level security;
 alter table public.workspace_invitations enable row level security;
 
 drop policy if exists profiles_self on public.profiles;
-create policy profiles_self on public.profiles for all to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
 drop policy if exists profiles_public_read on public.profiles;
-create policy profiles_public_read on public.profiles for select to authenticated using(true);
+create policy profiles_public_select on public.profiles for select to authenticated using(true);
+create policy profiles_self_insert on public.profiles for insert to authenticated with check(id=(select auth.uid()));
+create policy profiles_self_update on public.profiles for update to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
+create policy profiles_self_delete on public.profiles for delete to authenticated using(id=(select auth.uid()));
 
 
 drop policy if exists workspace_member_read on public.workspaces;
