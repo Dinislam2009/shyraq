@@ -201,10 +201,10 @@ Shyraq supports both individual and collaborative learning.
 - [x] Marked cards
 - [x] Suspended cards
 - [x] Nested/tag hierarchy
-- [ ] Saved filters
+- [x] Saved filters
 - [x] Smart collections
-- [ ] Custom deck sorting
-- [ ] Drag-and-drop organization
+- [x] Custom deck sorting
+- [x] Drag-and-drop organization
 
 ---
 
