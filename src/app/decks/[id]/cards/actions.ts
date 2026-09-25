@@ -75,7 +75,7 @@ export async function setCardFlag(deckId:string,cardId:string,field:"is_marked"|
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)redirect("/login");
- const {error}=await supabase.from("cards").update({[field]:value}).eq("id",cardId).eq("owner_id",user.id);
+ const {error}=await supabase.from("cards").update({[field]:value}).eq("id",cardId);
  if(error)fail("/decks/"+deckId,error.message);
  revalidatePath("/decks/"+deckId);
  revalidatePath("/review");
@@ -88,7 +88,7 @@ export async function bulkSetCardFlag(deckId:string,cardIds:string[],field:"is_m
  if(!user)redirect("/login");
  const ids=[...new Set(cardIds)].filter(Boolean).slice(0,500);
  if(!ids.length)redirect("/decks/"+deckId);
- const {error}=await supabase.from("cards").update({[field]:value}).eq("deck_id",deckId).eq("owner_id",user.id).in("id",ids);
+ const {error}=await supabase.from("cards").update({[field]:value}).eq("deck_id",deckId).in("id",ids);
  if(error)fail("/decks/"+deckId,error.message);
  revalidatePath("/decks/"+deckId);
  revalidatePath("/review");
