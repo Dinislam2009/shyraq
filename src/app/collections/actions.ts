@@ -64,6 +64,7 @@ export async function updateCollection(id:string,formData:FormData):Promise<void
   const kind=String(formData.get("rule_kind")||"marked");const value=String(formData.get("rule_value")||"").trim().slice(0,80);
   patch.rule={tag:kind==="tag"?value:"",marked:kind==="marked",suspended:kind==="suspended",kind:["basic","reverse","cloze","multiple_choice","image","custom"].includes(value)?value:""};
  }
+ patch.is_public=formData.get("is_public")==="on";
  const {error}=await supabase.from("collections").update(patch).eq("id",id).eq("owner_id",user.id);
  if(error)fail("/collections/"+id,error.message);
  revalidatePath("/collections");revalidatePath("/collections/"+id);redirect("/collections/"+id);
