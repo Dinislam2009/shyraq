@@ -92,7 +92,7 @@ export function parseStandardText(text: string, filename = ""): ImportRow[] {
   if (lower.endsWith(".json") || text.trim().startsWith("{") || text.trim().startsWith("[")) {
     const data = JSON.parse(text);
     const cards = Array.isArray(data) ? data : Array.isArray(data.cards) ? data.cards : Array.isArray(data.decks) ? data.decks.flatMap((deck: any) => deck.cards || []) : [];
-    return cards.map((card: any, index: number) => rowFromObject(card, index + 1)).filter(row => row.front || row.back);
+    return cards.map((card: any, index: number) => rowFromObject(card, index + 1)).filter((row: ImportRow) => row.front || row.back);
   }
   const delimiter = lower.endsWith(".tsv") || lower.endsWith(".txt") || text.split(/\r?\n/)[0]?.includes("\t") ? "\t" : ",";
   return parseDelimited(text, delimiter);
