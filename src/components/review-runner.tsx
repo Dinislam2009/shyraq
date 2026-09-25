@@ -10,7 +10,7 @@ import {OccludedImage} from "@/components/image-occlusion";
 type Preferences={desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean;rating_labels?:Record<string,string>;rating_order?:string[];show_keyboard_hints?:boolean;swipe_enabled?:boolean};
 type CardContent={front?:string;back?:string;options?:string[];answer?:number;imageUrl?:string;occlusions?:Array<{x:number;y:number;w:number;h:number}>;mediaUrl?:string;mediaType?:string;mediaItems?:Array<{name:string;path:string;mime_type:string;url?:string}>};
 function templateOne(template:QueueItem["card"]["card_templates"]){if(Array.isArray(template))return template[0]||null;return template||null;}
-function applyCardTemplate(source:string,fields:{front:string;back:string}){return String(source||"").replace(/{{s*fronts*}}/gi,fields.front).replace(/{{s*backs*}}/gi,fields.back).replace(/{{s*FrontSides*}}/g,fields.front);}
+function applyCardTemplate(source:string,fields:{front:string;back:string}){return String(source||"").replace(/\{\{\s*front\s*\}\}/gi,fields.front).replace(/\{\{\s*back\s*\}\}/gi,fields.back).replace(/\{\{\s*FrontSide\s*\}\}/g,fields.front);}
 type QueueItem={card:{id:string;content:CardContent;kind:string;template_id?:string;card_templates?:{id:string;name:string;front_template:string;back_template:string;css?:string|null}|{id:string;name:string;front_template:string;back_template:string;css?:string|null}[]};stateData:any;isNew:boolean};
 
 type CompletedReview={cardId:string;rating:"again"|"hard"|"good"|"easy";elapsedMs:number;previousState:any;nextState:any;queueIndex:number};
@@ -94,9 +94,9 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  const {front,back,templateCss}=useMemo(()=>{
    const rawFront=card.content?.front||"",rawBack=card.content?.back||"";
    const sourceFront=card.kind==="reverse"?rawBack:rawFront,sourceBack=card.kind==="reverse"?rawFront:rawBack;
-   const maskedFront=card.kind==="cloze"?sourceFront.replace(/{{cd+::([^}]+)}}/g,"••••"):sourceFront;
-   const revealedFront=card.kind==="cloze"?sourceFront.replace(/{{cd+::([^}]+)}}/g,"$1"):sourceFront;
-   const clozeBack=card.kind==="cloze"?[revealedFront,sourceBack].filter(Boolean).join("
+   const maskedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"••••"):sourceFront;
+   const revealedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"$1"):sourceFront;
+   const clozeBack=card.kind==="cloze"?[revealedFront,sourceBack].filter(Boolean).join("\n\n"):sourceBack;
 
 "):sourceBack;
    const template=templateOne(card.card_templates);
