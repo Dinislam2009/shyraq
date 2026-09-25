@@ -1,11 +1,20 @@
 import {createClient} from "@/lib/supabase/server";
 
 async function withMediaUrl(supabase:any,card:any){
- if(card?.content?.mediaPath){
-  const {data}=await supabase.storage.from("user-media").createSignedUrl(card.content.mediaPath,3600);
-  if(data?.signedUrl)card.content={...card.content,mediaUrl:data.signedUrl};
+ const content={...(card?.content??{})};
+ if(content.mediaPath){
+  const {data}=await supabase.storage.from("user-media").createSignedUrl(content.mediaPath,3600);
+  if(data?.signedUrl)content.mediaUrl=data.signedUrl;
  }
- return card;
+ if(Array.isArray(content.mediaItems)&&content.mediaItems.length){
+  const items=[];
+  for(const item of content.mediaItems){
+   const {data}=await supabase.storage.from("user-media").createSignedUrl(item.path,3600);
+   if(data?.signedUrl)items.push({...item,url:data.signedUrl});
+  }
+  content.mediaItems=items;
+ }
+ return {...card,content};
 }
 export async function getCurrentUser(){const supabase=await createClient();const {data,error}=await supabase.auth.getUser();return error||!data.user?null:data.user;}
 export async function getPersonalWorkspace(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return null;const {data}=await supabase.from("workspaces").select("*").eq("owner_id",user.id).eq("kind","personal").order("created_at").limit(1).maybeSingle();return data;}
