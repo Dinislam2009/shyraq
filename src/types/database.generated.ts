@@ -294,19 +294,28 @@ export type Database = {
         Row: {
           copied_deck_id: string
           created_at: string
+          last_synced_source_updated_at: string | null
           source_deck_id: string
+          source_updated_at: string | null
+          update_policy: string
           user_id: string
         }
         Insert: {
           copied_deck_id: string
           created_at?: string
+          last_synced_source_updated_at?: string | null
           source_deck_id: string
+          source_updated_at?: string | null
+          update_policy?: string
           user_id: string
         }
         Update: {
           copied_deck_id?: string
           created_at?: string
+          last_synced_source_updated_at?: string | null
           source_deck_id?: string
+          source_updated_at?: string | null
+          update_policy?: string
           user_id?: string
         }
         Relationships: [
@@ -320,6 +329,47 @@ export type Database = {
           {
             foreignKeyName: "deck_copies_source_deck_id_fkey"
             columns: ["source_deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deck_reports: {
+        Row: {
+          created_at: string
+          deck_id: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          deck_id: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deck_reports_deck_id_fkey"
+            columns: ["deck_id"]
             isOneToOne: false
             referencedRelation: "decks"
             referencedColumns: ["id"]
@@ -954,6 +1004,63 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sync_conflicts: {
+        Row: {
+          card_id: string
+          current_reviewed_at: string | null
+          current_state: Json
+          detected_at: string
+          event_key: string
+          id: string
+          incoming_reviewed_at: string | null
+          incoming_state: Json
+          resolution: string | null
+          resolved_at: string | null
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          current_reviewed_at?: string | null
+          current_state?: Json
+          detected_at?: string
+          event_key: string
+          id?: string
+          incoming_reviewed_at?: string | null
+          incoming_state?: Json
+          resolution?: string | null
+          resolved_at?: string | null
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          current_reviewed_at?: string | null
+          current_state?: Json
+          detected_at?: string
+          event_key?: string
+          id?: string
+          incoming_reviewed_at?: string | null
+          incoming_state?: Json
+          resolution?: string | null
+          resolved_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_conflicts_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_conflicts_event_key_fkey"
+            columns: ["event_key"]
+            isOneToOne: false
+            referencedRelation: "review_events"
+            referencedColumns: ["event_key"]
+          },
+        ]
       }
       sync_cursors: {
         Row: {
