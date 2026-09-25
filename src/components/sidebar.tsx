@@ -8,7 +8,7 @@ import {useI18n} from "@/components/i18n-provider";
 const icons={home:HomeIcon,layers:LayersIcon,play:PlayIcon,"bar-chart":ChartIcon,settings:SettingsIcon};
 const labelKeys={
  "Dashboard":"dashboard","My decks":"myDecks","Review":"review","Statistics":"statistics",
- "Public decks":"publicDecks","Collections":"collections","Review history":"history","Notifications":"notifications",
+ "Public decks":"publicDecks","Collections":"collections","Tags":"tags","Markers":"markers","Review history":"history","Notifications":"notifications",
  "Import":"import","Export":"export","Profile":"profile","Review settings":"reviewSettings","Sync":"sync",
  "Review devices":"devices","Media library":"mediaLibrary","Moderation":"moderation","Workspace":"workspaceSettings","Settings":"settings",
 } as const;
