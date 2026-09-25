@@ -43,6 +43,8 @@ export const dictionaries = {
     signInLink: "Кіру",
     createOne: "Жасау",
     language: "Тіл",
+    accountCreated: "Аккаунт жасалды. Бапталған аккаунтты растауды аяқтағаннан кейін кіріңіз.",
+    accountDeletionFailed: "Аккаунтты жою сәтсіз аяқталды.",
   },
   ru: {
     workspace: "Рабочее пространство",
@@ -79,6 +81,8 @@ export const dictionaries = {
     signInLink: "Войти",
     createOne: "Создать",
     language: "Язык",
+    accountCreated: "Аккаунт создан. Войдите после завершения настроенной процедуры подтверждения аккаунта.",
+    accountDeletionFailed: "Не удалось удалить аккаунт.",
   },
   en: {
     workspace: "Workspace",
@@ -115,6 +119,8 @@ export const dictionaries = {
     signInLink: "Sign in",
     createOne: "Create one",
     language: "Language",
+    accountCreated: "Account created. Sign in after completing the configured account setup.",
+    accountDeletionFailed: "Account deletion failed.",
   },
 } as const;
 
