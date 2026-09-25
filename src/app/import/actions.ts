@@ -30,7 +30,7 @@ async function createDeckWithTemplate(supabase:any,userId:string,workspaceId:str
  deckMap.set(String(sourceDeck.id),deck.id);
  return deck.id;
 }
-async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>,conflictMode:"duplicate"|"skip"="duplicate"){
+export async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>,conflictMode:"duplicate"|"skip"="duplicate"){
  if(payload?.format!=="shyraq-backup-v2")throw new Error("Unsupported Shyraq backup format.");
  const deckMap=new Map<string,string>();
  const templateMap=new Map<string,string>();
