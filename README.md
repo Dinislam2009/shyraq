@@ -985,7 +985,7 @@ Target:
 - [x] Export failure recovery
 - [x] Upload retry
 - [x] Background sync retry
-- [ ] Error logging/observability
+- [x] Error logging/observability
 - [x] Health status page
 - [x] Recovery diagnostics
 
