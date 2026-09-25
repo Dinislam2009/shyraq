@@ -28,7 +28,7 @@ export default async function ExplorePage({searchParams}:{searchParams:Promise<S
   const followerCount=Number(counts.get(deck.id)||0); const cardCount=Number(deck.cards?.[0]?.count||0); return (q?(text===q?1000:(String(deck.name).toLowerCase()===q?800:(String(deck.name).toLowerCase().startsWith(q)?500:(text.includes(q)?200:0)))):0)+followerCount*10+cardCount;
  };
  const sort=String(params.sort||"recent");
- if(sort==="popular")decks.sort((a:any,b:any)=>(counts.get(b.id)||0)-(counts.get(a.id)||0)||new Date(String(b.updated_at)).getTime()-new Date(String(a.updated_at)).getTime());
+ if(sort==="popular")decks.sort((a:any,b:any)=>(Number(counts.get(b.id)||0)-Number(counts.get(a.id)||0))||new Date(String(b.updated_at)).getTime()-new Date(String(a.updated_at)).getTime());
  else if(sort==="cards")decks.sort((a:any,b:any)=>(Number(b.cards?.[0]?.count||0)-Number(a.cards?.[0]?.count||0)));
  else if(query)decks.sort((a:any,b:any)=>score(b)-score(a));
  else decks.sort((a:any,b:any)=>new Date(String(b.updated_at)).getTime()-new Date(String(a.updated_at)).getTime());
