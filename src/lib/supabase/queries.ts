@@ -52,31 +52,21 @@ export async function getReviewBatch(deckId?:string,limit=20){
  const result:any[]=[];
  const now=new Date().toISOString();
 
- const dueFetchLimit=Math.min(Math.max(batchLimit*5,50),500);
- const {data:dueStates}=await supabase
+ let dueQuery=supabase
   .from("review_states")
-  .select("card_id,state_data,due_at")
+  .select("card_id,state_data,due_at,cards!inner(id,deck_id,kind,content,is_suspended)")
   .eq("user_id",user.id)
+  .eq("cards.is_suspended",false)
   .lte("due_at",now)
   .order("due_at",{ascending:true})
-  .limit(dueFetchLimit);
+  .limit(batchLimit);
+ if(deckId)dueQuery=dueQuery.eq("cards.deck_id",deckId);
 
- const dueIds=(dueStates??[]).map((row:any)=>row.card_id).filter(Boolean);
- if(dueIds.length){
-  const {data:dueCards}=await supabase
-   .from("cards")
-   .select("id,deck_id,kind,content,is_suspended")
-   .in("id",dueIds)
-   .eq("is_suspended",false);
-
-  const byId=new Map((dueCards??[]).map((card:any)=>[card.id,card]));
-  for(const due of dueStates??[]){
-   const card=byId.get(due.card_id);
-   if(card&&(!deckId||card.deck_id===deckId)){
-    result.push({card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false});
-   }
-   if(result.length>=batchLimit)break;
-  }
+ const {data:dueStates}=await dueQuery;
+ for(const due of dueStates??[]){
+  const card=(due as any).cards;
+  if(card)result.push({card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false});
+  if(result.length>=batchLimit)break;
  }
 
  const newLimit=Math.min(batchLimit-result.length,remainingNewCards);
