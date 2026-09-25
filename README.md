@@ -885,16 +885,16 @@ No paid notification tiers.
 
 # 24. Accessibility
 
-- [ ] Full keyboard navigation
-- [ ] Screen-reader labels
-- [ ] Focus management
-- [ ] Accessible review controls
-- [ ] Reduced motion support
-- [ ] High-contrast support
+- [x] Full keyboard navigation
+- [x] Screen-reader labels
+- [x] Focus management
+- [x] Accessible review controls
+- [x] Reduced motion support
+- [x] High-contrast support
 - [ ] Proper semantic headings
 - [ ] ARIA audit
-- [ ] Color-independent state indicators
-- [ ] Accessible media controls
+- [x] Color-independent state indicators
+- [x] Accessible media controls
 
 ---
 
@@ -979,15 +979,15 @@ Target:
 - [x] Local pending review storage
 - [x] Review history preservation
 - [x] CI build
-- [ ] Global error boundary
-- [ ] User-friendly error pages
-- [ ] Import failure recovery
-- [ ] Export failure recovery
-- [ ] Upload retry
-- [ ] Background sync retry
+- [x] Global error boundary
+- [x] User-friendly error pages
+- [x] Import failure recovery
+- [x] Export failure recovery
+- [x] Upload retry
+- [x] Background sync retry
 - [ ] Error logging/observability
-- [ ] Health status page
-- [ ] Recovery diagnostics
+- [x] Health status page
+- [x] Recovery diagnostics
 
 ---
 
@@ -998,10 +998,10 @@ Target:
 - [x] ESLint
 - [x] TypeScript/Next build
 - [x] GitHub Actions CI
-- [ ] Unit tests for scheduler integration
-- [ ] Unit tests for import parsers
-- [ ] Unit tests for export/restore
-- [ ] Unit tests for sync conflict logic
+- [x] Unit tests for scheduler integration
+- [x] Unit tests for import parsers
+- [x] Unit tests for export/restore
+- [x] Unit tests for sync conflict logic
 - [ ] Unit tests for permission logic
 - [ ] Unit tests for deck update reconciliation
 - [ ] Database/RLS integration tests
