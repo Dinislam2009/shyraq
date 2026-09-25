@@ -85,7 +85,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
      if(rating)void answer(rating);
    };
    window.addEventListener("keydown",onKeyDown);return()=>window.removeEventListener("keydown",onKeyDown);
- },[answer,busy,revealed]);
+ },[answer,busy,preferences,revealed]);
 
  const {front,back,templateCss}=useMemo(()=>{
    const rawFront=card.content?.front||"";
