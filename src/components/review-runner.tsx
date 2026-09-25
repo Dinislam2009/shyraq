@@ -4,6 +4,7 @@ import {createEmptyCard,fsrs,Rating} from "ts-fsrs";
 import {queueReview,syncReviews} from "@/lib/sync/client";
 import {getDeviceId} from "@/lib/offline/store";
 import {useRouter} from "next/navigation";
+import {RichContent} from "@/components/rich-content";
 
 type Preferences={desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean};
 type CardContent={front?:string;back?:string;options?:string[];answer?:number;imageUrl?:string;mediaUrl?:string;mediaType?:string;mediaItems?:Array<{name:string;path:string;mime_type:string;url?:string}>};
@@ -94,14 +95,14 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
   <div className="flex flex-1 items-center">
    <div className="w-full rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12">
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p>
-    <h1 className="mx-auto mt-6 max-w-2xl whitespace-pre-wrap text-3xl font-semibold">{front}</h1>
+    <RichContent content={front} className="mx-auto mt-6 max-w-2xl text-3xl font-semibold" />
     {card.kind==="image"&&card.content.imageUrl&&<img src={card.content.imageUrl} alt="" className="mx-auto mt-8 max-h-72 rounded-2xl object-contain"/>}
     {card.content.mediaUrl&&card.content.mediaType?.startsWith("image/")&&<img src={card.content.mediaUrl} alt="" className="mx-auto mt-8 max-h-72 rounded-2xl object-contain"/>}
     {card.content.mediaUrl&&card.content.mediaType?.startsWith("audio/")&&<audio controls src={card.content.mediaUrl} className="mx-auto mt-8 w-full max-w-xl"/>}
     {card.content.mediaUrl&&card.content.mediaType?.startsWith("video/")&&<video controls src={card.content.mediaUrl} className="mx-auto mt-8 max-h-72 w-full rounded-2xl"/>}
     {card.content.mediaItems?.map((item,i)=><div key={item.path+i} className="mt-8">{item.mime_type.startsWith("image/")&&item.url&&<img src={item.url} alt="" className="mx-auto max-h-72 rounded-2xl object-contain"/>}{item.mime_type.startsWith("audio/")&&item.url&&<audio controls src={item.url} className="mx-auto w-full max-w-xl"/>}{item.mime_type.startsWith("video/")&&item.url&&<video controls src={item.url} className="mx-auto max-h-72 w-full rounded-2xl"/>}</div>)}
-    {card.kind==="multiple_choice"&&<div className="mx-auto mt-8 max-w-xl space-y-2 text-left">{(card.content.options??[]).map((option,i)=><div key={option+i} className="rounded-xl border border-slate-200 px-4 py-3 text-sm">{option}</div>)}</div>}
-    {revealed?<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>{card.kind==="multiple_choice"&&<p className="mt-5 text-sm font-semibold text-slate-900">Correct option: {(card.content.options??[])[card.content.answer??0]||"—"}</p>}<p className="mx-auto mt-5 max-w-2xl whitespace-pre-wrap text-lg leading-8 text-slate-600">{back}</p></div>:<button onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-50">Show answer <span className="ml-2 text-xs text-slate-400">Space</span></button>}
+    {card.kind==="multiple_choice"&&<div className="mx-auto mt-8 max-w-xl space-y-2 text-left">{(card.content.options??[]).map((option,i)=><div key={option+i} className="rounded-xl border border-slate-200 px-4 py-3 text-sm"><RichContent content={option} /></div>)}</div>}
+    {revealed?<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>{card.kind==="multiple_choice"&&<p className="mt-5 text-sm font-semibold text-slate-900">Correct option: {(card.content.options??[])[card.content.answer??0]||"—"}</p>}<RichContent content={back} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600" /></div>:<button onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-50">Show answer <span className="ml-2 text-xs text-slate-400">Space</span></button>}
    </div>
   </div>
   {revealed&&<div className="mt-5 grid grid-cols-4 gap-2">{(["again","hard","good","easy"] as const).map(r=><button key={r} disabled={busy} onClick={()=>void answer(r)} className="rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold capitalize hover:bg-slate-50 disabled:opacity-50">{r}<span className="ml-2 text-xs text-slate-400">{["again","hard","good","easy"].indexOf(r)+1}</span></button>)}</div>}
