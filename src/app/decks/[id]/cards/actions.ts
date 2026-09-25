@@ -14,7 +14,9 @@ function payload(formData:FormData){
  const content:any={front:String(formData.get("front")||""),back:String(formData.get("back")||"")};
  const templateId=String(formData.get("template_id")||"").trim();
  const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
+ const markers=String(formData.get("markers")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
  if(tags.length)content.tags=tags;
+ if(markers.length)content.markers=markers;
  if(kind==="multiple_choice"){
   content.options=String(formData.get("options")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,10);
   const requestedAnswer=Number(formData.get("answer")||0);
