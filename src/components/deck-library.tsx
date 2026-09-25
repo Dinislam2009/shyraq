@@ -78,7 +78,7 @@ export function DeckLibrary({ decks }: { decks: any[] }) {
             onDrop={()=>{if(dragged)moveDeck(dragged,String(deck.id));setDragged(null);}}
             className={"flex items-center gap-4 p-5 transition hover:bg-slate-50 "+(index?"border-t border-black/[0.05]":"")}
           >
-            <div className={"flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold "+(sort==="custom"?"cursor-grab":"")}>{index+1}</div>
+            {deck.settings?.coverUrl?<img src={String(deck.settings.coverUrl)} alt="" className="h-11 w-16 shrink-0 rounded-xl object-cover"/>:<div className={"flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold "+(sort==="custom"?"cursor-grab":"")}>{index+1}</div>}
             <Link href={"/decks/"+deck.id} className="min-w-0 flex-1">
               <h2 className="font-semibold">{deck.name}</h2>
               <p className="mt-1 truncate text-xs text-slate-400">{deck.description||"No description"}</p>
