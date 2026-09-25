@@ -20,3 +20,47 @@ export async function submitReview(cardId:string,rating:keyof typeof ratingMap,e
  if(stateError)return {error:stateError.message};
  revalidatePath("/review"); revalidatePath("/dashboard"); revalidatePath("/statistics"); return {ok:true};
 }
+export async function undoReview(cardId:string,previousState:any,hadPreviousState:boolean,originalRating:keyof typeof ratingMap){
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return {error:"Authentication required."};
+
+ const {data:current}=await supabase.from("review_states").select("*").eq("user_id",user.id).eq("card_id",cardId).maybeSingle();
+ const eventKey=crypto.randomUUID();
+ const {error:eventError}=await supabase.from("review_events").insert({
+  event_key:eventKey,
+  user_id:user.id,
+  card_id:cardId,
+  device_id:crypto.randomUUID(),
+  reviewed_at:new Date().toISOString(),
+  rating:originalRating,
+  elapsed_ms:0,
+  previous_state:current?.state_data??null,
+  next_state:hadPreviousState?previousState:null,
+  metadata:{scheduler:"fsrs",event_kind:"review-undo",undo_of:originalRating}
+ });
+ if(eventError)return {error:eventError.message};
+
+ if(hadPreviousState){
+  const next=revive(previousState);
+  const {error}=await supabase.from("review_states").upsert({
+   user_id:user.id,
+   card_id:cardId,
+   queue:next.state===0?"learning":next.state===1?"learning":next.state===2?"review":"relearning",
+   state_data:next,
+   due_at:next.due.toISOString(),
+   last_reviewed_at:next.last_review?next.last_review.toISOString():null,
+   reps:next.reps,
+   lapses:next.lapses,
+   stability:next.stability,
+   difficulty:next.difficulty,
+   scheduled_days:next.scheduled_days
+  });
+  if(error)return {error:error.message};
+ }else{
+  const {error}=await supabase.from("review_states").delete().eq("user_id",user.id).eq("card_id",cardId);
+  if(error)return {error:error.message};
+ }
+ revalidatePath("/review"); revalidatePath("/dashboard"); revalidatePath("/statistics"); revalidatePath("/history");
+ return {ok:true};
+}
