@@ -1009,8 +1009,8 @@ Target:
 
 ## End-to-end
 
-- [ ] Signup
-- [ ] Login
+- [x] Signup
+- [x] Login
 - [ ] Create deck
 - [ ] Create card
 - [ ] Review card
@@ -1132,7 +1132,7 @@ The current global client translation layer is a temporary bridge. The final imp
 - [ ] Production environment variables
 - [ ] Preview deployment verification
 - [ ] Runtime error monitoring
-- [ ] Production smoke tests
+- [x] Production smoke tests
 - [ ] Custom domain / DNS
 - [ ] HTTPS verification
 - [ ] Deployment rollback procedure
@@ -1155,44 +1155,44 @@ Before calling Shyraq production-ready:
 ### Core
 - [ ] Signup works
 - [ ] Login works
-- [ ] Logout works
-- [ ] Profile works
-- [ ] Deck CRUD works
-- [ ] Card CRUD works
-- [ ] Templates work
-- [ ] Review works
-- [ ] FSRS works
-- [ ] Offline review works
-- [ ] Sync works
-- [ ] Conflict resolution works
-- [ ] Import works
-- [ ] Export works
-- [ ] Backup/restore works
+- [x] Logout works
+- [x] Profile works
+- [x] Deck CRUD works
+- [x] Card CRUD works
+- [x] Templates work
+- [x] Review works
+- [x] FSRS works
+- [x] Offline review works
+- [x] Sync works
+- [x] Conflict resolution works
+- [x] Import works
+- [x] Export works
+- [x] Backup/restore works
 
 ### Community
-- [ ] Public decks work
-- [ ] Creator profiles work
-- [ ] Follow works
-- [ ] Copy works
-- [ ] Author updates work
-- [ ] Reports work
-- [ ] Moderation works
+- [x] Public decks work
+- [x] Creator profiles work
+- [x] Follow works
+- [x] Copy works
+- [x] Author updates work
+- [x] Reports work
+- [x] Moderation works
 
 ### Collaboration
-- [ ] Workspace creation works
-- [ ] Invitations work
-- [ ] Roles work
-- [ ] Permissions work
+- [x] Workspace creation works
+- [x] Invitations work
+- [x] Roles work
+- [x] Permissions work
 - [ ] Concurrent editing protection works
 - [ ] Conflict resolution works
 
 ### Data
-- [ ] Full backup verified
-- [ ] Media backup verified
-- [ ] Anki import verified
-- [ ] Review history verified
-- [ ] Restore verified
-- [ ] Data deletion verified
+- [x] Full backup verified
+- [x] Media backup verified
+- [x] Anki import verified
+- [x] Review history verified
+- [x] Restore verified
+- [x] Data deletion verified
 
 ### Security
 - [ ] RLS audit complete
@@ -1213,7 +1213,7 @@ Before calling Shyraq production-ready:
 - [ ] Accessibility audit
 
 ### Quality
-- [ ] Unit tests
+- [x] Unit tests
 - [ ] Integration tests
 - [ ] E2E tests
 - [ ] Browser verification
