@@ -61,7 +61,11 @@ export async function createCard(deckId:string,formData:FormData):Promise<void>{
 }
 export async function updateCard(deckId:string,cardId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");const p=payload(formData);const mediaFile=formData.get("media_file");
- const {data:existingCard}=await supabase.from("cards").select("content").eq("id",cardId).maybeSingle();
+ const {data:existingCard}=await supabase.from("cards").select("content,updated_at").eq("id",cardId).maybeSingle();
+ const expectedUpdatedAt=String(formData.get("expected_updated_at")||"").trim();
+ if(expectedUpdatedAt&&existingCard?.updated_at&&new Date(existingCard.updated_at).getTime()!==new Date(expectedUpdatedAt).getTime()){
+  fail("/decks/"+deckId,"This card changed in another session. Reload it before saving.");
+ }
  if(existingCard?.content&&typeof existingCard.content==="object"){for(const key of ["mediaPath","mediaType","mediaItems"]){if((p.content as any)[key]===undefined&&(existingCard.content as any)[key]!==undefined)(p.content as any)[key]=(existingCard.content as any)[key];}}
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
  if(mediaFile instanceof File&&mediaFile.size>0&&deck){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;}}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to upload media.");}}
