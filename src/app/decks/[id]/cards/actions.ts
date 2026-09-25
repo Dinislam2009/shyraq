@@ -74,3 +74,29 @@ export async function setCardFlag(deckId:string,cardId:string,field:"is_marked"|
  revalidatePath("/review");
  redirect("/decks/"+deckId);
 }
+
+export async function bulkSetCardFlag(deckId:string,cardIds:string[],field:"is_marked"|"is_suspended",value:boolean):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const ids=[...new Set(cardIds)].filter(Boolean).slice(0,500);
+ if(!ids.length)redirect("/decks/"+deckId);
+ const {error}=await supabase.from("cards").update({[field]:value}).eq("deck_id",deckId).eq("owner_id",user.id).in("id",ids);
+ if(error)fail("/decks/"+deckId,error.message);
+ revalidatePath("/decks/"+deckId);
+ revalidatePath("/review");
+ redirect("/decks/"+deckId);
+}
+
+export async function bulkDeleteCards(deckId:string,cardIds:string[]):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const ids=[...new Set(cardIds)].filter(Boolean).slice(0,500);
+ if(!ids.length)redirect("/decks/"+deckId);
+ const {error}=await supabase.from("cards").delete().eq("deck_id",deckId).eq("owner_id",user.id).in("id",ids);
+ if(error)fail("/decks/"+deckId,error.message);
+ revalidatePath("/decks/"+deckId);
+ revalidatePath("/review");
+ redirect("/decks/"+deckId);
+}
