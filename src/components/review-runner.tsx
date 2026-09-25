@@ -17,6 +17,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  const [done,setDone]=useState(false);
  const shellRef=useRef<HTMLDivElement>(null);
  const startedAt=useRef(Date.now());
+ const swipeStartX=useRef<number|null>(null);
  const current=queue[index];
  const card=current.card;
 
@@ -41,6 +42,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
      deviceId:getDeviceId(),
      sequence:Date.now(),
      rating,
+     elapsedMs:Math.max(0,Date.now()-startedAt.current),
      reviewedAt:new Date().toISOString(),
      previousState:previous as unknown as Record<string,unknown>,
      nextState:result.card as unknown as Record<string,unknown>,
@@ -79,8 +81,16 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
 
  if(done)return <div className="mx-auto max-w-2xl px-5 py-20 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-sm font-bold text-white">✓</div><h1 className="mt-6 text-3xl font-semibold">Session complete</h1><p className="mt-3 text-sm leading-6 text-slate-500">Your review events are stored locally and will sync when a connection is available.</p><div className="mt-6 flex justify-center gap-2"><button onClick={()=>router.refresh()} className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">Load more</button><button onClick={()=>router.push("/statistics")} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold">View statistics</button></div></div>;
 
- return <div ref={shellRef} tabIndex={0} className="outline-none mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-4xl flex-col px-5 py-8 sm:px-8">
-  <div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {index+1}/{queue.length}</p></div><div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-slate-900" style={{width:((index+1)/queue.length*100)+"%"}}/></div></div>
+ const onPointerDown=(event:React.PointerEvent<HTMLDivElement>)=>{if(event.pointerType==="mouse"&&event.button!==0)return;swipeStartX.current=event.clientX;};
+ const onPointerUp=(event:React.PointerEvent<HTMLDivElement>)=>{
+   const start=swipeStartX.current;swipeStartX.current=null;
+   if(start===null||!revealed||busy)return;
+   const delta=event.clientX-start;
+   if(Math.abs(delta)<90)return;
+   void answer(delta<0?"again":"easy");
+ };
+ return <div ref={shellRef} tabIndex={0} onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="outline-none mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-4xl flex-col px-5 py-8 sm:px-8">
+  <div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {index+1}/{queue.length} · swipe ← again / → easy</p></div><div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-slate-900" style={{width:((index+1)/queue.length*100)+"%"}}/></div></div>
   <div className="flex flex-1 items-center">
    <div className="w-full rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12">
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p>
