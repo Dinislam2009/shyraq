@@ -240,7 +240,7 @@ export async function getDashboardStats(){
   : {data:[]};
  const workspaceDeckIds=(workspaceDecks??[]).map((row:any)=>row.id).filter(Boolean);
  const {data:workspaceCards}=workspaceDeckIds.length
-  ? await supabase.from("cards").select("id").eq("owner_id",user.id).in("deck_id",workspaceDeckIds).limit(20000)
+  ? await supabase.from("cards").select("id").eq("owner_id",user.id).eq("is_suspended",false).in("deck_id",workspaceDeckIds).limit(20000)
   : {data:[]};
  const cardIds=(workspaceCards??[]).map((row:any)=>row.id);
 
@@ -249,7 +249,7 @@ export async function getDashboardStats(){
 
  let dueCount=0;
  if(cardIds.length){
-  const {count}=await supabase.from("review_states").select("card_id",{count:"exact",head:true}).eq("user_id",user.id).in("card_id",cardIds).eq("state_data->>suspended","false").lt("due_at",tomorrow.toISOString());
+  const {count}=await supabase.from("review_states").select("card_id",{count:"exact",head:true}).eq("user_id",user.id).in("card_id",cardIds).lt("due_at",tomorrow.toISOString());
   dueCount=count??0;
  }
 
