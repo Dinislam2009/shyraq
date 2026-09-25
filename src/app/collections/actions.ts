@@ -2,12 +2,19 @@
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
+import {resolveDeckRole} from "@/lib/workspace/permissions";
 
 function fail(path:string,message:string):never{redirect(path+"?error="+encodeURIComponent(message));}
 async function personalWorkspace(supabase:any,userId:string){const {data}=await supabase.from("workspaces").select("id").eq("owner_id",userId).eq("kind","personal").limit(1).maybeSingle();return data;}
 async function collectionForUser(supabase:any,userId:string,id:string){
- const {data}=await supabase.from("collections").select("id,name,kind,workspace_id,owner_id").eq("id",id).eq("owner_id",userId).maybeSingle();
- return data;
+ const {data}=await supabase.from("collections").select("id,name,kind,workspace_id,owner_id,is_public").eq("id",id).maybeSingle();
+ if(!data)return null;
+ const [{data:member},{data:override}]=await Promise.all([
+  supabase.from("workspace_members").select("role").eq("workspace_id",data.workspace_id).eq("user_id",userId).maybeSingle(),
+  supabase.from("collection_members").select("role").eq("collection_id",id).eq("user_id",userId).maybeSingle()
+ ]);
+ const effective=resolveDeckRole(String(member?.role||"") as any,String(override?.role||"") as any);
+ return effective==="editor"?data:null;
 }
 async function favoritesCollection(supabase:any,userId:string,workspaceId:string){
  const {data:existing}=await supabase.from("collections").select("id").eq("owner_id",userId).eq("workspace_id",workspaceId).eq("kind","favorites").limit(1).maybeSingle();
