@@ -36,6 +36,18 @@ export async function acceptDeckUpdate(copiedDeckId:string):Promise<void>{
  if(!source||!target)fail("/decks/"+copiedDeckId,"Source or copied deck not found.");
  if(!copy.last_synced_source_updated_at||new Date(source.updated_at)<=new Date(copy.last_synced_source_updated_at)){redirect("/decks/"+copiedDeckId);}
  if(new Date(target.updated_at)>new Date(copy.last_synced_source_updated_at))fail("/decks/"+copiedDeckId,"Conflict detected: this copied deck has local changes. Resolve them before accepting the author update.");
+ const sourceCards=source.cards??[];
+ const targetCards=target.cards??[];
+ const sourceById=new Map(sourceCards.map((c:any)=>[String(c.id),c]));
+ const targetBySourceId=new Map(targetCards.filter((c:any)=>c.content?._sourceCardId).map((c:any)=>[String(c.content._sourceCardId),c]));
+ let changed=0,added=0,removed=0;
+ for(const sourceCard of sourceCards){
+  const local=targetBySourceId.get(String(sourceCard.id));
+  if(!local)added++;
+  else if(JSON.stringify({kind:sourceCard.kind,content:sourceCard.content,sort_order:sourceCard.sort_order})!==JSON.stringify({kind:local.kind,content:local.content,sort_order:local.sort_order}))changed++;
+ }
+ for(const local of targetCards){const sourceId=local.content?._sourceCardId;if(sourceId&&!sourceById.has(String(sourceId)))removed++;}
+
 
  const sourceById=new Map((source.cards??[]).map((c:any)=>[c.id,c]));
  const targetBySourceId=new Map((target.cards??[]).filter((c:any)=>c.content?._sourceCardId).map((c:any)=>[c.content._sourceCardId,c]));
@@ -52,6 +64,7 @@ export async function acceptDeckUpdate(copiedDeckId:string):Promise<void>{
  const {error:deckError}=await supabase.from("decks").update({name:source.name+" (copy)",description:source.description,settings:source.settings}).eq("id",target.id);
  if(deckError)fail("/decks/"+copiedDeckId,deckError.message);
  await supabase.from("deck_copies").update({source_updated_at:source.updated_at,last_synced_source_updated_at:source.updated_at}).eq("user_id",user.id).eq("copied_deck_id",copiedDeckId);
+ await supabase.from("deck_copy_update_history").insert({user_id:user.id,source_deck_id:copy.source_deck_id,copied_deck_id:copiedDeckId,source_updated_at:source.updated_at,card_changes:{changed,added,removed}});
  revalidatePath("/decks/"+copiedDeckId);redirect("/decks/"+copiedDeckId);
 }
 
