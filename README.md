@@ -557,7 +557,7 @@ Target principle:
 - [x] Media deletion/orphan cleanup
 - [ ] Media compression
 - [ ] Image optimization
-- [ ] Audio/video metadata display
+- [x] Audio/video metadata display
 - [x] Offline media cache
 
 ---
