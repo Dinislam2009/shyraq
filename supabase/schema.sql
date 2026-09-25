@@ -120,6 +120,18 @@ create table if not exists public.sync_changes (
  entity_type text not null, entity_id uuid not null, operation text not null check(operation in ('upsert','delete')),
  payload jsonb not null default '{}'::jsonb, occurred_at timestamptz not null default now(), unique(user_id,event_key)
 );
+create table if not exists public.deck_reports (
+ id uuid primary key default gen_random_uuid(),
+ deck_id uuid not null references public.decks(id) on delete cascade,
+ reporter_id uuid not null references auth.users(id) on delete cascade,
+ reason text not null,
+ details text,
+ status text not null default 'open' check(status in ('open','reviewing','resolved','dismissed')),
+ created_at timestamptz not null default now(),
+ resolved_at timestamptz,
+ unique(deck_id,reporter_id)
+);
+
 create table if not exists public.public_deck_follows (
  user_id uuid not null references auth.users(id) on delete cascade, deck_id uuid not null references public.decks(id) on delete cascade,
  created_at timestamptz not null default now(), primary key(user_id,deck_id)
@@ -165,6 +177,7 @@ create index if not exists deck_copies_copied_deck_id_idx on public.deck_copies(
 create index if not exists media_owner_id_idx on public.media(owner_id);
 create index if not exists media_workspace_id_idx on public.media(workspace_id);
 create index if not exists public_deck_follows_deck_id_idx on public.public_deck_follows(deck_id);
+create index if not exists deck_reports_deck_idx on public.deck_reports(deck_id,status,created_at desc);
 create index if not exists review_states_due_idx on public.review_states(user_id,due_at);
 create index if not exists review_states_card_id_idx on public.review_states(card_id);
 create index if not exists review_events_user_idx on public.review_events(user_id,reviewed_at desc);
@@ -273,6 +286,7 @@ alter table public.review_events enable row level security;
 alter table public.media enable row level security;
 alter table public.sync_cursors enable row level security;
 alter table public.sync_changes enable row level security;
+alter table public.deck_reports enable row level security;
 alter table public.public_deck_follows enable row level security;
 alter table public.deck_copies enable row level security;
 alter table public.workspace_invitations enable row level security;
@@ -360,6 +374,13 @@ drop policy if exists media_update on public.media;
 create policy media_update on public.media for update to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor')) with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
 drop policy if exists media_delete on public.media;
 create policy media_delete on public.media for delete to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+
+drop policy if not exists deck_reports_insert on public.deck_reports;
+create policy deck_reports_insert on public.deck_reports for insert to authenticated with check(reporter_id=(select auth.uid()) and exists(select 1 from public.decks d where d.id=deck_id and d.visibility='public'));
+drop policy if not exists deck_reports_read on public.deck_reports;
+create policy deck_reports_read on public.deck_reports for select to authenticated using(reporter_id=(select auth.uid()) or exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid())));
+drop policy if not exists deck_reports_update on public.deck_reports;
+create policy deck_reports_update on public.deck_reports for update to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid()))) with check(exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid())));
 
 drop policy if exists follows_self on public.public_deck_follows;
 create policy follows_self on public.public_deck_follows for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
