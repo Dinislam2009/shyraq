@@ -156,7 +156,7 @@ async function restoreBackup(supabase:any,userId:string,workspaceId:string,paylo
 
  const preferences=payload.reviewPreferences;
  if(preferences){
-  const {error}=await supabase.from("review_preferences").upsert({user_id:userId,desired_retention:Number(preferences.desired_retention)||0.9,maximum_interval:Number(preferences.maximum_interval)||36500,learning_steps:Array.isArray(preferences.learning_steps)?preferences.learning_steps:["1m","10m"],relearning_steps:Array.isArray(preferences.relearning_steps)?preferences.relearning_steps:["10m"],new_cards_per_day:Number(preferences.new_cards_per_day)||20,reviews_per_day:Number(preferences.reviews_per_day)||9999,enable_fuzz:preferences.enable_fuzz!==false,enable_short_term:preferences.enable_short_term!==false});
+  const {error}=await supabase.from("review_preferences").upsert({user_id:userId,desired_retention:Number(preferences.desired_retention)||0.9,maximum_interval:Number(preferences.maximum_interval)||36500,learning_steps:Array.isArray(preferences.learning_steps)?preferences.learning_steps:["1m","10m"],relearning_steps:Array.isArray(preferences.relearning_steps)?preferences.relearning_steps:["10m"],new_cards_per_day:Number(preferences.new_cards_per_day)||20,reviews_per_day:Number(preferences.reviews_per_day)||9999,enable_fuzz:preferences.enable_fuzz!==false,enable_short_term:preferences.enable_short_term!==false,rating_labels:preferences.rating_labels??null,rating_order:Array.isArray(preferences.rating_order)?preferences.rating_order:null,show_keyboard_hints:preferences.show_keyboard_hints!==false,swipe_enabled:preferences.swipe_enabled!==false});
   if(error)throw new Error(error.message);
  }
 
