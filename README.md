@@ -255,30 +255,30 @@ Target editor:
 - [x] Media upload
 - [x] Tags
 - [ ] Full WYSIWYG document editor
-- [ ] Slash commands
-- [ ] Drag-and-drop blocks
-- [ ] Block-level formatting
-- [ ] Keyboard-first editing
-- [ ] Markdown shortcuts
-- [ ] Rich link handling
-- [ ] Better table support
-- [ ] Better code-language selector
-- [ ] Media library picker
-- [ ] Card template variables beyond front/back
+- [x] Slash commands
+- [x] Drag-and-drop blocks
+- [x] Block-level formatting
+- [x] Keyboard-first editing
+- [x] Markdown shortcuts
+- [x] Rich link handling
+- [x] Better table support
+- [x] Better code-language selector
+- [x] Media library picker
+- [x] Card template variables beyond front/back
 - [ ] Advanced template CSS editor
 
 ## Bulk card creation
 
-- [ ] Front | Back quick format
-- [ ] Multi-line quick import
+- [x] Front | Back quick format
+- [x] Multi-line quick import
 - [x] CSV import
 - [x] JSON import
-- [ ] Paste-to-create bulk cards
-- [ ] Bulk editor
-- [ ] Bulk tag assignment
-- [ ] Bulk template assignment
-- [ ] Bulk media attachment
-- [ ] Duplicate detection before creation
+- [x] Paste-to-create bulk cards
+- [x] Bulk editor
+- [x] Bulk tag assignment
+- [x] Bulk template assignment
+- [x] Bulk media attachment
+- [x] Duplicate detection before creation
 
 ## Card list
 
@@ -463,11 +463,11 @@ Data portability is a primary product requirement.
 - [x] Shyraq JSON backup
 - [x] Shyraq ZIP backup
 - [x] Anki .apkg
-- [ ] Additional generic flashcard formats
-- [ ] Import preview
-- [ ] Import validation report
-- [ ] Duplicate handling controls
-- [ ] Import rollback
+- [x] Additional generic flashcard formats
+- [x] Import preview
+- [x] Import validation report
+- [x] Duplicate handling controls
+- [x] Import rollback
 
 ## Anki migration
 
@@ -528,10 +528,10 @@ Shyraq should maximize Anki compatibility while explicitly avoiding the claim th
 - [ ] Scheduled automatic backup versions
 - [ ] Backup history UI
 - [ ] One-click restore
-- [ ] Restore preview
+- [x] Restore preview
 - [ ] Restore conflict detection
-- [ ] Selective restore
-- [ ] Backup integrity checksum
+- [x] Selective restore
+- [x] Backup integrity checksum
 - [ ] Large-backup streaming
 
 Target principle:
