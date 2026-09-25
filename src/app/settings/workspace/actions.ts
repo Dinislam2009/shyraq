@@ -3,11 +3,12 @@ import {redirect} from "next/navigation";
 import {createHash,randomBytes} from "crypto";
 import {createClient} from "@/lib/supabase/server";
 import {revalidatePath} from "next/cache";
+import {canAdminWorkspace,canChangeWorkspaceMemberRole,canDeleteWorkspaceMember} from "@/lib/workspace/permissions";
 
 function hashToken(token:string){return createHash("sha256").update(token).digest("hex");}
 async function requireAdmin(supabase:any,userId:string,workspaceId:string){
  const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",userId).maybeSingle();
- return member&&["owner","admin"].includes(member.role)?member.role:null;
+ return member&&canAdminWorkspace(member.role)?member.role:null;
 }
 export async function createWorkspaceInvite(formData:FormData):Promise<{ok?:boolean;link?:string;error?:string}>{
  const supabase=await createClient();
@@ -47,7 +48,7 @@ export async function updateMemberRole(workspaceId:string,userId:string,role:"ad
  const actorRole=await requireAdmin(supabase,user.id,workspaceId);
  if(!actorRole)redirect("/settings/workspace?error=Only+workspace+admins+can+change+roles");
  const {data:target}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",userId).maybeSingle();
- if(!target||target.role==="owner"||(actorRole==="admin"&&target.role==="admin"))redirect("/settings/workspace?error=This+member+cannot+be+changed+by+your+role");
+ if(!target||!canChangeWorkspaceMemberRole(actorRole as any,target.role as any))redirect("/settings/workspace?error=This+member+cannot+be+changed+by+your+role");
  const {error}=await supabase.from("workspace_members").update({role}).eq("workspace_id",workspaceId).eq("user_id",userId);
  if(error)redirect("/settings/workspace?error="+encodeURIComponent(error.message));
  revalidatePath("/settings/workspace");redirect("/settings/workspace");
