@@ -10,8 +10,11 @@ export default async function ReviewSettingsPage(){
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return null;
  const {data:prefs}=await supabase.from("review_preferences").select("*").eq("user_id",user.id).maybeSingle();
- const labels=({...defaultLabels,...(prefs?.rating_labels&&typeof prefs.rating_labels==="object"?prefs.rating_labels:{})}) as Record<string,string>;
- const order=Array.isArray(prefs?.rating_order)?prefs.rating_order.filter((x):x is typeof ratings[number]=>ratings.includes(x as typeof ratings[number])):ratings;
+ const rawLabels=prefs?.rating_labels;
+ const labelsSource=rawLabels&&typeof rawLabels==="object"&&!Array.isArray(rawLabels)?rawLabels as Record<string,unknown>:{};
+ const labels=Object.fromEntries(ratings.map(r=>[r,typeof labelsSource[r]==="string"?String(labelsSource[r]):defaultLabels[r]]));
+ const rawOrder=prefs?.rating_order;
+ const order=Array.isArray(rawOrder)?rawOrder.map(String).filter((x):x is typeof ratings[number]=>ratings.includes(x as typeof ratings[number])):ratings;
  return <AppShell><div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
    <p className="text-sm text-slate-400">Review</p>
    <h1 className="mt-1 text-3xl font-semibold tracking-tight">Scheduler settings</h1>
