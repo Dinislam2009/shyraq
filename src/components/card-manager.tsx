@@ -166,6 +166,7 @@ export function CardManager({ deckId, cards, favoriteIds }: { deckId: string; ca
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                  <Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link>
                   <form action={toggleFavorite.bind(null, card.id, deckId)}>
                     <button className={"text-xs font-semibold " + (favoriteSet.has(card.id) ? "text-amber-600" : "text-slate-400")}>
                       {favoriteSet.has(card.id) ? "★ Favorite" : "☆ Favorite"}
