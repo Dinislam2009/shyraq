@@ -3,6 +3,7 @@ import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
 import {parseAnkiPackage} from "@/lib/import/anki";
 import {revalidatePath} from "next/cache";
+import {createEmptyCard,fsrs,Rating} from "ts-fsrs";
 
 const ratingMap:Record<number,"again"|"hard"|"good"|"easy">={1:"again",2:"hard",3:"good",4:"easy"};
 function fail(message:string):never{redirect("/import/anki?error="+encodeURIComponent(message));}
@@ -54,6 +55,49 @@ export async function importAnki(formData:FormData):Promise<void>{
     for(let index=0;index<sourceDeck.cards.length;index++){const sourceId=sourceDeck.cards[index].sourceCardId;const importedId=created?.[index]?.id;if(importedId)sourceToImported.set(sourceId,importedId);}
     imported+=rows.length;
   }
+ }
+
+ const scheduler=fsrs({request_retention:0.9,maximum_interval:36500,enable_fuzz:true,enable_short_term:true,learning_steps:["1m","10m"],relearning_steps:["10m"]});
+ const ratingValues={again:Rating.Again,hard:Rating.Hard,good:Rating.Good,easy:Rating.Easy} as const;
+ const reviewsByCard=new Map<number,any[]>();
+ for(const review of parsed.reviews){
+  const bucket=reviewsByCard.get(review.cardId)||[];
+  bucket.push(review);
+  reviewsByCard.set(review.cardId,bucket);
+ }
+ const reviewStateRows:any[]=[];
+ for(const [sourceCardId,history] of reviewsByCard.entries()){
+  const importedCardId=sourceToImported.get(sourceCardId);
+  if(!importedCardId||!history.length)continue;
+  history.sort((a,b)=>Number(a.timestamp)-Number(b.timestamp));
+  let state=createEmptyCard(new Date(history[0].timestamp));
+  let lastTimestamp=history[0].timestamp;
+  for(const review of history){
+   const mapped=ratingMap[review.rating];
+   if(!mapped)continue;
+   const result=scheduler.next(state,new Date(review.timestamp),ratingValues[mapped]);
+   state=result.card;
+   lastTimestamp=review.timestamp;
+  }
+  const stateJson=JSON.parse(JSON.stringify(state));
+  const queue=state.state===2?"review":state.state===3?"relearning":"learning";
+  reviewStateRows.push({
+   user_id:user.id,
+   card_id:importedCardId,
+   queue,
+   state_data:stateJson,
+   due_at:new Date(state.due).toISOString(),
+   last_reviewed_at:new Date(lastTimestamp).toISOString(),
+   reps:Number(state.reps)||0,
+   lapses:Number(state.lapses)||0,
+   stability:Number(state.stability)||null,
+   difficulty:Number(state.difficulty)||null,
+   scheduled_days:Number(state.scheduled_days)||0
+  });
+ }
+ if(reviewStateRows.length){
+  const {error}=await supabase.from("review_states").upsert(reviewStateRows,{onConflict:"user_id,card_id"});
+  if(error)fail(error.message);
  }
 
  const reviewRows=parsed.reviews.flatMap(review=>{
