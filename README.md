@@ -936,10 +936,10 @@ No paid notification tiers.
 - [x] User-controlled public deck visibility
 - [x] Data export
 - [x] Account deletion foundation
-- [ ] Privacy policy
-- [ ] Terms of service
-- [ ] Data retention documentation
-- [ ] Public/community content policy
+- [x] Privacy policy
+- [x] Terms of service
+- [x] Data retention documentation
+- [x] Public/community content policy
 
 Legacy tables from the old project must remain isolated from the Shyraq application and should not be exposed through the Shyraq UI.
 
