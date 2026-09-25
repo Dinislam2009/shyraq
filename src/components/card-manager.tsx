@@ -16,6 +16,7 @@ type CardRow = {
     front?: string;
     back?: string;
     tags?: string[];
+    markers?: string[];
   };
   is_suspended?: boolean;
   is_marked?: boolean;
@@ -166,6 +167,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                         {card.content.tags.map(tag => <span key={tag} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] text-slate-500">{tag}</span>)}
                       </div>
                     )}
+                    {Array.isArray(card.content?.markers) && card.content.markers.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{card.content.markers.map(marker => <span key={marker} className="rounded-md bg-amber-50 px-2 py-1 text-[10px] text-amber-700">{marker}</span>)}</div>}
                   </div>
                 </div>
 
@@ -195,10 +197,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                 </div>
                 <input type="hidden" name="kind" value={card.kind} />
                 <input type="hidden" name="expected_updated_at" value={card.updated_at||""} />
-                <label className="mt-3 block">
-                  <span className="text-xs font-medium text-slate-500">Tags</span>
-                  <input name="tags" defaultValue={Array.isArray(card.content?.tags) ? card.content.tags.join(", ") : ""} className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs" />
-                </label>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="block"><span className="text-xs font-medium text-slate-500">Tags</span><input name="tags" defaultValue={Array.isArray(card.content?.tags) ? card.content.tags.join(", ") : ""} className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs" /></label><label className="block"><span className="text-xs font-medium text-slate-500">Markers</span><input name="markers" defaultValue={Array.isArray(card.content?.markers) ? card.content.markers.join(", ") : ""} placeholder="difficult, exam, revise" className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs" /></label></div>
                 <div className="mt-3 flex justify-end">
                   <button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold hover:bg-slate-50">Save changes</button>
                 </div>
