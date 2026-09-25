@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useRef,useState} from "react";
+import {useEffect,useState} from "react";
 
 export type OcclusionRect={x:number;y:number;w:number;h:number};
 type Interaction={index:number;mode:"move"|"resize";startX:number;startY:number;original:OcclusionRect;handle?:string};
@@ -8,54 +8,61 @@ type Interaction={index:number;mode:"move"|"resize";startX:number;startY:number;
 function clamp(value:number,min:number,max:number){return Math.min(max,Math.max(min,value));}
 function normalizeRect(rect:OcclusionRect):OcclusionRect{
  const x=clamp(rect.x,0,1),y=clamp(rect.y,0,1);
- const w=clamp(rect.w,0,1-x),h=clamp(rect.h,0,1-y);
- return {x,y,w,h};
+ return {x,y,w:clamp(rect.w,0,1-x),h:clamp(rect.h,0,1-y)};
 }
 
 export function OcclusionEditor({src,value,onChange}:{src:string;value:OcclusionRect[];onChange:(next:OcclusionRect[])=>void}){
- const frameRef=useRef<HTMLDivElement>(null);
- const drawingRef=useRef<{x:number;y:number}|null>(null);
- const interactionRef=useRef<Interaction|null>(null);
+ const [drawing,setDrawing]=useState<{x:number;y:number}|null>(null);
  const [draft,setDraft]=useState<OcclusionRect|null>(null);
+ const [interaction,setInteraction]=useState<Interaction|null>(null);
  const [selected,setSelected]=useState<number|null>(value.length?value.length-1:null);
 
  useEffect(()=>{if(!src)onChange([]);},[src,onChange]);
 
  function point(event:React.PointerEvent){
-  const frame=frameRef.current?.getBoundingClientRect();if(!frame)return null;
+  const frame=(event.currentTarget.closest('[data-occlusion-frame="true"]') as HTMLElement|null)?.getBoundingClientRect();
+  if(!frame)return null;
   return {x:clamp((event.clientX-frame.left)/frame.width,0,1),y:clamp((event.clientY-frame.top)/frame.height,0,1)};
  }
 
  function startDraw(event:React.PointerEvent){
-  if(!src||interactionRef.current)return;
-  const p=point(event);if(!p)return;
+  if(!src||interaction)return;
   if((event.target as HTMLElement).dataset.occlusionRect==="true")return;
-  event.currentTarget.setPointerCapture(event.pointerId);
-  drawingRef.current=p;setSelected(null);setDraft({x:p.x,y:p.y,w:0,h:0});
+  const p=point(event);if(!p)return;
+  drawingRef(event.currentTarget,p);
+  setSelected(null);
+  setDraft({x:p.x,y:p.y,w:0,h:0});
  }
+ function drawingRef(_element:EventTarget|null,p:{x:number;y:number}){setDrawing(p);}
  function moveDraw(event:React.PointerEvent){
-  const start=drawingRef.current,p=point(event);if(!start||!p)return;
-  const x=Math.min(start.x,p.x),y=Math.min(start.y,p.y),w=Math.abs(start.x-p.x),h=Math.abs(start.y-p.y);
+  if(!drawing)return;
+  const p=point(event);if(!p)return;
+  const x=Math.min(drawing.x,p.x),y=Math.min(drawing.y,p.y),w=Math.abs(drawing.x-p.x),h=Math.abs(drawing.y-p.y);
   setDraft({x,y,w,h});
  }
  function finishDraw(){
-  if(draft&&draft.w>0.02&&draft.h>0.02){onChange([...value,normalizeRect(draft)]);setSelected(value.length);}
-  drawingRef.current=null;setDraft(null);
+  if(draft&&draft.w>0.02&&draft.h>0.02){
+   const next=[...value,normalizeRect(draft)];
+   onChange(next);setSelected(value.length);
+  }
+  setDrawing(null);setDraft(null);
  }
 
  function beginInteraction(index:number,mode:"move"|"resize",event:React.PointerEvent,handle?:string){
-  event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId);
+  event.stopPropagation();
   const p=point(event);if(!p)return;
-  interactionRef.current={index,mode,startX:p.x,startY:p.y,original:{...value[index]},handle};
+  setInteraction({index,mode,startX:p.x,startY:p.y,original:{...value[index]},handle});
   setSelected(index);
  }
  function updateInteraction(event:React.PointerEvent){
-  const interaction=interactionRef.current,p=point(event);if(!interaction||!p)return;
+  if(!interaction)return;
+  const p=point(event);if(!p)return;
   const dx=p.x-interaction.startX,dy=p.y-interaction.startY;
   const original=interaction.original;
   let next={...original};
   if(interaction.mode==="move"){
-   next.x=clamp(original.x+dx,0,1-original.w);next.y=clamp(original.y+dy,0,1-original.h);
+   next.x=clamp(original.x+dx,0,1-original.w);
+   next.y=clamp(original.y+dy,0,1-original.h);
   }else{
    const handle=interaction.handle||"se";
    const left=original.x,right=original.x+original.w,top=original.y,bottom=original.y+original.h;
@@ -66,19 +73,22 @@ export function OcclusionEditor({src,value,onChange}:{src:string;value:Occlusion
    if(handle.includes("s"))nb=clamp(bottom+dy,nt+0.02,1);
    next={x:nl,y:nt,w:nr-nl,h:nb-nt};
   }
-  const copy=[...value];copy[interaction.index]=normalizeRect(next);onChange(copy);
+  const copy=[...value];
+  copy[interaction.index]=normalizeRect(next);
+  onChange(copy);
  }
- function endInteraction(){interactionRef.current=null;}
+ function endInteraction(){setInteraction(null);}
 
  function removeSelected(){
   if(selected===null)return;
-  onChange(value.filter((_,index)=>index!==selected));setSelected(null);
+  onChange(value.filter((_,index)=>index!==selected));
+  setSelected(null);
  }
 
  const preview=[...value,...(draft?[draft]:[])];
- const handles=["nw","ne","sw","se"];
+ const handles=["nw","ne","sw","se"] as const;
  return <div>
-  <div ref={frameRef} onPointerDown={startDraw} onPointerMove={event=>{moveDraw(event);updateInteraction(event);}} onPointerUp={event=>{finishDraw();endInteraction();}} onPointerCancel={event=>{finishDraw();endInteraction();}} className="relative mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 select-none touch-none">
+  <div data-occlusion-frame="true" onPointerDown={startDraw} onPointerMove={event=>{moveDraw(event);updateInteraction(event);}} onPointerUp={()=>{finishDraw();endInteraction();}} onPointerCancel={()=>{finishDraw();endInteraction();}} className="relative mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 select-none touch-none">
    {src?<img src={src} alt="" draggable={false} className="block max-h-[32rem] w-full object-contain"/>:<div className="flex min-h-48 items-center justify-center p-6 text-sm text-slate-400">Choose an image to draw occlusion areas.</div>}
    {src&&preview.map((rect,index)=>(
     <div key={index} data-occlusion-rect="true" onPointerDown={event=>{if(index<value.length)beginInteraction(index,"move",event)}} className={"absolute border-2 shadow-sm "+(index===selected?"border-sky-300 bg-sky-950/55":"border-white bg-slate-950/75")} style={{left:(rect.x*100)+"%",top:(rect.y*100)+"%",width:(rect.w*100)+"%",height:(rect.h*100)+"%"}}>
