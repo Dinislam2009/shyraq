@@ -85,7 +85,6 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
             <option value="cloze">Cloze</option>
             <option value="multiple_choice">Multiple choice</option>
             <option value="image">Image</option>
-            <option value="audio">Audio</option>
             <option value="custom">Custom</option>
           </select>
         </label>
@@ -158,10 +157,10 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
             </div>
           )}
 
-          {(kind === "image" || kind === "audio" || kind === "custom") && (
+          {(kind === "image" || kind === "custom") && (
             <label className="block">
               <span className="text-sm font-medium">Media file</span>
-              <input name="media_file" type="file" accept={kind === "audio" ? "audio/*" : kind === "image" ? "image/*" : "image/*,audio/*,video/*"} onChange={event => { const file = event.target.files?.[0]; setImagePreview(file && file.type.startsWith("image/") ? URL.createObjectURL(file) : ""); }} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
+              <input name="media_file" type="file" accept={kind === "image" ? "image/*" : "image/*,audio/*,video/*"} onChange={event => { const file = event.target.files?.[0]; setImagePreview(file && file.type.startsWith("image/") ? URL.createObjectURL(file) : ""); }} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
               <span className="mt-1 block text-xs text-slate-400">Maximum 25 MB.</span>
             </label>
           )}
