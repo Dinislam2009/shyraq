@@ -244,6 +244,13 @@ const translations: Record<string, Record<"kk" | "ru" | "en", string>> = {
   "Choose an image to draw occlusion areas.": { kk: "Жасыру аймақтарын белгілеу үшін сурет таңдаңыз.", ru: "Выберите изображение, чтобы отметить скрываемые области.", en: "Choose an image to draw occlusion areas." },
   "Drag on the image to create hidden regions. Click clear to redraw.": { kk: "Жасырылатын аймақтарды жасау үшін суреттің үстінен сүйреңіз. Қайта сызу үшін тазалаңыз.", ru: "Перетащите по изображению, чтобы создать скрытые области. Нажмите очистить, чтобы нарисовать заново.", en: "Drag on the image to create hidden regions. Click clear to redraw." },
   "Clear": { kk: "Тазалау", ru: "Очистить", en: "Clear" },
+  "☆ Favorite": { kk: "☆ Таңдаулы", ru: "☆ Избранное", en: "☆ Favorite" },
+  "★ Favorite": { kk: "★ Таңдаулы", ru: "★ Избранное", en: "★ Favorite" },
+  "Optional email restriction": { kk: "Қосымша email шектеуі", ru: "Необязательное ограничение по email", en: "Optional email restriction" },
+  "Create invite link": { kk: "Шақыру сілтемесін жасау", ru: "Создать ссылку-приглашение", en: "Create invite link" },
+  "Invite link": { kk: "Шақыру сілтемесі", ru: "Ссылка-приглашение", en: "Invite link" },
+  "Copy link": { kk: "Сілтемені көшіру", ru: "Копировать ссылку", en: "Copy link" },
+  "Admin": { kk: "Әкімші", ru: "Администратор", en: "Admin" },
 };
 
 function normalize(s: string) { return s.replace(/\s+/g, " ").trim(); }
