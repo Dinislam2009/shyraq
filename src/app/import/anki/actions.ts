@@ -8,7 +8,7 @@ const ratingMap:Record<number,"again"|"hard"|"good"|"easy">={1:"again",2:"hard",
 function fail(message:string):never{redirect("/import/anki?error="+encodeURIComponent(message));}
 
 async function uploadImportedMedia(supabase:any,userId:string,workspaceId:string,mediaFiles:Record<string,Uint8Array>){
- const paths=new Map<string,string>();
+ const paths=new Map<string,{path:string;mime_type:string}>();
  for(const [name,bytes] of Object.entries(mediaFiles)){
    const safe=name.toLowerCase().replace(/[^a-z0-9._-]+/g,"-").slice(-120);
    const path=userId+"/anki/"+crypto.randomUUID()+"-"+safe;
@@ -20,7 +20,7 @@ async function uploadImportedMedia(supabase:any,userId:string,workspaceId:string
    if(uploadError)throw new Error("Media upload failed for "+name+": "+uploadError.message);
    const {error}=await supabase.from("media").insert({workspace_id:workspaceId,owner_id:userId,storage_path:path,mime_type:mime,byte_size:bytes.byteLength});
    if(error)throw new Error(error.message);
-   paths.set(name,path);
+   paths.set(name,{path,mime_type:mime});
  }
  return paths;
 }
