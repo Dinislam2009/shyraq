@@ -73,6 +73,63 @@ async function applyTags(supabase:any,cardId:string,workspaceId:string,names:str
  if(clearError)throw new Error(clearError.message);
  if(tags?.length){const {error}=await supabase.from("card_tags").insert(tags.map((tag:any)=>({card_id:cardId,tag_id:tag.id})));if(error)throw new Error(error.message);}
 }
+export async function createBulkCards(deckId:string,formData:FormData):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
+ if(!deck)fail("/decks/"+deckId,"Deck not found.");
+ const raw=String(formData.get("bulk")||"").replace(/\r\n/g,"\n");
+ const lines=raw.split("\n");
+ const rows=lines.map(line=>{
+  const value=line.trim();
+  if(!value)return null;
+  const parts=value.includes("\t")?value.split("\t"):value.includes("||")?value.split("||"):value.split("|");
+  return {front:String(parts[0]||"").trim(),back:String(parts.slice(1).join(value.includes("||")?"||":"|")||"").trim()};
+ }).filter((row):row is {front:string;back:string}=>Boolean(row?.front||row?.back)).slice(0,500);
+ if(!rows.length)fail("/decks/"+deckId+"/cards/bulk","Add at least one card.");
+ const tagNames=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
+ const templateId=String(formData.get("template_id")||"").trim()||null;
+ const duplicateMode=String(formData.get("duplicate_mode")||"skip");
+ const selectedMedia=String(formData.get("media_path")||"").trim();
+ if(selectedMedia){
+  const {data:media}=await supabase.from("media").select("storage_path,mime_type").eq("owner_id",user.id).eq("storage_path",selectedMedia).maybeSingle();
+  if(!media)fail("/decks/"+deckId+"/cards/bulk","Selected media is not available.");
+ }
+ const {data:existing}=await supabase.from("cards").select("id,content").eq("owner_id",user.id).limit(50000);
+ const seen=new Set((existing??[]).map((card:any)=>duplicateKey({front:String(card.content?.front||""),back:String(card.content?.back||"")})));
+ const inFile=new Set<string>();
+ const toInsert=[];
+ let skipped=0;
+ for(const row of rows){
+  const key=duplicateKey(row);
+  if((duplicateMode==="skip"&&seen.has(key))||inFile.has(key)){skipped++;continue;}
+  if(duplicateMode==="reject"&&seen.has(key))fail("/decks/"+deckId+"/cards/bulk","Duplicate found before creation.");
+  inFile.add(key);
+  const content:any={front:row.front,back:row.back};
+  if(tagNames.length)content.tags=tagNames;
+  if(selectedMedia)content.mediaItems=[{path:selectedMedia,mimeType:"",name:selectedMedia.split("/").pop()||"media"}];
+  toInsert.push({deck_id:deckId,owner_id:user.id,kind:"basic",content,template_id:templateId,sort_order:0});
+ }
+ const {data:last}=await supabase.from("cards").select("sort_order").eq("deck_id",deckId).order("sort_order",{ascending:false}).limit(1).maybeSingle();
+ toInsert.forEach((row,index)=>{row.sort_order=(last?.sort_order??-1)+1+index;});
+ if(toInsert.length){
+  const {error}=await supabase.from("cards").insert(toInsert);
+  if(error)fail("/decks/"+deckId+"/cards/bulk",error.message);
+ }
+ if(tagNames.length){
+  const {data:created}=await supabase.from("cards").select("id").eq("deck_id",deckId).eq("owner_id",user.id).order("created_at",{ascending:false}).limit(toInsert.length||1);
+  if(created?.length){
+   const {data:tags,error}=await supabase.from("tags").upsert(tagNames.map(name=>({workspace_id:deck.workspace_id,name})),{onConflict:"workspace_id,name"}).select("id");
+   if(error)fail("/decks/"+deckId+"/cards/bulk",error.message);
+   const links=(created??[]).flatMap((card:any)=>(tags??[]).map((tag:any)=>({card_id:card.id,tag_id:tag.id})));
+   if(links.length)await supabase.from("card_tags").upsert(links,{onConflict:"card_id,tag_id"});
+  }
+ }
+ revalidatePath("/decks/"+deckId);
+ redirect("/decks/"+deckId+"?bulk_created="+toInsert.length+"&bulk_skipped="+skipped);
+}
+
 export async function createCard(deckId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();if(!deck)fail("/decks/"+deckId,"Deck not found.");
