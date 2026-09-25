@@ -9,7 +9,18 @@ import {OccludedImage} from "@/components/image-occlusion";
 
 type Preferences={desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean};
 type CardContent={front?:string;back?:string;options?:string[];answer?:number;imageUrl?:string;occlusions?:Array<{x:number;y:number;w:number;h:number}>;mediaUrl?:string;mediaType?:string;mediaItems?:Array<{name:string;path:string;mime_type:string;url?:string}>};
-type QueueItem={card:{id:string;content:CardContent;kind:string};stateData:any;isNew:boolean};
+function templateOne(template:QueueItem["card"]["card_templates"]){
+ if(Array.isArray(template))return template[0]||null;
+ return template||null;
+}
+function applyCardTemplate(source:string,fields:{front:string;back:string}){
+ return String(source||"")
+  .replace(/\{\{\s*front\s*\}\}/gi,fields.front)
+  .replace(/\{\{\s*back\s*\}\}/gi,fields.back)
+  .replace(/\{\{\s*FrontSide\s*\}\}/g,fields.front);
+}
+
+type QueueItem={card:{id:string;content:CardContent;kind:string;template_id?:string;card_templates?:{id:string;name:string;front_template:string;back_template:string;css?:string|null}|{id:string;name:string;front_template:string;back_template:string;css?:string|null}[]};stateData:any;isNew:boolean};
 
 export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:QueueItem[];preferences:Preferences}){
  const router=useRouter();
@@ -73,12 +84,16 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
    window.addEventListener("keydown",onKeyDown);return()=>window.removeEventListener("keydown",onKeyDown);
  },[answer,busy,revealed]);
 
- const {front,back}=useMemo(()=>{
+ const {front,back,templateCss}=useMemo(()=>{
    const rawFront=card.content?.front||"";
    const rawBack=card.content?.back||"";
+   const maskedFront=card.kind==="cloze"?rawFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"••••"):rawFront;
+   const revealedFront=card.kind==="cloze"?rawFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"$1"):rawFront;
+   const template=templateOne(card.card_templates);
    return {
-     front:card.kind==="cloze"?rawFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"••••"):rawFront,
-     back:card.kind==="cloze"?rawFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"$1")||rawBack:rawBack
+     front:template?applyCardTemplate(template.front_template,{front:maskedFront,back:rawBack}):maskedFront,
+     back:template?applyCardTemplate(template.back_template,{front:revealedFront,back:rawBack}):(card.kind==="cloze"?revealedFront||rawBack:rawBack),
+     templateCss:template?.css||""
    };
  },[card]);
 
@@ -92,7 +107,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
    if(Math.abs(delta)<90)return;
    void answer(delta<0?"again":"easy");
  };
- return <div ref={shellRef} tabIndex={0} onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="outline-none mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-4xl flex-col px-5 py-8 sm:px-8">
+ return <div ref={shellRef} tabIndex={0} onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="outline-none mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-4xl flex-col px-5 py-8 sm:px-8">{templateCss&&<style>{templateCss}</style>}
   <div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {index+1}/{queue.length} · swipe ← again / → easy</p></div><div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-slate-900" style={{width:((index+1)/queue.length*100)+"%"}}/></div></div>
   <div className="flex flex-1 items-center">
    <div className="w-full rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12">
