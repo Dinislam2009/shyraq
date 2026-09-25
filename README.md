@@ -526,10 +526,10 @@ Shyraq should maximize Anki compatibility while explicitly avoiding the claim th
 - [x] JSON database backup
 - [x] CSV card export
 - [ ] Scheduled automatic backup versions
-- [ ] Backup history UI
-- [ ] One-click restore
+- [x] Backup history UI
+- [x] One-click restore
 - [x] Restore preview
-- [ ] Restore conflict detection
+- [x] Restore conflict detection
 - [x] Selective restore
 - [x] Backup integrity checksum
 - [ ] Large-backup streaming
