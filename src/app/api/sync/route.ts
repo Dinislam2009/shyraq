@@ -18,11 +18,12 @@ export async function POST(request:NextRequest){
  if(!user)return NextResponse.json({error:"Unauthorized"},{status:401});
  const body=await request.json();
  const events=Array.isArray(body.events)?body.events:[];
+ const batch=events.slice(0,500);
  const conflicts:string[]=[];
 
- if(events.length>0){
-  const rows=events.slice(0,500).map((e:any)=>({
-    event_key:e.event_key??e.eventKey,
+ if(batch.length>0){
+  const rows=batch.map((e:any)=>({
+    event_key:e.event_key??e.eventKey??crypto.randomUUID(),
     user_id:user.id,
     card_id:e.card_id??e.cardId,
     device_id:e.device_id??e.deviceId,
@@ -76,5 +77,5 @@ export async function POST(request:NextRequest){
   }
  }
 
- return NextResponse.json({accepted:events.length,conflicts});
+ return NextResponse.json({accepted:batch.length,conflicts});
 }
