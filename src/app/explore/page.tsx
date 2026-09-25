@@ -8,6 +8,7 @@ export default async function ExplorePage({searchParams}:{searchParams:Promise<S
  const params=await searchParams;
  const query=String(params.q||"").trim();
  const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
  let request=supabase.from("decks").select("id,name,description,updated_at,owner_id,settings,cards(count)").eq("visibility","public").order("updated_at",{ascending:false}).limit(100);
  if(query)request=request.or("name.ilike.%"+query+"%,description.ilike.%"+query+"%");
  const {data:rawDecks,error}=await request;
@@ -18,7 +19,7 @@ export default async function ExplorePage({searchParams}:{searchParams:Promise<S
  const ids=decks.map((deck:any)=>deck.id);
  const [{data:profiles},{data:followCounts}]=await Promise.all([
   [...new Set(decks.map((d:any)=>d.owner_id).filter(Boolean))].length?supabase.from("profiles").select("id,username,display_name").in("id",[...new Set(decks.map((d:any)=>d.owner_id).filter(Boolean))]):Promise.resolve({data:[]}),
-  ids.length?supabase.rpc("get_public_deck_follow_counts",{deck_ids:ids}):Promise.resolve({data:[]})
+  ids.length&&user?supabase.rpc("get_public_deck_follow_counts",{deck_ids:ids}):Promise.resolve({data:[]})
  ]);
  const counts=new Map((followCounts??[]).map((row:any)=>[row.deck_id,Number(row.follow_count||0)]));
  const profileById=new Map((profiles??[]).map((p:any)=>[p.id,p]));
