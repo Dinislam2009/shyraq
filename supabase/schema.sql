@@ -456,6 +456,13 @@ with check (
     where d.id = cards.deck_id
       and private.is_workspace_member(d.workspace_id, 'editor'::workspace_role)
   )
+  and (
+    cards.template_id is null
+    or exists (
+      select 1 from public.card_templates t
+      where t.id = cards.template_id and t.deck_id = cards.deck_id
+    )
+  )
 );
 
 create or replace function private.prevent_deck_owner_change()
