@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag } from "@/app/decks/[id]/cards/actions";
 import { toggleFavorite } from "@/app/collections/actions";
+import { useI18n } from "@/components/i18n-provider";
 
 type CardRow = {
   id: string;
@@ -27,6 +28,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [status, setStatus] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const { t } = useI18n();
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
   const router = useRouter();
@@ -40,7 +42,6 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [deckId, router]);
-
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -79,7 +80,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
 
   async function runBulk(action: "mark" | "unmark" | "suspend" | "unsuspend" | "delete") {
     if (!selected.length || busy) return;
-    if (action === "delete" && !window.confirm("Delete the selected cards permanently?")) return;
+    if (action === "delete" && !window.confirm(t("confirmBulkCardDelete"))) return;
     setBusy(true);
     try {
       if (action === "delete") await bulkDeleteCards(deckId, selected);
