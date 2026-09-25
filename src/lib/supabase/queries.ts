@@ -45,10 +45,10 @@ export async function getDecks(workspaceId?:string){
  if(!member)return [];
  const {data}=await supabase
   .from("decks")
-  .select("id,name,description,visibility,workspace_id,owner_id,updated_at,settings,cards(count)")
+  .select("id,name,description,visibility,workspace_id,owner_id,updated_at,settings,sort_order,cards(count)")
   .eq("workspace_id",targetWorkspaceId)
   .is("deleted_at",null)
-  .order("updated_at",{ascending:false});
+  .order("sort_order",{ascending:true}).order("created_at",{ascending:true});
  return (data??[]).filter((deck:any)=>deck.settings?.archived!==true);
 }
 export async function getDeck(id:string){const supabase=await createClient();const {data}=await supabase.from("decks").select("id,name,description,visibility,workspace_id,owner_id,settings,deleted_at,created_at,updated_at,cards(id,content,kind,sort_order,is_suspended,is_marked,updated_at)").eq("id",id).is("deleted_at",null).maybeSingle();return data;}
