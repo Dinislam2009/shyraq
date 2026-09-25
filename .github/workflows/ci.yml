@@ -55,3 +55,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: API smoke test
+        run: npm run test:api
