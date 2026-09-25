@@ -7,6 +7,10 @@ function fail(path:string,message:string):never{redirect(path+"?error="+encodeUR
 
 export async function followDeck(deckId:string):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login?next="+encodeURIComponent("/explore/"+deckId));
+ const {data:deck}=await supabase.from("decks").select("owner_id,visibility").eq("id",deckId).maybeSingle();
+ if(!deck||deck.visibility!=="public")fail("/explore/"+deckId,"Public deck not found.");
+ const {data:relation}=await supabase.from("creator_relations").select("relation").eq("user_id",user.id).eq("creator_id",deck.owner_id).in("relation",["mute","block"]).limit(1).maybeSingle();
+ if(relation)fail("/explore/"+deckId,"You cannot follow this creator while they are muted or blocked.");
  const {error}=await supabase.from("public_deck_follows").upsert({user_id:user.id,deck_id:deckId});if(error)fail("/explore/"+deckId,error.message);
  revalidatePath("/explore/"+deckId);redirect("/explore/"+deckId);
 }
