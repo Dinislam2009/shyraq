@@ -15,7 +15,10 @@ export function ReviewRunner({userId,card,stateData,preferences,isNew}:{userId:s
   const previous=stateData?{...stateData,due:new Date(stateData.due),last_review:stateData.last_review?new Date(stateData.last_review):undefined}:createEmptyCard(new Date());
   const result=scheduler.next(previous,new Date(),({again:Rating.Again,hard:Rating.Hard,good:Rating.Good,easy:Rating.Easy} as const)[rating]);
   await queueReview({id:crypto.randomUUID(),userId,cardId:card.id,deviceId:getDeviceId(),sequence:Date.now(),rating,reviewedAt:new Date().toISOString(),previousState:previous as Record<string,unknown>,nextState:result.card as unknown as Record<string,unknown>,status:"pending",metadata:{event_kind:isNew?"new-card":"review"}});
-  try{await syncReviews();}catch{}
+  try{
+   const syncResult=await syncReviews();
+   if(syncResult.conflicts?.length){router.push("/settings/sync");return;}
+  }catch{}
   setSaved(true);setBusy(false);router.refresh();
  }
  useEffect(()=>{shellRef.current?.focus();},[]);
