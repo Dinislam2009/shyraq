@@ -7,7 +7,7 @@ const defaults={desired_retention:0.9,maximum_interval:36500,learning_steps:["1m
 export default async function ReviewPage({searchParams}:{searchParams:Promise<{deck?:string;limit?:string;shuffle?:string;auto?:string}>}){
  const params=await searchParams;
  const deck=params.deck;
- const requestedLimit=Math.min(100,Math.max(1,Number(params.limit||20)));
+
  let queue:any[]=[];
  let user:any=null;
  let raw:any=null;
@@ -21,7 +21,7 @@ export default async function ReviewPage({searchParams}:{searchParams:Promise<{d
   : defaults;
  const storedSessionDefaults=preferences.session_defaults&&typeof preferences.session_defaults==="object"&&!Array.isArray(preferences.session_defaults)?preferences.session_defaults:{};
  preferences={...preferences,session_defaults:{...storedSessionDefaults,batchSize:requestedLimit,shuffle:params.shuffle==="1",autoRevealSeconds:params.auto?Math.min(60,Math.max(0,Number(params.auto))):Number((storedSessionDefaults as any).autoRevealSeconds||0)}};
- if(params.shuffle==="1")queue=[...queue].sort(()=>Math.random()-0.5);
+ if(shuffleSession)queue=[...queue].sort(()=>Math.random()-0.5);
 
  return <AppShell><ReviewBootstrap userId={user?.id||null} initialQueue={queue} initialPreferences={preferences}/></AppShell>;
 }
