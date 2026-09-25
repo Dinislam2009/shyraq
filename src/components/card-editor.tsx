@@ -10,16 +10,16 @@ type FieldName = "front" | "back";
 
 const tick = String.fromCharCode(96);
 
-export function CardEditor({ action, templates = [] }: { action: CardAction; templates?: Template[] }) {
-  const [kind, setKind] = useState("basic");
-  const [front, setFront] = useState("");
-  const [back, setBack] = useState("");
-  const [tags, setTags] = useState("");
-  const [options, setOptions] = useState("");
-  const [answer, setAnswer] = useState("0");
-  const [imageUrl, setImageUrl] = useState("");
-  const [imagePreview, setImagePreview] = useState("");
-  const [occlusions, setOcclusions] = useState<OcclusionRect[]>([]);
+export function CardEditor({ action, templates = [], initial, submitLabel = "Save card" }: { action: CardAction; templates?: Template[]; initial?: { kind?: string; front?: string; back?: string; tags?: string[]; options?: string[]; answer?: number; imageUrl?: string; mediaUrl?: string; occlusions?: OcclusionRect[]; templateId?: string }; submitLabel?: string }) {
+  const [kind, setKind] = useState(initial?.kind || "basic");
+  const [front, setFront] = useState(initial?.front || "");
+  const [back, setBack] = useState(initial?.back || "");
+  const [tags, setTags] = useState((initial?.tags || []).join(", "));
+  const [options, setOptions] = useState((initial?.options || []).join(", "));
+  const [answer, setAnswer] = useState(String(initial?.answer ?? 0));
+  const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
+  const [imagePreview, setImagePreview] = useState(initial?.mediaUrl || "");
+  const [occlusions, setOcclusions] = useState<OcclusionRect[]>(initial?.occlusions || []);
   const [activeField, setActiveField] = useState<FieldName>("front");
   const frontRef = useRef<HTMLTextAreaElement>(null);
   const backRef = useRef<HTMLTextAreaElement>(null);
@@ -71,7 +71,7 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
       <div className="grid gap-4 sm:grid-cols-4">
         <label className="block text-sm font-medium">
           Template
-          <select name="template_id" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
+          <select name="template_id" defaultValue={initial?.templateId || ""} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
             <option value="">Default</option>
             {templates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
           </select>
@@ -208,7 +208,7 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
           <input name="continue" value="1" type="checkbox" className="h-4 w-4 rounded border-slate-300" />
           Save and add next card
         </label>
-        <button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">Save card</button>
+        <button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">{submitLabel}</button>
       </div>
     </form>
   );
