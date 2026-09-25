@@ -11,7 +11,7 @@ export default async function ExplorePage({searchParams}:{searchParams:Promise<S
  let request=supabase.from("decks").select("id,name,description,updated_at,owner_id,settings,cards(count)").eq("visibility","public").order("updated_at",{ascending:false}).limit(100);
  if(query)request=request.or("name.ilike.%"+query+"%,description.ilike.%"+query+"%");
  const {data:rawDecks,error}=await request;
- let decks=(rawDecks??[]).filter((deck:any)=>{
+ const decks=(rawDecks??[]).filter((deck:any)=>{
   const settings=deck.settings||{};
   return (!params.category||String(settings.category||"")===params.category)&&(!params.subject||String(settings.subject||"")===params.subject)&&(!params.language||String(settings.language||"")===params.language)&&(!params.difficulty||String(settings.difficulty||"")===params.difficulty);
  });
