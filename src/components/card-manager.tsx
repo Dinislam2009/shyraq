@@ -172,7 +172,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  {canEdit ? <Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link> : null}
+                  {canEdit ? <Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link><Link href={"/decks/"+deckId+"/cards/"+card.id+"/history"} className="text-xs font-semibold text-slate-500">History</Link> : null}
                   <form action={toggleFavorite.bind(null, card.id, deckId)}>
                     <button className={"text-xs font-semibold " + (favoriteSet.has(card.id) ? "text-amber-600" : "text-slate-400")}>
                       {favoriteSet.has(card.id) ? "★ Favorite" : "☆ Favorite"}
