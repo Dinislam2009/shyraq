@@ -389,13 +389,13 @@ Offline functionality is a core requirement, not an optional enhancement.
 - [x] Cached review sessions
 - [x] Device ID
 - [x] Pending event status
-- [ ] Full local mirror of decks/cards
+- [x] Full local mirror of decks/cards
 - [ ] Full cold-start offline application
 - [ ] Offline card creation
 - [ ] Offline card editing
 - [ ] Offline deck management
-- [ ] Offline media cache management
-- [ ] Storage quota UI
+- [x] Offline media cache management
+- [x] Storage quota UI
 
 ## Sync
 
@@ -410,12 +410,12 @@ Offline functionality is a core requirement, not an optional enhancement.
 - [x] Apply incoming state
 - [x] Local pending event protection
 - [x] Retry behavior
-- [ ] Background sync refinement
+- [x] Background sync refinement
 - [ ] Full bidirectional local database synchronization
-- [ ] Better sync progress UI
-- [ ] Sync health indicator
-- [ ] Per-device sync history
-- [ ] Sync diagnostics export
+- [x] Better sync progress UI
+- [x] Sync health indicator
+- [x] Per-device sync history
+- [x] Sync diagnostics export
 
 ## Conflict model
 
