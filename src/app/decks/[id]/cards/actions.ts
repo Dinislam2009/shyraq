@@ -16,8 +16,10 @@ function payload(formData:FormData){
  const templateId=String(formData.get("template_id")||"").trim();
  const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
  const markers=String(formData.get("markers")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
+ const status=String(formData.get("status")||"").trim().slice(0,60);
  if(tags.length)content.tags=tags;
  if(markers.length)content.markers=markers;
+ if(status)content.status=status;
  if(kind==="multiple_choice"){
   content.options=String(formData.get("options")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,10);
   const requestedAnswer=Number(formData.get("answer")||0);
