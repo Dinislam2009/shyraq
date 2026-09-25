@@ -5,6 +5,10 @@ import {createClient} from "@/lib/supabase/server";
 import {revalidatePath} from "next/cache";
 
 function hashToken(token:string){return createHash("sha256").update(token).digest("hex");}
+async function requireAdmin(supabase:any,userId:string,workspaceId:string){
+ const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",userId).maybeSingle();
+ return member&&["owner","admin"].includes(member.role)?member.role:null;
+}
 export async function createWorkspaceInvite(formData:FormData):Promise<{ok?:boolean;link?:string;error?:string}>{
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
@@ -12,8 +16,7 @@ export async function createWorkspaceInvite(formData:FormData):Promise<{ok?:bool
  const workspaceId=String(formData.get("workspace_id")||"").trim();
  const {data:workspace}=await supabase.from("workspaces").select("id").eq("id",workspaceId).maybeSingle();
  if(!workspace)return {error:"Workspace not found."};
- const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspace.id).eq("user_id",user.id).maybeSingle();
- if(!member||!["owner","admin"].includes(member.role))return {error:"Only workspace admins can create invites."};
+ if(!await requireAdmin(supabase,user.id,workspace.id))return {error:"Only workspace admins can create invites."};
  const role=String(formData.get("role")||"reviewer");
  if(!["admin","editor","reviewer","viewer"].includes(role))return {error:"Invalid role."};
  const email=String(formData.get("email")||"").trim().toLowerCase()||null;
@@ -36,20 +39,26 @@ export async function createTeamWorkspace(formData:FormData):Promise<void>{
  await supabase.from("workspace_members").insert({workspace_id:workspace.id,user_id:user.id,role:"owner"});
  revalidatePath("/settings/workspace");redirect("/settings/workspace");
 }
-
 export async function updateMemberRole(workspaceId:string,userId:string,role:"admin"|"editor"|"reviewer"|"viewer"):Promise<void>{
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)redirect("/login");
+ const actorRole=await requireAdmin(supabase,user.id,workspaceId);
+ if(!actorRole)redirect("/settings/workspace?error=Only+workspace+admins+can+change+roles");
+ const {data:target}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",userId).maybeSingle();
+ if(!target||target.role==="owner"||(actorRole==="admin"&&target.role==="admin"))redirect("/settings/workspace?error=This+member+cannot+be+changed+by+your+role");
  const {error}=await supabase.from("workspace_members").update({role}).eq("workspace_id",workspaceId).eq("user_id",userId);
  if(error)redirect("/settings/workspace?error="+encodeURIComponent(error.message));
  revalidatePath("/settings/workspace");redirect("/settings/workspace");
 }
-
 export async function removeMember(workspaceId:string,userId:string):Promise<void>{
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)redirect("/login");
+ const actorRole=await requireAdmin(supabase,user.id,workspaceId);
+ if(!actorRole)redirect("/settings/workspace?error=Only+workspace+admins+can+remove+members");
+ const {data:target}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",userId).maybeSingle();
+ if(!target||target.role==="owner"||(actorRole==="admin"&&target.role==="admin"))redirect("/settings/workspace?error=This+member+cannot+be+removed+by+your+role");
  const {error}=await supabase.from("workspace_members").delete().eq("workspace_id",workspaceId).eq("user_id",userId);
  if(error)redirect("/settings/workspace?error="+encodeURIComponent(error.message));
  revalidatePath("/settings/workspace");redirect("/settings/workspace");
