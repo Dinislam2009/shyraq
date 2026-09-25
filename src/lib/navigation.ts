@@ -8,6 +8,8 @@ export const mainNavigation:NavItem[]=[
 export const secondaryNavigation:NavItem[]=[
  {href:"/explore",label:"Public decks",icon:"layers"},
  {href:"/collections",label:"Collections",icon:"layers"},
+ {href:"/tags",label:"Tags",icon:"settings"},
+ {href:"/markers",label:"Markers",icon:"settings"},
  {href:"/history",label:"Review history",icon:"layers"},
  {href:"/notifications",label:"Notifications",icon:"settings"},
  {href:"/import",label:"Import",icon:"settings"},
