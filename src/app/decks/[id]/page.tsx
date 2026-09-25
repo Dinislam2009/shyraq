@@ -6,6 +6,7 @@ import {CollaborationPresence} from "@/components/collaboration-presence";
 import {getDeck} from "@/lib/supabase/queries";
 import {acceptDeckUpdate,setDeckUpdatePolicy} from "@/app/explore/[id]/actions";
 import {createClient} from "@/lib/supabase/server";
+import {getEffectiveDeckRole} from "@/lib/workspace/deck-permissions";
 
 export default async function DeckPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{error?:string}>}){
  const {id}=await params;
@@ -17,16 +18,8 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
 
- let canEdit=false;
- if(user){
-  const {data:membership}=await supabase
-   .from("workspace_members")
-   .select("role")
-   .eq("workspace_id",deck.workspace_id)
-   .eq("user_id",user.id)
-   .maybeSingle();
-  canEdit=["owner","admin","editor"].includes(String(membership?.role||""));
- }
+ const permission=await getEffectiveDeckRole(id);
+ const canEdit=permission.deckRole==="editor";
 
  let sourceUpdate:any=null;
  if(user){
