@@ -117,7 +117,7 @@ export async function getReviewCard(deckId?:string){
 
  const {data:tracked}=await supabase.from("review_states").select("card_id").eq("user_id",user.id).limit(5000);
  const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
- let query=supabase.from("cards").select("id,deck_id,kind,content").eq("is_suspended",false).order("updated_at",{ascending:true}).limit(1);
+ let query=supabase.from("cards").select("id,deck_id,kind,content,template_id,card_templates(id,name,front_template,back_template,css)").eq("is_suspended",false).order("updated_at",{ascending:true}).limit(1);
  if(deckId)query=query.eq("deck_id",deckId);
  if(trackedIds.length)query=query.not("id","in","("+trackedIds.join(",")+")");
  const {count:newToday}=await supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id).eq("metadata->>event_kind","new-card").gte("reviewed_at",todayStart.toISOString());
@@ -197,7 +197,7 @@ export async function getDashboardStats(){
   .select("card_id,cards!inner(id,is_suspended)",{count:"exact",head:true})
   .eq("user_id",user.id)
   .eq("cards.is_suspended",false)
-  .lte("due_at",tomorrow.toISOString());
+  .lt("due_at",tomorrow.toISOString());
 
  const {data:todayEvents}=await supabase
   .from("review_events")
