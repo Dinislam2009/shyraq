@@ -119,7 +119,7 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
               <button type="button" onClick={() => setSelectedDecks(backupDecks.map(deck => deck.id))} className="text-xs font-semibold text-slate-600">Select all</button>
             </div>
             <div className="mt-3 space-y-2">
-              {backupDecks.map(deck => (
+              {backupDecks.map((deck: {id:string;name:string;cards:number}) => (
                 <label key={deck.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
                   <span className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectedDecks.includes(deck.id)} onChange={() => setSelectedDecks(current => current.includes(deck.id) ? current.filter(id => id !== deck.id) : [...current, deck.id])} className="h-4 w-4 rounded border-slate-300"/>{deck.name}</span>
                   <span className="text-xs text-slate-400">{deck.cards} cards</span>
