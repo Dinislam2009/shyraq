@@ -50,7 +50,7 @@ export async function GET(request:NextRequest){
    const {data}=await supabase.storage.from("user-media").createSignedUrl(item.storage_path,900);
    return {...item,signed_url:data?.signedUrl||null};
   }));
-  return NextResponse.json({decks:decks??[],cards:cards??[],media:mediaWithUrls});
+  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],media:mediaWithUrls});
  }
  const {data,error}=await supabase.from("sync_changes").select("cursor,event_key,entity_type,entity_id,operation,payload,occurred_at").eq("user_id",user.id).gt("cursor",since).order("cursor",{ascending:true}).limit(500);
  if(error)return NextResponse.json({error:error.message},{status:500});
