@@ -220,7 +220,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       ) : (
         <div>
           {filtered.map((card, index) => (
-            <div key={card.id} data-card-index={index} tabIndex={0} className={"p-6 outline-none focus-visible:ring-2 focus-visible:ring-slate-500 " + (index ? "border-t border-black/[0.05]" : "")}>
+            <div key={card.id} data-card-index={index} tabIndex={0} style={{contentVisibility:"auto",containIntrinsicSize:"520px"}} className={"p-6 outline-none focus-visible:ring-2 focus-visible:ring-slate-500 " + (index ? "border-t border-black/[0.05]" : "")}>
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   {canEdit&&<input type="checkbox" checked={selected.includes(card.id)} onChange={() => toggle(card.id)} className="mt-1 h-4 w-4 rounded border-slate-300" />}
