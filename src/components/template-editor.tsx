@@ -6,18 +6,20 @@ import { RichContent } from "@/components/rich-content";
 export function TemplateEditor({
   template,
   updateAction,
-  deleteAction
+  deleteAction,
+  duplicateAction
 }: {
   template: { id:string; name:string; front_template:string; back_template:string; css:string };
   updateAction: (formData:FormData) => void | Promise<void>;
   deleteAction: (formData:FormData) => void | Promise<void>;
+  duplicateAction?: (formData:FormData) => void | Promise<void>;
 }) {
   const [name,setName]=useState(template.name);
   const [front,setFront]=useState(template.front_template);
   const [back,setBack]=useState(template.back_template);
   const [css,setCss]=useState(template.css||"");
   const fields=useMemo(()=>({front:"What is photosynthesis?",back:"A process used by plants to convert light into chemical energy.",subject:"Biology",example:"Leaves use chlorophyll."}),[]);
-  const render=(value:string)=>String(value||"").replace(/\{\{\s*([^}]+?)\s*\}\}/g,(_,key)=>fields[String(key).trim() as keyof typeof fields]??"");
+  const render=(value:string)=>{let output=String(value||"");output=output.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key,body)=>fields[String(key).trim() as keyof typeof fields]?body:"");output=output.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key,body)=>fields[String(key).trim() as keyof typeof fields]?"":body);return output.replace(/\{\{\s*([^}]+?)\s*\}\}/g,(_,key)=>fields[String(key).trim() as keyof typeof fields]??"");};
   return <div className="rounded-2xl border border-black/[0.06] bg-white p-6">
     <form action={updateAction}>
       <div className="grid gap-4 md:grid-cols-3">
@@ -41,7 +43,7 @@ export function TemplateEditor({
       </div>
       <style dangerouslySetInnerHTML={{__html:css}} />
       <div className="mt-5 flex justify-end gap-2">
-        <button formAction={deleteAction} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-500">Delete</button>
+        <button formAction={duplicateAction} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Duplicate</button><button formAction={deleteAction} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-500">Delete</button>
         <button className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Save</button>
       </div>
     </form>
