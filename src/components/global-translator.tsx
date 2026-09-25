@@ -193,6 +193,27 @@ const translations: Record<string, Record<"kk" | "ru" | "en", string>> = {
   "Resolve": { kk: "Шешу", ru: "Решить", en: "Resolve" },
   "Dismiss": { kk: "Қабылдамау", ru: "Отклонить", en: "Dismiss" },
   "Sign out": { kk: "Шығу", ru: "Выйти", en: "Sign out" },
+  "Sign out": { kk: "Шығу", ru: "Выйти", en: "Sign out" },
+  "Search decks, cards, tags...": { kk: "Колодаларды, карталарды, тегтерді іздеу...", ru: "Поиск колод, карточек, тегов...", en: "Search decks, cards, tags..." },
+  "Session complete": { kk: "Сессия аяқталды", ru: "Сессия завершена", en: "Session complete" },
+  "Your review events are stored locally and will sync when a connection is available.": { kk: "Қайталау нәтижелері жергілікті сақталды және байланыс болғанда синхрондалады.", ru: "Результаты повторения сохранены локально и синхронизируются при подключении.", en: "Your review events are stored locally and will sync when a connection is available." },
+  "Load more": { kk: "Тағы жүктеу", ru: "Загрузить ещё", en: "Load more" },
+  "View statistics": { kk: "Статистиканы көру", ru: "Посмотреть статистику", en: "View statistics" },
+  "New card": { kk: "Жаңа карта", ru: "Новая карточка", en: "New card" },
+  "Scheduled review": { kk: "Жоспарланған қайталау", ru: "Запланированное повторение", en: "Scheduled review" },
+  "swipe ← again / → easy": { kk: "сырғыту ← қайта / → оңай", ru: "свайп ← снова / → легко", en: "swipe ← again / → easy" },
+  "Front": { kk: "Алдыңғы бет", ru: "Лицевая сторона", en: "Front" },
+  "Back": { kk: "Артқы бет", ru: "Оборот", en: "Back" },
+  "Correct": { kk: "Дұрыс", ru: "Правильно", en: "Correct" },
+  "Your choice": { kk: "Сіздің таңдауыңыз", ru: "Ваш выбор", en: "Your choice" },
+  "Choose this answer": { kk: "Осы жауапты таңдау", ru: "Выбрать этот ответ", en: "Choose this answer" },
+  "Correct option:": { kk: "Дұрыс нұсқа:", ru: "Правильный вариант:", en: "Correct option:" },
+  "Show answer": { kk: "Жауапты көрсету", ru: "Показать ответ", en: "Show answer" },
+  "Preparing review session": { kk: "Қайталау сессиясы дайындалуда", ru: "Подготовка сессии повторения", en: "Preparing review session" },
+  "Loading your local study data…": { kk: "Жергілікті оқу деректері жүктелуде…", ru: "Загрузка локальных учебных данных…", en: "Loading your local study data…" },
+  "Review queue is empty": { kk: "Қайталау кезегі бос", ru: "Очередь повторения пуста", en: "Review queue is empty" },
+  "Create some cards first or connect once to refresh your queue.": { kk: "Алдымен карталар жасаңыз немесе кезекті жаңарту үшін интернетке қосылыңыз.", ru: "Сначала создайте карточки или подключитесь к интернету, чтобы обновить очередь.", en: "Create some cards first or connect once to refresh your queue." },
+
 };
 
 function normalize(s: string) { return s.replace(/\s+/g, " ").trim(); }
