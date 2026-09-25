@@ -2,8 +2,9 @@ import {AppShell} from "@/components/app-shell";
 import {getReviewStats} from "@/lib/supabase/queries";
 import Link from "next/link";
 
-export default async function StatisticsPage(){
- const stats=await getReviewStats();
+export default async function StatisticsPage({searchParams}:{searchParams?:Promise<{workspace?:string}>}){
+ const params=searchParams?await searchParams:{};
+ const stats=await getReviewStats(params.workspace);
  const maxReviews=Math.max(1,...stats.daily.map((d:any)=>d.reviews));
  const maxDue=Math.max(1,...stats.dueForecast.map((d:any)=>d.due));
  const ratingTotal=Object.values(stats.ratings||{}).reduce((sum:number,value:any)=>sum+Number(value||0),0);
