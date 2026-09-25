@@ -45,7 +45,7 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
   if(!deck){deck={id:String(row[2]),name:"Imported deck",description:"Imported from Anki",cards:[]};deckMap.set(Number(row[2]),deck);}
   const front=parseField(note.fields[0]||"",media);const back=parseField(note.fields[1]||"",media);
   const model:any=modelsRaw[String(note.mid)]||{};
-  const kind:model["type"]|string===1||/\{\{c\d+::/i.test(front.text+back.text)?"cloze":"basic";
+  const kind = model["type"] === 1 || /\{\{c\d+::/i.test(front.text + back.text) ? "cloze" : "basic";
   deck.cards.push({front:front.text,back:back.text,tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),sourceCardId:Number(row[0]),mediaNames:[...new Set([...front.mediaNames,...back.mediaNames])],kind});
  }
  const reviewValues=db.exec("select cid,id,ease,ivl,lastIvl,factor,time,type from revlog")[0]?.values||[];
