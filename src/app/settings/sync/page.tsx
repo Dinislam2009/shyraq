@@ -15,6 +15,7 @@ export default async function SyncSettingsPage(){
   <p className="text-sm text-slate-400">Sync</p>
   <h1 className="mt-1 text-3xl font-semibold tracking-tight">Sync center</h1>
   <p className="mt-2 text-sm text-slate-500">Offline changes, local storage, device history and conflict resolution.</p>
+  <HealthCard />
   <OfflineSyncPanel userId={user.id} devices={devices??[]}/>
   <section className="mt-8">
    <h2 className="text-xl font-semibold">Conflicts</h2>
@@ -31,3 +32,11 @@ export default async function SyncSettingsPage(){
  </div></AppShell>;
 }
 function State({title,state,at}:{title:string;state:any;at:string|null}){return <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{title}</p><pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-700">{JSON.stringify(state??{},null,2)}</pre>{at&&<p className="mt-3 text-[11px] text-slate-400">{new Date(at).toLocaleString()}</p>}</div>}
+
+async function HealthCard(){
+ const supabase=await createClient();
+ const started=Date.now();
+ const {error}=await supabase.from("profiles").select("id",{head:true,count:"exact"});
+ const ok=!error;
+ return <section className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-5"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold">Service health</p><p className="mt-1 text-sm text-slate-500">Live application database check.</p></div><span className={"rounded-full px-3 py-1 text-xs font-semibold "+(ok?"bg-emerald-50 text-emerald-700":"bg-red-50 text-red-700")}>{ok?"Healthy":"Degraded"}</span></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-xs text-slate-400">Database</p><p className="mt-1 font-semibold">{ok?"Connected":"Unavailable"}</p></div><div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-xs text-slate-400">Latency</p><p className="mt-1 font-semibold">{Date.now()-started} ms</p></div></div></section>;
+}
