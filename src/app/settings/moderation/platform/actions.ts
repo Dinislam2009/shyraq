@@ -15,7 +15,6 @@ export async function upsertModerator(formData:FormData){
  const role=String(formData.get("role")||"moderator");
  if(!userId||!["moderator","admin"].includes(role))redirect("/settings/moderation/platform?error=Valid+user+id+and+role+required");
  await supabase.from("moderators").upsert({user_id:userId,role,enabled:true},{onConflict:"user_id"});
- await supabase.from("moderation_actions").insert({report_id:null as any,moderator_id:user.id,action:"moderator.roster.updated",note:userId+" -> "+role}).catch(()=>undefined);
  revalidatePath("/settings/moderation/platform");redirect("/settings/moderation/platform");
 }
 export async function setModeratorEnabled(userId:string,enabled:boolean){
