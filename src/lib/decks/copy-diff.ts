@@ -7,8 +7,10 @@ export function diffCopiedCards(sourceCards:any[],targetCards:any[]):DeckCopyDif
  for(const sourceCard of sourceCards){
   const local=targetBySourceId.get(String(sourceCard.id));
   if(!local){added++;continue;}
-  const sourceComparable=JSON.stringify({kind:sourceCard.kind,content:sourceCard.content,sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked});
-  const localComparable=JSON.stringify({kind:local.kind,content:local.content,sort_order:local.sort_order,is_suspended:local.is_suspended,is_marked:local.is_marked});
+  const sourceContent={...(sourceCard.content||{})}; delete sourceContent._sourceCardId;
+  const localContent={...(local.content||{})}; delete localContent._sourceCardId;
+  const sourceComparable=JSON.stringify({kind:sourceCard.kind,content:sourceContent,sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked});
+  const localComparable=JSON.stringify({kind:local.kind,content:localContent,sort_order:local.sort_order,is_suspended:local.is_suspended,is_marked:local.is_marked});
   if(sourceComparable!==localComparable)changed++;
  }
  for(const local of targetCards){
