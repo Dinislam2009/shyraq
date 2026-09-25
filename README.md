@@ -234,9 +234,9 @@ Shyraq supports both individual and collaborative learning.
 - [x] Rich formatting
 - [x] Custom media
 - [x] Image occlusion foundation
-- [ ] Full visual image-occlusion editor
-- [ ] Drag/resize occlusion rectangles
-- [ ] Multiple occlusion groups
+- [x] Full visual image-occlusion editor
+- [x] Drag/resize occlusion rectangles
+- [x] Multiple occlusion groups
 - [ ] Advanced cloze/image workflows
 
 ## Card editor
