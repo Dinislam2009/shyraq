@@ -99,6 +99,8 @@ export async function createBulkCards(deckId:string,formData:FormData):Promise<v
  if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
  if(!deck)fail("/decks/"+deckId,"Deck not found.");
+ const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
+ if(!["owner","admin","editor"].includes(String(member?.role||"")))fail("/decks/"+deckId,"You do not have permission to edit this deck.");
  const raw=String(formData.get("bulk")||"").replace(/\r\n/g,"\n");
  const lines=raw.split("\n");
  const rows=lines.map(line=>{
@@ -172,7 +174,7 @@ export async function createCard(deckId:string,formData:FormData):Promise<void>{
 export async function updateCard(deckId:string,cardId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");const p=payload(formData);const mediaFile=formData.get("media_file");
  const libraryMedia=await validateLibraryMedia(supabase,user.id,p.content.mediaItems||[]); if(libraryMedia.length)p.content.mediaItems=libraryMedia; else delete p.content.mediaItems;
- const {data:existingCard}=await supabase.from("cards").select("content,updated_at").eq("id",cardId).maybeSingle();
+ const {data:existingCard}=await supabase.from("cards").select("content,updated_at,deck_id,owner_id").eq("id",cardId).eq("deck_id",deckId).maybeSingle();
  const expectedUpdatedAt=String(formData.get("expected_updated_at")||"").trim();
  if(isStaleVersion(expectedUpdatedAt,existingCard?.updated_at)){
   fail("/decks/"+deckId,"This card changed in another session. Reload it before saving.");
@@ -186,6 +188,9 @@ export async function updateCard(deckId:string,cardId:string,formData:FormData):
   p.content.occlusions=[];
  }
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
+ if(!deck)fail("/decks/"+deckId,"Deck not found.");
+ const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
+ if(!["owner","admin","editor"].includes(String(member?.role||"")))fail("/decks/"+deckId,"You do not have permission to edit this deck.");
  if(mediaFile instanceof File&&mediaFile.size>0&&deck){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;if(p.kind==="image")p.content.occlusions=[];}}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to upload media.");}}
  const {error}=await supabase.from("cards").update(p).eq("id",cardId);
  if(error){
