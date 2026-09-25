@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 pb-20 outline-none lg:pb-0">{children}</main>
         <MobileNav />
       </div>
     </div>
