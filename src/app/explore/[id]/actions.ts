@@ -28,7 +28,9 @@ export async function copyDeck(deckId:string):Promise<void>{
 }
 
 export async function acceptDeckUpdate(copiedDeckId:string):Promise<void>{
- const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
  const {data:copy}=await supabase.from("deck_copies").select("source_deck_id,copied_deck_id,last_synced_source_updated_at").eq("user_id",user.id).eq("copied_deck_id",copiedDeckId).maybeSingle();
  if(!copy)fail("/decks/"+copiedDeckId,"Source relationship not found.");
  const {data:source}=await supabase.from("decks").select("id,name,description,settings,updated_at,cards(*)").eq("id",copy.source_deck_id).eq("visibility","public").maybeSingle();
@@ -36,34 +38,41 @@ export async function acceptDeckUpdate(copiedDeckId:string):Promise<void>{
  if(!source||!target)fail("/decks/"+copiedDeckId,"Source or copied deck not found.");
  if(!copy.last_synced_source_updated_at||new Date(source.updated_at)<=new Date(copy.last_synced_source_updated_at)){redirect("/decks/"+copiedDeckId);}
  if(new Date(target.updated_at)>new Date(copy.last_synced_source_updated_at))fail("/decks/"+copiedDeckId,"Conflict detected: this copied deck has local changes. Resolve them before accepting the author update.");
+
  const sourceCards=source.cards??[];
  const targetCards=target.cards??[];
- const sourceById=new Map(sourceCards.map((c:any)=>[String(c.id),c]));
- const targetBySourceId=new Map(targetCards.filter((c:any)=>c.content?._sourceCardId).map((c:any)=>[String(c.content._sourceCardId),c]));
+ const sourceById=new Map(sourceCards.map((card:any)=>[String(card.id),card]));
+ const targetBySourceId=new Map(targetCards.filter((card:any)=>card.content?._sourceCardId).map((card:any)=>[String(card.content._sourceCardId),card]));
  let changed=0,added=0,removed=0;
+
  for(const sourceCard of sourceCards){
   const local=targetBySourceId.get(String(sourceCard.id));
-  if(!local)added++;
-  else if(JSON.stringify({kind:sourceCard.kind,content:sourceCard.content,sort_order:sourceCard.sort_order})!==JSON.stringify({kind:local.kind,content:local.content,sort_order:local.sort_order}))changed++;
+  if(!local){added++;}
+  else{
+   const sourceComparable=JSON.stringify({kind:sourceCard.kind,content:sourceCard.content,sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked});
+   const localComparable=JSON.stringify({kind:local.kind,content:local.content,sort_order:local.sort_order,is_suspended:local.is_suspended,is_marked:local.is_marked});
+   if(sourceComparable!==localComparable)changed++;
+  }
+  const payload={kind:sourceCard.kind,content:{...sourceCard.content,_sourceCardId:sourceCard.id},sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked};
+  if(local)await supabase.from("cards").update(payload).eq("id",local.id);
+  else await supabase.from("cards").insert({...payload,deck_id:target.id,owner_id:user.id});
  }
- for(const local of targetCards){const sourceId=local.content?._sourceCardId;if(sourceId&&!sourceById.has(String(sourceId)))removed++;}
 
+ for(const local of targetCards){
+  const sourceId=local.content?._sourceCardId;
+  if(sourceId&&!sourceById.has(String(sourceId))){
+   removed++;
+   await supabase.from("cards").delete().eq("id",local.id);
+  }
+ }
 
- const sourceById=new Map((source.cards??[]).map((c:any)=>[c.id,c]));
-   const local=targetBySourceId.get(sourceCard.id);
-   const payload={kind:sourceCard.kind,content:{...sourceCard.content,_sourceCardId:sourceCard.id},sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked};
-   if(local)await supabase.from("cards").update(payload).eq("id",local.id);
-   else await supabase.from("cards").insert({...payload,deck_id:target.id,owner_id:user.id});
- }
- for(const local of target.cards??[]){
-   const sourceId=local.content?._sourceCardId;
-   if(sourceId&& !sourceById.has(sourceId))await supabase.from("cards").delete().eq("id",local.id);
- }
  const {error:deckError}=await supabase.from("decks").update({name:source.name+" (copy)",description:source.description,settings:source.settings}).eq("id",target.id);
  if(deckError)fail("/decks/"+copiedDeckId,deckError.message);
+
  await supabase.from("deck_copies").update({source_updated_at:source.updated_at,last_synced_source_updated_at:source.updated_at}).eq("user_id",user.id).eq("copied_deck_id",copiedDeckId);
  await supabase.from("deck_copy_update_history").insert({user_id:user.id,source_deck_id:copy.source_deck_id,copied_deck_id:copiedDeckId,source_updated_at:source.updated_at,card_changes:{changed,added,removed}});
- revalidatePath("/decks/"+copiedDeckId);redirect("/decks/"+copiedDeckId);
+ revalidatePath("/decks/"+copiedDeckId);
+ redirect("/decks/"+copiedDeckId);
 }
 
 export async function setDeckUpdatePolicy(copiedDeckId:string,policy:"ask"|"accept_all"):Promise<void>{
