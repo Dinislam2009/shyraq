@@ -196,7 +196,15 @@ const translations: Record<string, Record<"kk" | "ru" | "en", string>> = {
   "Sign out": { kk: "Шығу", ru: "Выйти", en: "Sign out" },
 };
 
-function normalize(s: string) { return s.replace(/\s+/g, " ").trim(); }\n\nfunction dynamicTranslation(raw: string, locale: "kk" | "ru" | "en") {\n  let m = raw.match(/^(\\d+) cards$/); if (m) return `${m[1]} ${locale === "kk" ? "карта" : locale === "ru" ? "карточек" : "cards"}`;\n  m = raw.match(/^(\\d+) reviews$/); if (m) return `${m[1]} ${locale === "kk" ? "қайталау" : locale === "ru" ? "повторений" : "reviews"}`;\n  m = raw.match(/^(\\d+) responses recorded$/); if (m) return `${m[1]} ${locale === "kk" ? "жауап тіркелді" : locale === "ru" ? "ответов записано" : "responses recorded"}`;\n  m = raw.match(/^(\\d+) min$/); if (m) return `${m[1]} ${locale === "kk" ? "мин" : "min"}`;\n  return null;\n}
+function normalize(s: string) { return s.replace(/\s+/g, " ").trim(); }
+
+function dynamicTranslation(raw: string, locale: "kk" | "ru" | "en") {
+  let m = raw.match(/^(\\d+) cards$/); if (m) return `${m[1]} ${locale === "kk" ? "карта" : locale === "ru" ? "карточек" : "cards"}`;
+  m = raw.match(/^(\\d+) reviews$/); if (m) return `${m[1]} ${locale === "kk" ? "қайталау" : locale === "ru" ? "повторений" : "reviews"}`;
+  m = raw.match(/^(\\d+) responses recorded$/); if (m) return `${m[1]} ${locale === "kk" ? "жауап тіркелді" : locale === "ru" ? "ответов записано" : "responses recorded"}`;
+  m = raw.match(/^(\\d+) min$/); if (m) return `${m[1]} ${locale === "kk" ? "мин" : "min"}`;
+  return null;
+}
 
 export function GlobalTranslator() {
   const { locale } = useI18n();
