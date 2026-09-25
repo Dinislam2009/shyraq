@@ -25,6 +25,7 @@ export async function updateDeckSettings(id:string,formData:FormData){
   difficulty:String(formData.get("difficulty")||"").trim().slice(0,30),
   color:String(formData.get("color")||"").trim().slice(0,20),
   icon:String(formData.get("icon")||"").trim().slice(0,8),
+  coverUrl:String(formData.get("cover_url")||"").trim().slice(0,1000),
   archived:formData.get("archived")==="on"
  };
  const {error}=await supabase.from("decks").update({name:String(formData.get("name")||deck.name).trim().slice(0,120),description:String(formData.get("description")||"").trim().slice(0,2000),visibility:String(formData.get("visibility")||"private"),settings:next}).eq("id",id);
