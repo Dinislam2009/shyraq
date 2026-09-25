@@ -532,7 +532,7 @@ Shyraq should maximize Anki compatibility while explicitly avoiding the claim th
 - [x] Restore conflict detection
 - [x] Selective restore
 - [x] Backup integrity checksum
-- [ ] Large-backup streaming
+- [x] Large-backup streaming
 
 Target principle:
 
