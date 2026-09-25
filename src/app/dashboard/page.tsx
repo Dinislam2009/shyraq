@@ -15,10 +15,17 @@ export default async function DashboardPage() {
           <div><p className="mb-2 text-sm text-slate-400">Personal workspace</p><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Welcome back, {displayName}.</h1><p className="mt-2 text-sm text-slate-500">Your learning workspace is ready.</p></div>
           <Link href="/review" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800"><PlayIcon size={16}/>Start review</Link>
         </div>
-        <section className="grid gap-4 sm:grid-cols-3">
-          <Stat icon={<ClockIcon size={18}/>} label="Due today" value={String(stats.dueToday)} sub="cards waiting for review"/>
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <Stat icon={<ClockIcon size={18}/>} label="Due" value={String(stats.dueToday)} sub="cards due or overdue"/>
+          <Stat icon={<LayersIcon size={18}/>} label="New today" value={String(stats.newToday)} sub="new cards reviewed"/>
+          <Stat icon={<PlayIcon size={18}/>} label="Reviews today" value={String(stats.reviewsToday)} sub="responses recorded"/>
+          <Stat icon={<ClockIcon size={18}/>} label="Study time" value={String(stats.studyMinutesToday)+"m"} sub={stats.accuracyToday===null?"today":"today · "+stats.accuracyToday+"% accuracy"}/>
           <Stat icon={<FlameIcon size={18}/>} label="Study streak" value={String(stats.streak)} sub="days in a row"/>
+        </section>
+        <section className="mt-4 grid gap-4 sm:grid-cols-3">
           <Stat icon={<LayersIcon size={18}/>} label="Decks" value={String(decks.length)} sub="in your workspace"/>
+          <Stat icon={<ClockIcon size={18}/>} label="30-day reviews" value="See statistics" sub="open detailed analytics"/>
+          <Stat icon={<PlayIcon size={18}/>} label="Continue" value="Start review" sub="resume your queue"/>
         </section>
         <section className="mt-8">
           <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Your decks</h2><Link href="/decks" className="text-sm font-medium text-slate-500 hover:text-slate-900">View all</Link></div>
