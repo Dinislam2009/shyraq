@@ -31,7 +31,7 @@ export async function importAnki(formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();if(!workspace)fail("Personal workspace not found.");
 
- let mediaPaths=new Map<string,string>();
+ let mediaPaths=new Map<string,{path:string;mime_type:string}>();
  try{mediaPaths=await uploadImportedMedia(supabase,user.id,workspace.id,parsed.mediaFiles);}catch(error){fail(error instanceof Error?error.message:"Unable to import media.");}
 
  const sourceToImported=new Map<number,string>();let imported=0;
