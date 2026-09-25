@@ -45,7 +45,6 @@ async function createDeckWithTemplate(supabase:any,userId:string,workspaceId:str
  const {data:deck,error}=await supabase.from("decks").insert({workspace_id:workspaceId,owner_id:userId,name:String(sourceDeck.name||"Imported deck"),description:String(sourceDeck.description||""),visibility,settings}).select("id").single();
  if(error||!deck)throw new Error(error?.message||"Unable to restore deck.");
  deckMap.set(String(sourceDeck.id),deck.id);
- await supabase.from("card_templates").insert({deck_id:deck.id,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
  return deck.id;
 }
 async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>){
@@ -80,11 +79,21 @@ async function restoreBackup(supabase:any,userId:string,workspaceId:string,paylo
  for(const deck of sourceDecks){ await createDeckWithTemplate(supabase,userId,workspaceId,deck,deckMap); }
 
  const templates=Array.isArray(payload.templates)?payload.templates:[];
+ const restoredTemplateDecks=new Set<string>();
  for(const template of templates){
   const deckId=deckMap.get(String(template.deck_id)); if(!deckId)continue;
   const {data,error}=await supabase.from("card_templates").insert({deck_id:deckId,name:String(template.name||"Template"),front_template:String(template.front_template||"{{front}}"),back_template:String(template.back_template||"{{back}}"),css:String(template.css||""),field_schema:Array.isArray(template.field_schema)?template.field_schema:[]}).select("id").single();
   if(error)throw new Error(error.message);
-  if(data)templateMap.set(String(template.id),data.id);
+  if(data){templateMap.set(String(template.id),data.id);restoredTemplateDecks.add(String(template.deck_id));}
+ }
+
+ for(const sourceDeck of sourceDecks){
+  const sourceId=String(sourceDeck.id);
+  const deckId=deckMap.get(sourceId);
+  if(deckId&&!restoredTemplateDecks.has(sourceId)){
+   const {error}=await supabase.from("card_templates").insert({deck_id:deckId,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
+   if(error)throw new Error(error.message);
+  }
  }
 
  const tags=Array.isArray(payload.tags)?payload.tags:[];
