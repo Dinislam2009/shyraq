@@ -15,7 +15,7 @@ async function requireAccess(id:string,write:boolean){
 }
 
 export async function updateDeckSettings(id:string,formData:FormData){
- const {supabase,deck}=await requireAccess(id,true);
+ const {supabase,user,deck}=await requireAccess(id,true);
  const current=(deck.settings||{}) as Record<string,any>;
  const next={...current,
   category:String(formData.get("category")||"").trim().slice(0,60),
