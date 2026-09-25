@@ -603,7 +603,7 @@ Target principle:
 - [x] Collection detail page
 - [x] Collection editing
 - [x] Collection sorting
-- [ ] Collection sharing
+- [x] Collection sharing
 - [x] Smart collections
 - [x] Collection rules
 
@@ -683,9 +683,9 @@ If a local edit conflicts with an author update:
 - [x] Creator avatar
 - [x] Creator statistics
 - [x] Creator collections
-- [ ] Creator activity controls
-- [ ] Block/mute creator
-- [ ] Community moderation/report history
+- [x] Creator activity controls
+- [x] Block/mute creator
+- [x] Community moderation/report history
 
 ---
 
