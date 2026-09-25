@@ -38,7 +38,11 @@ export function parseDeckFormData(formData:FormData){
    category:String(formData.get("category")||"").trim().slice(0,60),
    subject:String(formData.get("subject")||"").trim().slice(0,80),
    language:String(formData.get("language")||"").trim().slice(0,20),
-   difficulty:String(formData.get("difficulty")||"").trim().slice(0,30)
+   difficulty:String(formData.get("difficulty")||"").trim().slice(0,30),
+   color:String(formData.get("color")||"").trim().slice(0,20),
+   icon:String(formData.get("icon")||"").trim().slice(0,8),
+   coverUrl:String(formData.get("cover_url")||"").trim().slice(0,1000),
+   archived:formData.get("archived")==="on"
   }
  };
 }
