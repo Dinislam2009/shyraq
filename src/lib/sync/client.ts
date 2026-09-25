@@ -10,7 +10,7 @@ export async function queueReview(event:OfflineReview){
 export async function syncReviews(){
  const events=await offlineStore.reviews.where("status").equals("pending").limit(500).toArray();
  if(!events.length)return {accepted:0,conflicts:[] as string[]};
- const response=await fetch("/api/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({events})});
+ const response=await fetch("/api/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({events:events.map(e=>({...e,event_key:e.id}))})});
  if(!response.ok)throw new Error("Sync failed");
  const result=(await response.json()) as {accepted:number;conflicts:string[]};
  const conflictSet=new Set(result.conflicts??[]);
