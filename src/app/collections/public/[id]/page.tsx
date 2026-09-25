@@ -7,6 +7,8 @@ import {toggleFeaturedCollection} from "@/app/collections/actions";
 export default async function PublicCollectionPage({params}:{params:Promise<{id:string}>}){
  const {id}=await params;
  const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ const isModerator=user?(await supabase.rpc("is_platform_moderator")).data===true:false;
  const {data:collection}=await supabase.from("collections").select("id,name,description,kind,is_public,is_featured,owner_id,collection_cards(card_id)").eq("id",id).eq("is_public",true).maybeSingle();
  if(!collection)notFound();
  const ids=(collection.collection_cards??[]).map((row:any)=>String(row.card_id));
