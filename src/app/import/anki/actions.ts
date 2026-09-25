@@ -41,7 +41,7 @@ export async function importAnki(formData:FormData):Promise<void>{
   const rows=sourceDeck.cards.map((card,index)=>{
     let front=card.front;
     let back=card.back;
-    for(const [name,path] of mediaPaths.entries()){
+    for(const [name,info] of mediaPaths.entries()){
       const token="__SHYRAQ_MEDIA__"+encodeURIComponent(name);
       front=front.replaceAll(token,info.path);
       back=back.replaceAll(token,info.path);
