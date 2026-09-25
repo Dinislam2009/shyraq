@@ -327,11 +327,11 @@ The review engine is one of Shyraq's core systems.
 - [x] Short-term scheduling
 - [x] New-card daily limit
 - [x] Review daily limit
-- [ ] Scheduler profiles
+- [x] Scheduler profiles
 - [ ] Multiple scheduler engines
 - [ ] User-selectable scheduler
-- [ ] Advanced scheduler diagnostics
-- [ ] Scheduler migration tools
+- [x] Advanced scheduler diagnostics
+- [x] Scheduler migration tools
 
 Long-term direction:
 
@@ -358,13 +358,13 @@ Long-term direction:
 - [x] Custom review-button order
 - [x] Keyboard-hint preference
 - [x] Swipe preference
-- [ ] Fully customizable review-button colors/styles
-- [ ] Per-card review interaction preferences
-- [ ] Review-session configuration screen
-- [ ] Undo last answer
-- [ ] Pause/resume session
-- [ ] Review session summary
-- [ ] Better accessibility controls
+- [x] Fully customizable review-button colors/styles
+- [x] Per-card review interaction preferences
+- [x] Review-session configuration screen
+- [x] Undo last answer
+- [x] Pause/resume session
+- [x] Review session summary
+- [x] Better accessibility controls
 
 ## Review philosophy
 
