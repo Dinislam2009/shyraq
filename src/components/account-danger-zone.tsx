@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { offlineStore } from "@/lib/offline/store";
+import { useI18n } from "@/components/i18n-provider";
 
 export function AccountDangerZone(){
  const router=useRouter();
  const [confirm,setConfirm]=useState("");
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
+ const { t } = useI18n();
 
  async function removeAccount(){
   if(confirm!=="DELETE"||busy)return;
@@ -24,7 +26,7 @@ export function AccountDangerZone(){
    await supabase.auth.signOut({scope:"global"});
    router.replace("/login?deleted=1");
   }catch(error){
-   setError(error instanceof Error?error.message:"Account deletion failed.");
+   setError(error instanceof Error?error.message:t("accountDeletionFailed"));
    setBusy(false);
   }
  }
