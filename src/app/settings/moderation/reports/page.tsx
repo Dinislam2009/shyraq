@@ -1,0 +1,9 @@
+import Link from "next/link";
+import {AppShell} from "@/components/app-shell";
+import {createClient} from "@/lib/supabase/server";
+
+export default async function MyReportsPage(){
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return <AppShell><div className="mx-auto max-w-3xl px-5 py-10">Sign in to view your reports.</div></AppShell>;
+ const {data:reports}=await supabase.from("deck_reports").select("id,deck_id,reason,details,status,created_at,resolved_at,decks(id,name)").eq("reporter_id",user.id).order("created_at",{ascending:false}).limit(100);
+ return <AppShell><div className="mx-auto max-w-4xl px-5 py-8 sm:px-8"><Link href="/settings/moderation" className="text-sm text-slate-400">← Moderation</Link><h1 className="mt-4 text-3xl font-semibold">My reports</h1><p className="mt-2 text-sm text-slate-500">Track reports you submitted against public decks.</p><div className="mt-7 space-y-3">{(reports??[]).map((r:any)=><div key={r.id} className="rounded-2xl border border-black/[0.06] bg-white p-5"><div className="flex items-start justify-between gap-4"><div><p className="font-semibold">{r.decks?.name||"Deck"}</p><p className="mt-1 text-xs text-slate-400">{r.reason} · {new Date(r.created_at).toLocaleString()}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize">{r.status}</span></div><p className="mt-4 text-sm text-slate-500">{r.details||"No details provided."}</p>{r.resolved_at?<p className="mt-3 text-xs text-slate-400">Resolved {new Date(r.resolved_at).toLocaleString()}</p>:null}</div>)}{!(reports??[]).length?<div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">No reports submitted yet.</div>:null}</div></div></AppShell>;
+}
