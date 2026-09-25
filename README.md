@@ -551,14 +551,14 @@ Target principle:
 - [x] Media references inside cards
 - [x] Media export
 - [x] Anki media migration
-- [ ] Dedicated media library
-- [ ] Media search
-- [ ] Media reuse across cards
-- [ ] Media deletion/orphan cleanup
+- [x] Dedicated media library
+- [x] Media search
+- [x] Media reuse across cards
+- [x] Media deletion/orphan cleanup
 - [ ] Media compression
 - [ ] Image optimization
 - [ ] Audio/video metadata display
-- [ ] Offline media cache
+- [x] Offline media cache
 
 ---
 
