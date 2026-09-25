@@ -423,7 +423,8 @@ alter publication supabase_realtime add table public.decks, public.cards, public
 create or replace function private.prevent_card_owner_change()
 returns trigger
 language plpgsql
-as $$
+set search_path = pg_catalog
+as $
 begin
   if new.owner_id is distinct from old.owner_id then
     raise exception 'card owner cannot be changed';
@@ -460,7 +461,8 @@ with check (
 create or replace function private.prevent_deck_owner_change()
 returns trigger
 language plpgsql
-as $$
+set search_path = pg_catalog
+as $
 begin
   if new.owner_id is distinct from old.owner_id then
     raise exception 'deck owner cannot be changed';
@@ -473,3 +475,8 @@ drop trigger if exists decks_owner_immutable on public.decks;
 create trigger decks_owner_immutable
 before update on public.decks
 for each row execute function private.prevent_deck_owner_change();
+
+
+-- Harden collaboration trigger functions.
+alter function private.prevent_card_owner_change() set search_path = pg_catalog;
+alter function private.prevent_deck_owner_change() set search_path = pg_catalog;
