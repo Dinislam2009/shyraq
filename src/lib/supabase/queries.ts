@@ -231,7 +231,7 @@ export async function getReviewStats(){
 export async function getDashboardStats(){
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
- if(!user)return {dueToday:0,newToday:0,reviewsToday:0,studyMinutesToday:0,accuracyToday:null,streak:0,workspace:null};
+ if(!user)return {dueToday:0,newToday:0,reviewsToday:0,studyMinutesToday:0,accuracyToday:null,streak:0,workspace:null,planning:{targetReviews:0,estimatedMinutes:0,dueToday:0,newToday:0},insights:["Sign in to see personalized learning insights."],workspaceOverview:{decks:0,cards:0,members:0}};
 
  const workspace=await getSelectedWorkspace();
  const workspaceId=workspace?.id?String(workspace.id):"";
