@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { ClockIcon, FlameIcon, LayersIcon, PlayIcon } from "@/components/icons";
-import { getCurrentUser, getDecks } from "@/lib/supabase/queries";
+import { getCurrentUser, getDashboardStats, getDecks } from "@/lib/supabase/queries";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const decks = await getDecks();
+  const stats = await getDashboardStats();
   const displayName = String(user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Student");
   return (
     <AppShell>
@@ -15,8 +16,8 @@ export default async function DashboardPage() {
           <Link href="/review" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800"><PlayIcon size={16}/>Start review</Link>
         </div>
         <section className="grid gap-4 sm:grid-cols-3">
-          <Stat icon={<ClockIcon size={18}/>} label="Due today" value="0" sub="cards waiting for review"/>
-          <Stat icon={<FlameIcon size={18}/>} label="Study streak" value="0" sub="days in a row"/>
+          <Stat icon={<ClockIcon size={18}/>} label="Due today" value={String(stats.dueToday)} sub="cards waiting for review"/>
+          <Stat icon={<FlameIcon size={18}/>} label="Study streak" value={String(stats.streak)} sub="days in a row"/>
           <Stat icon={<LayersIcon size={18}/>} label="Decks" value={String(decks.length)} sub="in your workspace"/>
         </section>
         <section className="mt-8">
