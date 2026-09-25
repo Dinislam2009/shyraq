@@ -104,9 +104,9 @@ export async function createBulkCards(deckId:string,formData:FormData):Promise<v
  let skipped=0;
  for(const row of rows){
   const key=duplicateKey(row);
-  if((duplicateMode==="skip"&&seen.has(key))||inFile.has(key)){skipped++;continue;}
+  if((duplicateMode==="skip"&&seen.has(key))||((duplicateMode!=="create")&&inFile.has(key))){skipped++;continue;}
   if(duplicateMode==="reject"&&seen.has(key))fail("/decks/"+deckId+"/cards/bulk","Duplicate found before creation.");
-  inFile.add(key);
+  if(duplicateMode!=="create")inFile.add(key);
   const content:any={front:row.front,back:row.back};
   if(tagNames.length)content.tags=tagNames;
   if(selectedMedia)content.mediaItems=[{path:selectedMedia,mimeType:"",name:selectedMedia.split("/").pop()||"media"}];
