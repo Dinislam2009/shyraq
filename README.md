@@ -1005,7 +1005,7 @@ Target:
 - [x] Unit tests for permission logic
 - [x] Unit tests for deck update reconciliation
 - [ ] Database/RLS integration tests
-- [ ] API tests
+- [x] API tests
 
 ## End-to-end
 
