@@ -20,6 +20,8 @@ export async function POST(request:NextRequest){
  const events=Array.isArray(body.events)?body.events:[];
  const batch=events.slice(0,500);
  const conflicts:string[]=[];
+ let acceptedCount=0;
+ let deviceIds:string[]=[];
 
  if(batch.length>0){
   const rows=batch.map((e:any)=>({
@@ -35,51 +37,48 @@ export async function POST(request:NextRequest){
     next_state:e.next_state??e.nextState??{},
     metadata:e.metadata??{}
   }));
-
+  deviceIds=[...new Set(rows.map((row:any)=>row.device_id).filter(Boolean))] as string[];
+  if(deviceIds.length){
+   const deviceRows=deviceIds.map((id)=>({id,user_id:user.id,name:String(body.deviceName||"Web browser").slice(0,60),last_seen_at:new Date().toISOString()}));
+   await supabase.from("review_devices").upsert(deviceRows,{onConflict:"id"});
+  }
   const eventKeys=rows.map((row:any)=>row.event_key);
   const {data:existingEvents}=await supabase.from("review_events").select("event_key").eq("user_id",user.id).in("event_key",eventKeys);
   const existingKeys=new Set((existingEvents??[]).map((row:any)=>row.event_key));
   const newRows=rows.filter((row:any)=>!existingKeys.has(row.event_key));
   const {error:eventError}=await supabase.from("review_events").upsert(newRows,{onConflict:"event_key",ignoreDuplicates:true});
   if(eventError)return NextResponse.json({error:eventError.message},{status:400});
+  acceptedCount=newRows.length;
 
   for(const e of newRows){
    const incoming=e.next_state as any;
    if(!incoming?.due)continue;
-
    const {data:existing}=await supabase.from("review_states").select("state_data,last_reviewed_at").eq("user_id",user.id).eq("card_id",e.card_id).maybeSingle();
    const currentReviewedAt=existing?.last_reviewed_at?new Date(existing.last_reviewed_at).getTime():0;
    const incomingReviewedAt=new Date(e.reviewed_at).getTime();
 
    if(currentReviewedAt>incomingReviewedAt){
-     await supabase.from("sync_conflicts").insert({
-       user_id:user.id,
-       card_id:e.card_id,
-       event_key:e.event_key,
-       incoming_state:incoming,
-       current_state:existing?.state_data??{},
-       incoming_reviewed_at:e.reviewed_at,
-       current_reviewed_at:existing?.last_reviewed_at??null
+     const {error:conflictError}=await supabase.from("sync_conflicts").insert({
+       user_id:user.id,card_id:e.card_id,event_key:e.event_key,incoming_state:incoming,current_state:existing?.state_data??{},
+       incoming_reviewed_at:e.reviewed_at,current_reviewed_at:existing?.last_reviewed_at??null
+     });
+     if(conflictError)continue;
+     await supabase.from("notifications").insert({
+       user_id:user.id,kind:"sync_conflict",title:"Review sync conflict detected",
+       body:"A newer remote review state was preserved. Open Sync to review the conflict.",href:"/settings/sync"
      });
      conflicts.push(e.event_key);
      continue;
    }
 
    await supabase.from("review_states").upsert({
-     user_id:user.id,
-     card_id:e.card_id,
+     user_id:user.id,card_id:e.card_id,
      queue:incoming.state===2?"review":incoming.state===3?"relearning":"learning",
-     state_data:incoming,
-     due_at:new Date(incoming.due).toISOString(),
-     last_reviewed_at:e.reviewed_at,
-     reps:incoming.reps??0,
-     lapses:incoming.lapses??0,
-     stability:incoming.stability??null,
-     difficulty:incoming.difficulty??null,
-     scheduled_days:incoming.scheduled_days??0
+     state_data:incoming,due_at:new Date(incoming.due).toISOString(),last_reviewed_at:e.reviewed_at,
+     reps:incoming.reps??0,lapses:incoming.lapses??0,stability:incoming.stability??null,
+     difficulty:incoming.difficulty??null,scheduled_days:incoming.scheduled_days??0
    });
   }
  }
-
- return NextResponse.json({accepted:Math.max(0,newRows.length-conflicts.length),conflicts});
+ return NextResponse.json({accepted:Math.max(0,acceptedCount-conflicts.length),conflicts,devices:deviceIds});
 }
