@@ -28,7 +28,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [kind, setKind] = useState("all");
   const [status, setStatus] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);\n  const [viewName, setViewName] = useState("");\n  const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string}>>([]);
   const { t } = useI18n();
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
@@ -61,6 +61,28 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       return matchesQuery && matchesKind && matchesStatus;
     });
   }, [cards, kind, query, status]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
+      if (event.key.toLowerCase() === "j" || event.key.toLowerCase() === "k") {
+        const current = document.activeElement?.getAttribute("data-card-index");
+        const nextIndex = current === null ? 0 : Math.max(0, Math.min(filtered.length - 1, Number(current) + (event.key.toLowerCase()==="j"?1:-1)));
+        document.querySelector('[data-card-index="'+nextIndex+'"]')?.scrollIntoView({behavior:"smooth",block:"center"});
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [filtered.length]);
+
+  function saveView(){
+    const name=viewName.trim(); if(!name)return;
+    const next=[...savedViews.filter(view=>view.name!==name),{name,query,kind,status}];
+    setSavedViews(next); localStorage.setItem("shyraq:card-views:"+deckId,JSON.stringify(next)); setViewName("");
+  }
+  function applyView(view:{name:string;query:string;kind:string;status:string}){
+    setQuery(view.query);setKind(view.kind);setStatus(view.status);
+  }
 
   const selectedVisible = filtered.filter(card => selected.includes(card.id));
   const allVisibleSelected = filtered.length > 0 && filtered.every(card => selected.includes(card.id));
@@ -120,7 +142,12 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
           </div>
         </div>
 
-        {canEdit&&<div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
+          <input value={viewName} onChange={event=>setViewName(event.target.value)} placeholder="View name" className="h-9 w-36 rounded-lg border border-slate-200 bg-white px-2 text-xs"/>
+          <button type="button" onClick={saveView} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Save view</button>
+          {savedViews.map(view=><button key={view.name} type="button" onClick={()=>applyView(view)} className="rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold">{view.name}</button>)}
+        </div>
+        {canEdit&&<div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
           <label className="flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
             <input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} className="h-4 w-4 rounded border-slate-300" />
             Select visible
@@ -150,7 +177,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       ) : (
         <div>
           {filtered.map((card, index) => (
-            <div key={card.id} className={"p-6 " + (index ? "border-t border-black/[0.05]" : "")}>
+            <div key={card.id} data-card-index={index} tabIndex={0} className={"p-6 outline-none focus-visible:ring-2 focus-visible:ring-slate-500 " + (index ? "border-t border-black/[0.05]" : "")}>
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   {canEdit&&<input type="checkbox" checked={selected.includes(card.id)} onChange={() => toggle(card.id)} className="mt-1 h-4 w-4 rounded border-slate-300" />}
