@@ -128,13 +128,19 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  },[answer,busy,paused,ratingOrder,revealed,undo]);
 
  const {front,back,templateCss}=useMemo(()=>{
-   const rawFront=card.content?.front||"",rawBack=card.content?.back||"";\n   const templateFields:Record<string,string>={front:rawFront,back:rawBack,...(card.content?.fields||{})};\n   if(card.content?.tags?.length){templateFields.Tags=card.content.tags.join(" ");templateFields.tags=card.content.tags.join(" ");}
+   const rawFront=card.content?.front||"",rawBack=card.content?.back||"";
+   const templateFields:Record<string,string>={front:rawFront,back:rawBack,...(card.content?.fields||{})};
+   if(card.content?.tags?.length){templateFields.Tags=card.content.tags.join(" ");templateFields.tags=card.content.tags.join(" ");}
    const sourceFront=card.kind==="reverse"?rawBack:rawFront,sourceBack=card.kind==="reverse"?rawFront:rawBack;
    const maskedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"••••"):sourceFront;
    const revealedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"$1"):sourceFront;
    const clozeBack=card.kind==="cloze"?[revealedFront,sourceBack].filter(Boolean).join("\n\n"):sourceBack;
    const template=templateOne(card.card_templates);
-   const frontRendered=template?applyCardTemplate(template.front_template,{...templateFields,front:maskedFront,back:sourceBack}):maskedFront;\n   const backRendered=template?applyCardTemplate(template.back_template,{...templateFields,front:revealedFront,back:clozeBack}):clozeBack;\n   const maskCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}|]+)(?:\|[^}]+)?\}\}/g,"••••"):value;\n   const revealCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}|]+)(?:\|[^}]+)?\}\}/g,"$1"):value;\n   return {front:maskCloze(frontRendered),back:revealCloze(backRendered),templateCss:template?.css||""};
+   const frontRendered=template?applyCardTemplate(template.front_template,{...templateFields,front:maskedFront,back:sourceBack}):maskedFront;
+   const backRendered=template?applyCardTemplate(template.back_template,{...templateFields,front:revealedFront,back:clozeBack}):clozeBack;
+   const maskCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}|]+)(?:\|[^}]+)?\}\}/g,"••••"):value;
+   const revealCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}|]+)(?:\|[^}]+)?\}\}/g,"$1"):value;
+   return {front:maskCloze(frontRendered),back:revealCloze(backRendered),templateCss:template?.css||""};
  },[card]);
 
  if(done){
