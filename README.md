@@ -108,7 +108,7 @@ Create a stable technical foundation before adding advanced product features.
 - [ ] Avatar upload
 - [x] Profile statistics
 - [x] Public creator deck collections
-- [ ] Creator activity/history controls
+- [x] Creator activity/history controls
 
 ## Account lifecycle
 
