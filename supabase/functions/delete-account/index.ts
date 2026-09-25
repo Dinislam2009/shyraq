@@ -12,25 +12,30 @@ const handler = withSupabase({ auth: "user" }, async (_req, ctx) => {
 
   while (folders.length) {
     const prefix = folders.pop()!;
+    const childFolders: string[] = [];
+    const files: string[] = [];
+    let offset = 0;
+
     while (true) {
-      const { data: entries, error: listError } = await bucket.list(prefix, { limit: 1000, offset: 0 });
+      const { data: entries, error: listError } = await bucket.list(prefix, { limit: 1000, offset });
       if (listError) return Response.json({ error: "Unable to prepare account deletion.", detail: listError.message }, { status: 500 });
       if (!entries || entries.length === 0) break;
 
-      const files: string[] = [];
       for (const entry of entries as StorageEntry[]) {
         const path = prefix + "/" + entry.name;
         if (entry.id) files.push(path);
-        else folders.push(path);
-      }
-
-      for (let start = 0; start < files.length; start += 100) {
-        const chunk = files.slice(start, start + 100);
-        const { error: removeError } = await bucket.remove(chunk);
-        if (removeError) return Response.json({ error: "Unable to remove account media.", detail: removeError.message }, { status: 500 });
+        else childFolders.push(path);
       }
 
       if (entries.length < 1000) break;
+      offset += entries.length;
+    }
+
+    folders.push(...childFolders);
+    for (let start = 0; start < files.length; start += 100) {
+      const chunk = files.slice(start, start + 100);
+      const { error: removeError } = await bucket.remove(chunk);
+      if (removeError) return Response.json({ error: "Unable to remove account media.", detail: removeError.message }, { status: 500 });
     }
   }
 
