@@ -12,7 +12,7 @@ export default async function DashboardPage() {
     <AppShell>
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
         <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div><p className="mb-2 text-sm text-slate-400">Personal workspace</p><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Welcome back, {displayName}.</h1><p className="mt-2 text-sm text-slate-500">Your learning workspace is ready.</p></div>
+          <div><p className="mb-2 text-sm text-slate-400">{stats.workspace?.name||"Learning workspace"}</p><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Welcome back, {displayName}.</h1><p className="mt-2 text-sm text-slate-500">Your learning workspace is ready.</p></div>
           <Link href="/review" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800"><PlayIcon size={16}/>Start review</Link>
         </div>
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
