@@ -40,7 +40,7 @@ export function ReviewBootstrap({
     if(cached&&cached.queue.length){
      setResolvedUserId(browserUserId||cached.userId);
      setQueue(cached.queue);
-     setPreferences({...defaults,...cached.preferences});
+     setPreferences({...defaults,...(cached.preferences&&typeof cached.preferences==="object"?cached.preferences:{})});
      setReady(true);
     }else{
      setResolvedUserId(browserUserId);
