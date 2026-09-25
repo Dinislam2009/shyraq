@@ -5,6 +5,10 @@ import {createClient} from "@/lib/supabase/server";
 
 function fail(path:string,message:string):never{redirect(path+"?error="+encodeURIComponent(message));}
 async function personalWorkspace(supabase:any,userId:string){const {data}=await supabase.from("workspaces").select("id").eq("owner_id",userId).eq("kind","personal").limit(1).maybeSingle();return data;}
+async function collectionForUser(supabase:any,userId:string,id:string){
+ const {data}=await supabase.from("collections").select("id,name,kind,workspace_id,owner_id").eq("id",id).eq("owner_id",userId).maybeSingle();
+ return data;
+}
 async function favoritesCollection(supabase:any,userId:string,workspaceId:string){
  const {data:existing}=await supabase.from("collections").select("id").eq("owner_id",userId).eq("workspace_id",workspaceId).eq("kind","favorites").limit(1).maybeSingle();
  if(existing)return existing;
@@ -29,4 +33,37 @@ export async function createCollection(formData:FormData):Promise<void>{
  const name=String(formData.get("name")||"").trim().slice(0,80);if(!name)fail("/collections","Collection name is required.");
  const {error}=await supabase.from("collections").insert({workspace_id:workspace.id,owner_id:user.id,name,kind:"custom"});if(error)fail("/collections",error.message);
  revalidatePath("/collections");redirect("/collections");
+}
+export async function updateCollection(id:string,formData:FormData):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const collection=await collectionForUser(supabase,user.id,id);if(!collection)fail("/collections","Collection not found.");
+ if(collection.kind==="favorites")fail("/collections/"+id,"Favorites cannot be renamed.");
+ const name=String(formData.get("name")||"").trim().slice(0,80);if(!name)fail("/collections/"+id,"Collection name is required.");
+ const {error}=await supabase.from("collections").update({name}).eq("id",id).eq("owner_id",user.id);
+ if(error)fail("/collections/"+id,error.message);
+ revalidatePath("/collections");revalidatePath("/collections/"+id);redirect("/collections/"+id);
+}
+export async function deleteCollection(id:string):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const collection=await collectionForUser(supabase,user.id,id);if(!collection)fail("/collections","Collection not found.");
+ if(collection.kind==="favorites")fail("/collections/"+id,"Favorites cannot be deleted.");
+ const {error}=await supabase.from("collections").delete().eq("id",id).eq("owner_id",user.id);
+ if(error)fail("/collections/"+id,error.message);
+ revalidatePath("/collections");redirect("/collections");
+}
+export async function removeCardFromCollection(collectionId:string,cardId:string):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const collection=await collectionForUser(supabase,user.id,collectionId);if(!collection)fail("/collections","Collection not found.");
+ const {error}=await supabase.from("collection_cards").delete().eq("collection_id",collectionId).eq("card_id",cardId);
+ if(error)fail("/collections/"+collectionId,error.message);
+ revalidatePath("/collections/"+collectionId);revalidatePath("/collections");redirect("/collections/"+collectionId);
+}
+export async function addCardToCollection(collectionId:string,formData:FormData):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const collection=await collectionForUser(supabase,user.id,collectionId);if(!collection)fail("/collections","Collection not found.");
+ const cardId=String(formData.get("card_id")||"").trim();if(!cardId)fail("/collections/"+collectionId,"Card ID is required.");
+ const {data:card}=await supabase.from("cards").select("id").eq("id",cardId).maybeSingle();if(!card)fail("/collections/"+collectionId,"Card not found.");
+ const {error}=await supabase.from("collection_cards").upsert({collection_id:collectionId,card_id:cardId});
+ if(error)fail("/collections/"+collectionId,error.message);
+ revalidatePath("/collections/"+collectionId);redirect("/collections/"+collectionId);
 }
