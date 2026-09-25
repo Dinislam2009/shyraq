@@ -45,3 +45,16 @@ export async function deleteDeck(id:string):Promise<void>{
  if(error)fail("/decks/"+id,error.message);
  revalidatePath("/dashboard");revalidatePath("/decks");redirect("/decks");
 }
+
+export async function reorderDecks(workspaceId:string,deckIds:string[]):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",user.id).maybeSingle();
+ if(!member||!["owner","admin","editor"].includes(String(member.role)))fail("/decks","You do not have permission to reorder decks.");
+ const {data:decks}=await supabase.from("decks").select("id").eq("workspace_id",workspaceId).is("deleted_at",null).in("id",deckIds);
+ const valid=new Set((decks??[]).map((deck:any)=>String(deck.id)));
+ const ordered=deckIds.filter(id=>valid.has(id));
+ for(let index=0;index<ordered.length;index++)await supabase.from("decks").update({sort_order:index}).eq("id",ordered[index]).eq("workspace_id",workspaceId);
+ revalidatePath("/decks");revalidatePath("/dashboard");
+}
