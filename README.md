@@ -630,13 +630,13 @@ Public sharing is a major Shyraq feature.
 - [x] Public deck pages
 - [x] Creator attribution
 - [x] Card previews
-- [ ] Category system
-- [ ] Subject filters
-- [ ] Language filters
-- [ ] Difficulty filters
-- [ ] Sort by recent
-- [ ] Sort by popularity
-- [ ] Search ranking
+- [x] Category system
+- [x] Subject filters
+- [x] Language filters
+- [x] Difficulty filters
+- [x] Sort by recent
+- [x] Sort by popularity
+- [x] Search ranking
 - [ ] Featured collections
 
 ## Public deck actions
@@ -649,7 +649,7 @@ Public sharing is a major Shyraq feature.
 - [x] Accept future updates
 - [x] Ask before updates
 - [x] Local-change protection
-- [ ] Unfollow management
+- [x] Unfollow management
 - [ ] Copy/update history
 - [ ] Deck version history
 - [ ] Visual update diff
