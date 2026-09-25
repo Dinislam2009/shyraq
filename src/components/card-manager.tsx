@@ -117,13 +117,13 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
+        {canEdit&&<div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
           <label className="flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
             <input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} className="h-4 w-4 rounded border-slate-300" />
             Select visible
           </label>
           <span className="text-xs text-slate-400">{selected.length} selected</span>
-          {canEdit&&selected.length > 0 && (
+          {selected.length > 0 && (
             <>
               <button type="button" disabled={busy} onClick={() => void runBulk("mark")} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold">Mark</button>
               <button type="button" disabled={busy} onClick={() => void runBulk("unmark")} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold">Unmark</button>
@@ -132,7 +132,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
               <button type="button" disabled={busy} onClick={() => void runBulk("delete")} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">Delete</button>
             </>
           )}
-        </div>
+        </div>}
       </div>
 
       {cards.length === 0 ? (
@@ -176,13 +176,13 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                   </form>
                   {canEdit&&<form action={setCardFlag.bind(null, deckId, card.id, "is_marked", !card.is_marked)}>
                     <button className="text-xs font-semibold text-slate-500">{card.is_marked ? "Unmark" : "Mark"}</button>
-                  </form>
+                  </form>}
                   {canEdit&&<form action={setCardFlag.bind(null, deckId, card.id, "is_suspended", !card.is_suspended)}>
                     <button className="text-xs font-semibold text-slate-500">{card.is_suspended ? "Unsuspend" : "Suspend"}</button>
-                  </form>
+                  </form>}
                   {canEdit&&<form action={deleteCard.bind(null, deckId, card.id)}>
                     <button className="text-xs font-medium text-slate-400 hover:text-red-600">Delete</button>
-                  </form>
+                  </form>}
                 </div>
               </div>
 
@@ -199,7 +199,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                 <div className="mt-3 flex justify-end">
                   <button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold hover:bg-slate-50">Save changes</button>
                 </div>
-              </form>
+              </form>}
             </div>
           ))}
         </div>
