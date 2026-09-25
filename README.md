@@ -855,11 +855,11 @@ Global search is planned as a major productivity feature.
 - [ ] Search creators
 - [ ] Search public decks
 - [ ] Search workspace content
-- [ ] Search filters
+- [x] Search filters
 - [ ] Keyboard shortcut
 - [ ] Command palette
-- [ ] Recent searches
-- [ ] Saved searches
+- [x] Recent searches
+- [x] Saved searches
 
 Target shortcut:
 
@@ -869,15 +869,15 @@ Cmd/Ctrl + K
 
 # 23. Notifications and activity
 
-- [ ] Sync conflict notification
-- [ ] Author deck-update notification
-- [ ] Workspace invitation notification
-- [ ] Collaboration activity notification
-- [ ] Moderation notification
-- [ ] Backup notification
-- [ ] Offline/online state notification
-- [ ] In-app notification center
-- [ ] Notification preferences
+- [x] Sync conflict notification
+- [x] Author deck-update notification
+- [x] Workspace invitation notification
+- [x] Collaboration activity notification
+- [x] Moderation notification
+- [x] Backup notification
+- [x] Offline/online state notification
+- [x] In-app notification center
+- [x] Notification preferences
 
 No paid notification tiers.
 
