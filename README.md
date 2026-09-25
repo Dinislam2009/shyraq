@@ -780,17 +780,17 @@ Analytics are a core feature, not a Premium feature.
 - [x] Deck performance
 - [x] Daily detail
 - [x] Streak
-- [ ] Retention curve
-- [ ] Forecast of due workload
-- [ ] New/review balance
-- [ ] Card difficulty distribution
-- [ ] Learning/relearning breakdown
-- [ ] Scheduler effectiveness metrics
-- [ ] Per-card performance
-- [ ] Per-tag performance
-- [ ] Per-collection performance
-- [ ] Historical comparison
-- [ ] CSV/JSON analytics export
+- [x] Retention curve
+- [x] Forecast of due workload
+- [x] New/review balance
+- [x] Card difficulty distribution
+- [x] Learning/relearning breakdown
+- [x] Scheduler effectiveness metrics
+- [x] Per-card performance
+- [x] Per-tag performance
+- [x] Per-collection performance
+- [x] Historical comparison
+- [x] CSV/JSON analytics export
 
 The dashboard should expose a large amount of information while maintaining a visually minimal hierarchy.
 
