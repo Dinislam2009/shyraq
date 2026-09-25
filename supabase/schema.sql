@@ -151,6 +151,28 @@ create table if not exists public.deck_copies (
  primary key(user_id,source_deck_id,copied_deck_id)
 );
 
+create table if not exists public.notifications (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references auth.users(id) on delete cascade,
+ kind text not null check(kind in ('sync_conflict','deck_update','workspace_invite','collaboration','moderation','backup','system')),
+ title text not null,
+ body text not null default '',
+ href text,
+ read_at timestamptz,
+ created_at timestamptz not null default now()
+);
+create index if not exists notifications_user_idx on public.notifications(user_id,read_at,created_at desc);
+
+create table if not exists public.review_devices (
+ id uuid primary key,
+ user_id uuid not null references auth.users(id) on delete cascade,
+ name text not null default 'Device',
+ last_seen_at timestamptz not null default now(),
+ created_at timestamptz not null default now(),
+ unique(user_id,id)
+);
+create index if not exists review_devices_user_idx on public.review_devices(user_id,last_seen_at desc);
+
 create table if not exists public.workspace_invitations (
  id uuid primary key default gen_random_uuid(),
  workspace_id uuid not null references public.workspaces(id) on delete cascade,
