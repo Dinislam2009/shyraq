@@ -1,33 +1,35 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import { RichContent } from "@/components/rich-content";
 import { OcclusionEditor, type OcclusionRect } from "@/components/image-occlusion";
 
 type CardAction = (formData: FormData) => void | Promise<void>;
-type Template = {id:string;name:string;front_template:string;back_template:string};
+type t("cardTemplate") = {id:string;name:string;front_template:string;back_template:string};
 type FieldName = "front" | "back";
 
 const tick = String.fromCharCode(96);
-function applyTemplatePreview(source:string,fields:{front:string;back:string}){return String(source||"").replace(/\{\{\s*front\s*\}\}/gi,fields.front).replace(/\{\{\s*back\s*\}\}/gi,fields.back).replace(/\{\{\s*FrontSide\s*\}\}/g,fields.front);}
+function applyt("cardTemplate")Preview(source:string,fields:{front:string;back:string}){return String(source||"").replace(/\{\{\s*front\s*\}\}/gi,fields.front).replace(/\{\{\s*back\s*\}\}/gi,fields.back).replace(/\{\{\s*t("front")Side\s*\}\}/g,fields.front);}
 
-export function CardEditor({ action, templates = [], initial, submitLabel = "Save card" }: { action: CardAction; templates?: Template[]; initial?: { kind?: string; front?: string; back?: string; tags?: string[]; options?: string[]; answer?: number; imageUrl?: string; mediaUrl?: string; occlusions?: OcclusionRect[]; templateId?: string; updatedAt?: string }; submitLabel?: string }) {
-  const [templateId, setTemplateId] = useState(initial?.templateId || "");
+export function CardEditor({ action, templates = [], initial, submitLabel = "Save card" }: { action: CardAction; templates?: t("cardTemplate")[]; initial?: { kind?: string; front?: string; back?: string; tags?: string[]; options?: string[]; answer?: number; imageUrl?: string; mediaUrl?: string; occlusions?: OcclusionRect[]; templateId?: string; updatedAt?: string }; submitLabel?: string }) {
+  const { t } = useI18n();
+  const [templateId, sett("cardTemplate")Id] = useState(initial?.templateId || "");
   const [kind, setKind] = useState(initial?.kind || "basic");
-  const [front, setFront] = useState(initial?.front || "");
-  const [back, setBack] = useState(initial?.back || "");
-  const [tags, setTags] = useState((initial?.tags || []).join(", "));
-  const [options, setOptions] = useState((initial?.options || []).join(", "));
+  const [front, sett("front")] = useState(initial?.front || "");
+  const [back, sett("back")] = useState(initial?.back || "");
+  const [tags, sett("tags")] = useState((initial?.tags || []).join(", "));
+  const [options, sett("options")] = useState((initial?.options || []).join(", "));
   const [answer, setAnswer] = useState(String(initial?.answer ?? 0));
-  const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
-  const [imagePreview, setImagePreview] = useState(initial?.mediaUrl || "");
+  const [imageUrl, sett("image")Url] = useState(initial?.imageUrl || "");
+  const [imagePreview, sett("image")Preview] = useState(initial?.mediaUrl || "");
   const [occlusions, setOcclusions] = useState<OcclusionRect[]>(initial?.occlusions || []);
   const [activeField, setActiveField] = useState<FieldName>("front");
   const frontRef = useRef<HTMLTextAreaElement>(null);
   const backRef = useRef<HTMLTextAreaElement>(null);
 
   const valueFor = (field: FieldName) => field === "front" ? front : back;
-  const setterFor = (field: FieldName) => field === "front" ? setFront : setBack;
+  const setterFor = (field: FieldName) => field === "front" ? sett("front") : sett("back");
 
   function insertAround(before: string, after = before) {
     const ref = activeField === "front" ? frontRef.current : backRef.current;
@@ -60,58 +62,58 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
 
   const imageSrc = imageUrl || imagePreview;
 
-  const previewFront = kind === "cloze"
+  const previewt("front") = kind === "cloze"
     ? front.replace(/\{\{c\d+::([^}]+)\}\}/g, "••••")
     : front;
 
-  const previewBack = kind === "cloze"
+  const previewt("back") = kind === "cloze"
     ? front.replace(/\{\{c\d+::([^}]+)\}\}/g, "$1") || back
     : back;
-  const selectedTemplate = templates.find(template=>template.id===templateId);
-  const templatePreviewFront = selectedTemplate ? applyTemplatePreview(selectedTemplate.front_template,{front:previewFront,back:previewBack}) : previewFront;
-  const templatePreviewBack = selectedTemplate ? applyTemplatePreview(selectedTemplate.back_template,{front:previewFront,back:previewBack}) : previewBack;
+  const selectedt("cardTemplate") = templates.find(template=>template.id===templateId);
+  const templatePreviewt("front") = selectedt("cardTemplate") ? applyt("cardTemplate")Preview(selectedt("cardTemplate").front_template,{front:previewt("front"),back:previewt("back")}) : previewt("front");
+  const templatePreviewt("back") = selectedt("cardTemplate") ? applyt("cardTemplate")Preview(selectedt("cardTemplate").back_template,{front:previewt("front"),back:previewt("back")}) : previewt("back");
 
   return (
     <form action={action} className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6">
       {initial?.updatedAt&&<input type="hidden" name="expected_updated_at" value={initial.updatedAt} />}
       <div className="grid gap-4 sm:grid-cols-4">
         <label className="block text-sm font-medium">
-          Template
-          <select name="template_id" value={templateId} onChange={e=>setTemplateId(e.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
-            <option value="">Default</option>
+          t("cardTemplate")
+          <select name="template_id" value={templateId} onChange={e=>sett("cardTemplate")Id(e.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
+            <option value="">t("defaultTemplate")</option>
             {templates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
           </select>
         </label>
 
         <label className="block text-sm font-medium">
-          Card type
+          t("cardType")
           <select name="kind" value={kind} onChange={e => setKind(e.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
-            <option value="basic">Basic</option>
-            <option value="reverse">Reverse</option>
-            <option value="cloze">Cloze</option>
-            <option value="multiple_choice">Multiple choice</option>
-            <option value="image">Image</option>
-            <option value="custom">Custom</option>
+            <option value="basic">t("basic")</option>
+            <option value="reverse">t("reverse")</option>
+            <option value="cloze">t("cloze")</option>
+            <option value="multiple_choice">t("multipleChoice")</option>
+            <option value="image">t("image")</option>
+            <option value="custom">t("custom")</option>
           </select>
         </label>
 
         <label className="block text-sm font-medium sm:col-span-2">
-          Tags
-          <input name="tags" value={tags} onChange={e => setTags(e.target.value)} placeholder="math, algebra, exam" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
+          t("tags")
+          <input name="tags" value={tags} onChange={e => sett("tags")(e.target.value)} placeholder="math, algebra, exam" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
         </label>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
-        <span className="px-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Format</span>
-        <button type="button" onClick={() => insertAround("**")} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold shadow-sm">Bold</button>
-        <button type="button" onClick={() => insertAround("*")} className="rounded-lg bg-white px-3 py-2 text-xs italic shadow-sm">Italic</button>
-        <button type="button" onClick={() => insertAround(tick)} className="rounded-lg bg-white px-3 py-2 text-xs font-mono shadow-sm">Inline code</button>
-        <button type="button" onClick={() => insertBlock("\n" + tick.repeat(3) + "text\n" + tick.repeat(3) + "\n")} className="rounded-lg bg-white px-3 py-2 text-xs font-mono shadow-sm">Code block</button>
-        <button type="button" onClick={() => insertAround("$")} className="rounded-lg bg-white px-3 py-2 text-xs font-mono shadow-sm">LaTeX</button>
-        <button type="button" onClick={() => insertBlock("\n- item\n")} className="rounded-lg bg-white px-3 py-2 text-xs shadow-sm">List</button>
+        <span className="px-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">t("format")</span>
+        <button type="button" onClick={() => insertAround("**")} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold shadow-sm">t("bold")</button>
+        <button type="button" onClick={() => insertAround("*")} className="rounded-lg bg-white px-3 py-2 text-xs italic shadow-sm">t("italic")</button>
+        <button type="button" onClick={() => insertAround(tick)} className="rounded-lg bg-white px-3 py-2 text-xs font-mono shadow-sm">t("inlineCode")</button>
+        <button type="button" onClick={() => insertBlock("\n" + tick.repeat(3) + "text\n" + tick.repeat(3) + "\n")} className="rounded-lg bg-white px-3 py-2 text-xs font-mono shadow-sm">t("codeBlock")</button>
+        <button type="button" onClick={() => insertAround("$")} className="rounded-lg bg-white px-3 py-2 text-xs font-mono shadow-sm">t("latex")</button>
+        <button type="button" onClick={() => insertBlock("\n- item\n")} className="rounded-lg bg-white px-3 py-2 text-xs shadow-sm">t("list")</button>
         <div className="ml-auto flex rounded-lg bg-white p-1 shadow-sm">
-          <button type="button" onClick={() => setActiveField("front")} className={"rounded-md px-3 py-1.5 text-xs font-semibold " + (activeField === "front" ? "bg-slate-950 text-white" : "text-slate-500")}>Front</button>
-          <button type="button" onClick={() => setActiveField("back")} className={"rounded-md px-3 py-1.5 text-xs font-semibold " + (activeField === "back" ? "bg-slate-950 text-white" : "text-slate-500")}>Back</button>
+          <button type="button" onClick={() => setActiveField("front")} className={"rounded-md px-3 py-1.5 text-xs font-semibold " + (activeField === "front" ? "bg-slate-950 text-white" : "text-slate-500")}>t("front")</button>
+          <button type="button" onClick={() => setActiveField("back")} className={"rounded-md px-3 py-1.5 text-xs font-semibold " + (activeField === "back" ? "bg-slate-950 text-white" : "text-slate-500")}>t("back")</button>
         </div>
       </div>
 
@@ -122,14 +124,14 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <div className="space-y-4">
           <label className="block">
-            <span className="text-sm font-medium">Front</span>
+            <span className="text-sm font-medium">t("front")</span>
             <textarea
               ref={frontRef}
               name="front"
               required
               value={front}
               onFocus={() => setActiveField("front")}
-              onChange={e => setFront(e.target.value)}
+              onChange={e => sett("front")(e.target.value)}
               rows={14}
               className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 font-mono text-sm outline-none focus:border-slate-400"
               placeholder={kind === "cloze" ? "Water freezes at {{c1::0°C}}." : "Question, term, prompt..."}
@@ -137,13 +139,13 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium">{kind === "cloze" ? "Explanation" : "Back"}</span>
+            <span className="text-sm font-medium">{kind === "cloze" ? "t("explanation")" : "t("back")"}</span>
             <textarea
               ref={backRef}
               name="back"
               value={back}
               onFocus={() => setActiveField("back")}
-              onChange={e => setBack(e.target.value)}
+              onChange={e => sett("back")(e.target.value)}
               rows={9}
               className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 font-mono text-sm outline-none focus:border-slate-400"
               placeholder="Answer, explanation, example..."
@@ -153,11 +155,11 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
           {kind === "multiple_choice" && (
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block sm:col-span-2">
-                <span className="text-sm font-medium">Options</span>
-                <input name="options" value={options} onChange={e => setOptions(e.target.value)} placeholder="Option A, Option B, Option C" className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm" />
+                <span className="text-sm font-medium">t("options")</span>
+                <input name="options" value={options} onChange={e => sett("options")(e.target.value)} placeholder="Option A, Option B, Option C" className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm" />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Correct option index</span>
+                <span className="text-sm font-medium">t("correctOptionIndex")</span>
                 <input name="answer" type="number" min="0" value={answer} onChange={e => setAnswer(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm" />
               </label>
             </div>
@@ -165,21 +167,21 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
 
           {(kind === "image" || kind === "custom") && (
             <label className="block">
-              <span className="text-sm font-medium">Media file</span>
-              <input name="media_file" type="file" accept={kind === "image" ? "image/*" : "image/*,audio/*,video/*"} onChange={event => { const file = event.target.files?.[0]; setImagePreview(file && file.type.startsWith("image/") ? URL.createObjectURL(file) : ""); }} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
-              <span className="mt-1 block text-xs text-slate-400">Maximum 25 MB.</span>
+              <span className="text-sm font-medium">t("mediaFile")</span>
+              <input name="media_file" type="file" accept={kind === "image" ? "image/*" : "image/*,audio/*,video/*"} onChange={event => { const file = event.target.files?.[0]; sett("image")Preview(file && file.type.startsWith("image/") ? URL.createObjectURL(file) : ""); }} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
+              <span className="mt-1 block text-xs text-slate-400">t("max25Mb")</span>
             </label>
           )}
 
           {kind === "image" && (
             <>
               <label className="block">
-                <span className="text-sm font-medium">Image URL</span>
-                <input name="image_url" value={imageUrl} onChange={e => { setImageUrl(e.target.value); setImagePreview(""); }} placeholder="https://..." className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm" />
+                <span className="text-sm font-medium">t("image") URL</span>
+                <input name="image_url" value={imageUrl} onChange={e => { sett("image")Url(e.target.value); sett("image")Preview(""); }} placeholder="https://..." className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm" />
               </label>
               <input type="hidden" name="occlusions" value={JSON.stringify(occlusions)} />
               <div className="mt-4">
-                <p className="text-sm font-medium">Image occlusion</p>
+                <p className="text-sm font-medium">t("image") occlusion</p>
                 <OcclusionEditor src={imageSrc} value={occlusions} onChange={setOcclusions} />
               </div>
             </>
@@ -187,10 +189,10 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
         </div>
 
         <div>
-          <p className="text-sm font-medium">Live preview</p>
+          <p className="text-sm font-medium">t("livePreview")</p>
           <div className="mt-2 min-h-[32rem] rounded-2xl border border-slate-200 bg-slate-50 p-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p>
-            <RichContent content={templatePreviewFront || "Start typing..."} className="mt-5 text-xl font-semibold" />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">t("front")</p>
+            <RichContent content={templatePreviewt("front") || "Start typing..."} className="mt-5 text-xl font-semibold" />
 
             {kind === "multiple_choice" && (
               <div className="mt-6 space-y-2">
@@ -203,8 +205,8 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
             {kind === "image" && imageSrc && <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white"><img src={imageSrc} alt="" className="max-h-64 w-full object-contain" /></div>}
 
             <div className="my-8 h-px bg-slate-200" />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>
-            <RichContent content={templatePreviewBack || "Your answer will appear here."} className="mt-5 text-base text-slate-600" />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">t("back")</p>
+            <RichContent content={templatePreviewt("back") || "Your answer will appear here."} className="mt-5 text-base text-slate-600" />
           </div>
         </div>
       </div>
@@ -212,7 +214,7 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
       <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input name="continue" value="1" type="checkbox" className="h-4 w-4 rounded border-slate-300" />
-          Save and add next card
+          t("saveAndAddNextCard")
         </label>
         <button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">{submitLabel}</button>
       </div>
