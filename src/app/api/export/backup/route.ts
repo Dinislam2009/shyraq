@@ -50,13 +50,15 @@ export async function GET(){
  const archive:Record<string,Uint8Array>={"shyraq-backup.json":strToU8(JSON.stringify(payload,null,2))};
  let totalBytes=archive["shyraq-backup.json"].byteLength;
 
+ const maxBytes=200*1024*1024;
  for(const item of media){
-   if(totalBytes>200*1024*1024)break;
+   if(totalBytes>=maxBytes)break;
    const {data,error}=await supabase.storage.from("user-media").download(item.storage_path);
    if(error||!data)continue;
    const bytes=new Uint8Array(await data.arrayBuffer());
+   if(totalBytes+bytes.byteLength>maxBytes)continue;
    totalBytes+=bytes.byteLength;
-   archive["media/"+item.storage_path.replace(/^.*\//,"")]=bytes;
+   archive["media/"+item.storage_path.replace(/^\/+/, "")]=bytes;
  }
  const zipped=zipSync(archive,{level:6});
  return new Response(zipped,{headers:{"Content-Type":"application/zip","Content-Disposition":'attachment; filename="shyraq-backup.zip"'}});
