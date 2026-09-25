@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { RichContent } from "@/components/rich-content";
+import { OcclusionEditor, type OcclusionRect } from "@/components/image-occlusion";
 
 type CardAction = (formData: FormData) => void | Promise<void>;
 type Template = {id:string;name:string;front_template:string;back_template:string};
@@ -17,6 +18,8 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
   const [options, setOptions] = useState("");
   const [answer, setAnswer] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+  const [occlusions, setOcclusions] = useState<OcclusionRect[]>([]);
   const [activeField, setActiveField] = useState<FieldName>("front");
   const frontRef = useRef<HTMLTextAreaElement>(null);
   const backRef = useRef<HTMLTextAreaElement>(null);
@@ -52,6 +55,8 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
       ref.setSelectionRange(start + text.length, start + text.length);
     });
   }
+
+  const imageSrc = imageUrl || imagePreview;
 
   const previewFront = kind === "cloze"
     ? front.replace(/\{\{c\d+::([^}]+)\}\}/g, "••••")
@@ -156,16 +161,23 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
           {(kind === "image" || kind === "audio" || kind === "custom") && (
             <label className="block">
               <span className="text-sm font-medium">Media file</span>
-              <input name="media_file" type="file" accept={kind === "audio" ? "audio/*" : kind === "image" ? "image/*" : "image/*,audio/*,video/*"} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
+              <input name="media_file" type="file" accept={kind === "audio" ? "audio/*" : kind === "image" ? "image/*" : "image/*,audio/*,video/*"} onChange={event => { const file = event.target.files?.[0]; setImagePreview(file && file.type.startsWith("image/") ? URL.createObjectURL(file) : ""); }} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
               <span className="mt-1 block text-xs text-slate-400">Maximum 25 MB.</span>
             </label>
           )}
 
           {kind === "image" && (
-            <label className="block">
-              <span className="text-sm font-medium">Image URL</span>
-              <input name="image_url" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..." className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm" />
-            </label>
+            <>
+              <label className="block">
+                <span className="text-sm font-medium">Image URL</span>
+                <input name="image_url" value={imageUrl} onChange={e => { setImageUrl(e.target.value); setImagePreview(""); }} placeholder="https://..." className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm" />
+              </label>
+              <input type="hidden" name="occlusions" value={JSON.stringify(occlusions)} />
+              <div className="mt-4">
+                <p className="text-sm font-medium">Image occlusion</p>
+                <OcclusionEditor src={imageSrc} value={occlusions} onChange={setOcclusions} />
+              </div>
+            </>
           )}
         </div>
 
@@ -183,7 +195,7 @@ export function CardEditor({ action, templates = [] }: { action: CardAction; tem
               </div>
             )}
 
-            {kind === "image" && imageUrl && <img src={imageUrl} alt="" className="mt-6 max-h-64 w-full rounded-xl object-contain" />}
+            {kind === "image" && imageSrc && <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white"><img src={imageSrc} alt="" className="max-h-64 w-full object-contain" /></div>}
 
             <div className="my-8 h-px bg-slate-200" />
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>
