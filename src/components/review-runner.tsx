@@ -6,9 +6,10 @@ import {getDeviceId,cacheReviewSession} from "@/lib/offline/store";
 import {useRouter} from "next/navigation";
 import {RichContent} from "@/components/rich-content";
 import {OccludedImage} from "@/components/image-occlusion";
+import {DEFAULT_RATING_ORDER,sanitizePerCardPreferences,sanitizeRatingOrder,sanitizeStyles} from "@/lib/review/config";
 
-type Preferences={desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean;rating_labels?:Record<string,string>;rating_order?:string[];show_keyboard_hints?:boolean;swipe_enabled?:boolean};
-type CardContent={front?:string;back?:string;options?:string[];answer?:number;imageUrl?:string;occlusions?:Array<{x:number;y:number;w:number;h:number}>;mediaUrl?:string;mediaType?:string;mediaItems?:Array<{name:string;path:string;mime_type:string;url?:string}>};
+type Preferences={desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean;rating_labels?:Record<string,string>;rating_order?:string[];show_keyboard_hints?:boolean;swipe_enabled?:boolean;rating_styles?:Record<string,{background?:string;text?:string}>;accessibility?:{scale?:number;highContrast?:boolean;reducedMotion?:boolean;focusRing?:boolean};session_defaults?:{batchSize?:number;shuffle?:boolean;autoRevealSeconds?:number};};
+type CardContent={front?:string;back?:string;options?:string[];answer?:number;imageUrl?:string;occlusions?:Array<{x:number;y:number;w:number;h:number}>;mediaUrl?:string;mediaType?:string;mediaItems?:Array<{name:string;path:string;mime_type:string;url?:string}>;reviewPreferences?:Record<string,unknown>};
 function templateOne(template:QueueItem["card"]["card_templates"]){if(Array.isArray(template))return template[0]||null;return template||null;}
 function applyCardTemplate(source:string,fields:{front:string;back:string}){return String(source||"").replace(/\{\{\s*front\s*\}\}/gi,fields.front).replace(/\{\{\s*back\s*\}\}/gi,fields.back).replace(/\{\{\s*FrontSide\s*\}\}/g,fields.front);}
 type QueueItem={card:{id:string;content:CardContent;kind:string;template_id?:string;card_templates?:{id:string;name:string;front_template:string;back_template:string;css?:string|null}|{id:string;name:string;front_template:string;back_template:string;css?:string|null}[]};stateData:any;isNew:boolean};
@@ -24,13 +25,37 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  const [paused,setPaused]=useState(false);
  const [selectedOption,setSelectedOption]=useState<number|null>(null);
  const [completed,setCompleted]=useState<CompletedReview[]>([]);
+ const [elapsedSeconds,setElapsedSeconds]=useState(0);
  const shellRef=useRef<HTMLDivElement>(null);
  const startedAt=useRef(Date.now());
  const swipeStartX=useRef<number|null>(null);
  const current=queue[index];
  const card=current.card;
+ const cardReviewPreferences=useMemo(()=>sanitizePerCardPreferences(card.content?.reviewPreferences),[card.content?.reviewPreferences]);
+ const ratingOrder=useMemo(()=>sanitizeRatingOrder(cardReviewPreferences.ratingOrder??preferences.rating_order??DEFAULT_RATING_ORDER),[cardReviewPreferences.ratingOrder,preferences.rating_order]);
+ const ratingStyles=useMemo(()=>sanitizeStyles(preferences.rating_styles),[preferences.rating_styles]);
+ const accessibility=preferences.accessibility||{};
+ const effectiveAutoReveal=cardReviewPreferences.autoRevealSeconds ?? Number(preferences.session_defaults?.autoRevealSeconds||0);
+ const effectiveSwipe=cardReviewPreferences.swipeEnabled ?? preferences.swipe_enabled !== false;
+ const showTimer=cardReviewPreferences.showTimer !== false;
 
- useEffect(()=>{shellRef.current?.focus();startedAt.current=Date.now();setRevealed(false);setSelectedOption(null);},[index]);
+ useEffect(()=>{
+   shellRef.current?.focus();
+   startedAt.current=Date.now();
+   setElapsedSeconds(0);
+   setRevealed(false);
+   setSelectedOption(null);
+   if(effectiveAutoReveal>0){
+     const timer=window.setTimeout(()=>setRevealed(true),effectiveAutoReveal*1000);
+     return()=>window.clearTimeout(timer);
+   }
+ },[effectiveAutoReveal,index]);
+
+ useEffect(()=>{
+   if(paused||done||!showTimer)return;
+   const timer=window.setInterval(()=>setElapsedSeconds(value=>value+1),1000);
+   return()=>window.clearInterval(timer);
+ },[done,paused,showTimer]);
 
  const answer=useCallback(async(rating:"again"|"hard"|"good"|"easy")=>{
    if(busy||paused||!revealed)return;
@@ -84,12 +109,12 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
      if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="z"){event.preventDefault();void undo();return;}
      if(event.key.toLowerCase()==="p"){setPaused(value=>!value);return;}
      if(!revealed||busy||paused)return;
-     const order=(preferences.rating_order??["again","hard","good","easy"]).filter((x):x is "again"|"hard"|"good"|"easy"=>["again","hard","good","easy"].includes(x)).slice(0,4);
+     const order=ratingOrder.slice(0,4);
      const map:Record<string,"again"|"hard"|"good"|"easy">={};order.forEach((rating,i)=>{map["Digit"+(i+1)]=rating;});
      const rating=map[event.code];if(rating)void answer(rating);
    };
    window.addEventListener("keydown",onKeyDown);return()=>window.removeEventListener("keydown",onKeyDown);
- },[answer,busy,paused,preferences,revealed,undo]);
+ },[answer,busy,paused,ratingOrder,revealed,undo]);
 
  const {front,back,templateCss}=useMemo(()=>{
    const rawFront=card.content?.front||"",rawBack=card.content?.back||"";
@@ -115,12 +140,13 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  }
 
  const onPointerDown=(event:React.PointerEvent<HTMLDivElement>)=>{if(event.pointerType==="mouse"&&event.button!==0)return;swipeStartX.current=event.clientX;};
- const onPointerUp=(event:React.PointerEvent<HTMLDivElement>)=>{const start=swipeStartX.current;swipeStartX.current=null;if(start===null||!revealed||busy||paused||preferences.swipe_enabled===false)return;const delta=event.clientX-start;if(Math.abs(delta)<90)return;void answer(delta<0?"again":"easy");};
+ const onPointerUp=(event:React.PointerEvent<HTMLDivElement>)=>{const start=swipeStartX.current;swipeStartX.current=null;if(start===null||!revealed||busy||paused||!effectiveSwipe)return;const delta=event.clientX-start;if(Math.abs(delta)<90)return;void answer(delta<0?"again":"easy");};
 
- return <div ref={shellRef} tabIndex={0} onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="outline-none mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-4xl flex-col px-5 py-8 sm:px-8">
+ return <div ref={shellRef} tabIndex={0} onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="shyraq-review-content outline-none mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-4xl flex-col px-5 py-8 sm:px-8">
   {templateCss&&<style>{templateCss}</style>}
+  <style>{`.shyraq-review-content { transform: scale(${Math.min(1.4,Math.max(0.9,Number(accessibility.scale||1)))}); transform-origin: top center; } .shyraq-focus:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; } ${accessibility.highContrast?" .shyraq-review-surface { border-width: 2px; border-color: currentColor; box-shadow: none; } ":""} ${accessibility.reducedMotion?" * { scroll-behavior: auto !important; transition: none !important; } ":""}`}</style>
   <div className="mb-6 flex items-center justify-between">
-   <div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {index+1}/{queue.length}</p></div>
+   <div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {index+1}/{queue.length}{showTimer?" · "+elapsedSeconds+"s":""}</p></div>
    <div className="flex items-center gap-2">
     <button onClick={()=>setPaused(v=>!v)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">{paused?"Resume":"Pause"} <span className="ml-1 text-[10px] text-slate-400">P</span></button>
     <button disabled={!completed.length||busy} onClick={()=>void undo()} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold disabled:opacity-40">Undo <span className="ml-1 text-[10px] text-slate-400">⌘Z</span></button>
@@ -129,7 +155,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
   </div>
   {paused?<div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><p className="font-semibold">Session paused</p><p className="mt-1 text-amber-800">Your queue stays local. Resume when ready.</p></div>:null}
   <div className="flex flex-1 items-center">
-   <div className={"w-full rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12 "+(paused?"opacity-60":"")}>
+   <div className={"shyraq-review-surface w-full rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12 "+(paused?"opacity-60":"")}>
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p>
     <RichContent content={front} className="mx-auto mt-6 max-w-2xl text-3xl font-semibold" />
     {card.kind==="image"&&card.content.imageUrl&&((card.content.occlusions?.length??0)>0?<div className="mx-auto mt-8"><OccludedImage src={card.content.imageUrl} rects={card.content.occlusions??[]} revealed={revealed}/></div>:<img src={card.content.imageUrl} alt="" className="mx-auto mt-8 max-h-72 rounded-2xl object-contain"/> )}
@@ -141,7 +167,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
     {revealed?<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>{card.kind==="multiple_choice"&&<p className="mt-5 text-sm font-semibold text-slate-900">Correct option: {(card.content.options??[])[card.content.answer??0]||"—"}</p>}<RichContent content={back} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600"/></div>:card.kind!=="multiple_choice"&&<button disabled={paused} onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50">Show answer {preferences.show_keyboard_hints!==false&&<span className="ml-2 text-xs text-slate-400">Space</span>}</button>}
    </div>
   </div>
-  {revealed&&<div className="mt-5 grid grid-cols-4 gap-2">{((preferences.rating_order??["again","hard","good","easy"]).filter((x):x is "again"|"hard"|"good"|"easy"=>["again","hard","good","easy"].includes(x)).slice(0,4) as ("again"|"hard"|"good"|"easy")[]).map((r,i)=><button key={r} disabled={busy||paused} onClick={()=>void answer(r)} className="rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold capitalize hover:bg-slate-50 disabled:opacity-50">{preferences.rating_labels?.[r]||r}<span className="ml-2 text-xs text-slate-400">{preferences.show_keyboard_hints===false?"":i+1}</span></button>)}</div>}
+  {revealed&&<div className="mt-5 grid grid-cols-4 gap-2">{ratingOrder.slice(0,4).map((r,i)=>{const style=ratingStyles[r];return <button key={r} disabled={busy||paused} onClick={()=>void answer(r)} style={{backgroundColor:style.background,color:style.text}} className="shyraq-focus rounded-xl border border-transparent py-3 text-sm font-semibold capitalize disabled:opacity-50" aria-label={preferences.rating_labels?.[r]||r}>{preferences.rating_labels?.[r]||r}<span className="ml-2 text-xs opacity-70">{preferences.show_keyboard_hints===false?"":i+1}</span></button>})}</div>}
  </div>;
 }
 function SummaryMetric({label,value}:{label:string;value:string}){return <div className="rounded-2xl border border-black/[0.06] bg-white p-4"><p className="text-xs text-slate-400">{label}</p><p className="mt-2 text-xl font-semibold">{value}</p></div>}
