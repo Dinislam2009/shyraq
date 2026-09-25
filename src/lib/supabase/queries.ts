@@ -139,7 +139,12 @@ export async function getDashboardStats(){
  if(!user)return {dueToday:0,newToday:0,reviewsToday:0,streak:0};
  const start=new Date();start.setHours(0,0,0,0);
  const tomorrow=new Date(start);tomorrow.setDate(tomorrow.getDate()+1);
- const {count:dueToday}=await supabase.from("review_states").select("*",{count:"exact",head:true}).eq("user_id",user.id).lte("due_at",tomorrow.toISOString()).gte("due_at",start.toISOString());
+ const {count:dueToday}=await supabase
+  .from("review_states")
+  .select("card_id,cards!inner(id,is_suspended)",{count:"exact",head:true})
+  .eq("user_id",user.id)
+  .eq("cards.is_suspended",false)
+  .lte("due_at",tomorrow.toISOString());
  const {count:reviewsToday}=await supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id).gte("reviewed_at",start.toISOString()).lt("reviewed_at",tomorrow.toISOString());
  const {count:newToday}=await supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id).eq("metadata->>event_kind","new-card").gte("reviewed_at",start.toISOString()).lt("reviewed_at",tomorrow.toISOString());
  const {data:events}=await supabase.from("review_events").select("reviewed_at").eq("user_id",user.id).order("reviewed_at",{ascending:false}).limit(5000);
