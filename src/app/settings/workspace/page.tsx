@@ -9,7 +9,7 @@ export default async function WorkspacePage({searchParams}:{searchParams:Promise
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return null;
- const {data:workspaces}=await supabase.from("workspaces").select("id,name,kind,description,owner_id").order("kind").order("created_at");
+ const {data:workspaces}=await supabase.from("workspaces").select("id,name,kind,description,owner_id,slug").order("kind").order("created_at");
  const workspaceList=workspaces??[];
  const {data:profile}=await supabase.from("profiles").select("selected_workspace_id").eq("id",user.id).maybeSingle();\n const selected=workspaceList.find(w=>w.id===workspaceParam)??workspaceList.find(w=>w.id===profile?.selected_workspace_id)??workspaceList.find(w=>w.kind==="team")??workspaceList.find(w=>w.kind==="personal");
  if(!selected)return <AppShell><div className="mx-auto max-w-4xl px-5 py-10">No workspace found.</div></AppShell>;
