@@ -9,6 +9,7 @@ function fail(path:string,message:string):never{redirect(path+"?error="+encodeUR
 function payload(formData:FormData){
  const rawFields=String(formData.get("fields")||"");
  const rawMediaItems=String(formData.get("media_items")||"");
+ const rawReviewPreferences=String(formData.get("review_preferences")||"");
  const kind=String(formData.get("kind")||"basic");
  const content:any={front:String(formData.get("front")||""),back:String(formData.get("back")||"")};
  const templateId=String(formData.get("template_id")||"").trim();
@@ -36,6 +37,12 @@ function payload(formData:FormData){
  try{mediaItems=normalizeMediaItems(rawMediaItems?JSON.parse(rawMediaItems):[]);}catch{}
  if(Object.keys(fields).length)content.fields=fields;
  if(mediaItems.length)content.mediaItems=mediaItems;
+ if(rawReviewPreferences){
+  try{
+   const parsed=JSON.parse(rawReviewPreferences);
+   if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))content.reviewPreferences=parsed;
+  }catch{}
+ }
  return {kind,content,template_id:templateId||null};
 }
 function tagsFromForm(formData:FormData){return String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);}
