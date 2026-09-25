@@ -111,8 +111,13 @@ create table if not exists public.public_deck_follows (
  created_at timestamptz not null default now(), primary key(user_id,deck_id)
 );
 create table if not exists public.deck_copies (
- user_id uuid not null references auth.users(id) on delete cascade, source_deck_id uuid not null references public.decks(id) on delete cascade,
- copied_deck_id uuid not null references public.decks(id) on delete cascade, created_at timestamptz not null default now(),
+ user_id uuid not null references auth.users(id) on delete cascade,
+ source_deck_id uuid not null references public.decks(id) on delete cascade,
+ copied_deck_id uuid not null references public.decks(id) on delete cascade,
+ source_updated_at timestamptz,
+ last_synced_source_updated_at timestamptz,
+ update_policy text not null default 'ask' check(update_policy in ('ask','accept_all')),
+ created_at timestamptz not null default now(),
  primary key(user_id,source_deck_id,copied_deck_id)
 );
 
@@ -171,6 +176,8 @@ create or replace function private.is_workspace_owner(target_workspace uuid)
 returns boolean language sql security definer set search_path=public,private as $$
  select exists(select 1 from public.workspaces w where w.id=target_workspace and w.owner_id=(select auth.uid()));
 $$;
+
+create or replace function private.touch_deck_updated_at() returns trigger language plpgsql set search_path=public,private as $ begin update public.decks set updated_at=now() where id=coalesce(new.deck_id,old.deck_id); return coalesce(new,old); end $;
 
 create or replace function private.touch_updated_at() returns trigger language plpgsql set search_path=public,private as $ begin new.updated_at=now(); return new; end $;
 do $$ declare t text; begin
