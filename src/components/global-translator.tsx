@@ -87,7 +87,6 @@ const translations: Record<string, Record<"kk" | "ru" | "en", string>> = {
   "Group important cards without changing their deck.": { kk: "Маңызды карталарды колодасын өзгертпей топтаңыз.", ru: "Группируйте важные карточки без изменения их колоды.", en: "Group important cards without changing their deck." },
   "New collection name": { kk: "Жаңа жинақ атауы", ru: "Название новой коллекции", en: "New collection name" },
   "Create": { kk: "Жасау", ru: "Создать", en: "Create" },
-  "Add card": { kk: "Карта қосу", ru: "Добавить карточку", en: "Add card" },
   "Templates": { kk: "Шаблондар", ru: "Шаблоны", en: "Templates" },
   "Study": { kk: "Оқу", ru: "Учить", en: "Study" },
   "Author update available": { kk: "Автор жаңартуы қолжетімді", ru: "Доступно обновление от автора", en: "Author update available" },
