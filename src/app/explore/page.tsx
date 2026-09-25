@@ -25,13 +25,13 @@ export default async function ExplorePage({searchParams}:{searchParams:Promise<S
  const score=(deck:any)=>{
   const text=(String(deck.name)+" "+String(deck.description||"")).toLowerCase();
   const q=query.toLowerCase();
-  return (q?(text===q?1000:(String(deck.name).toLowerCase()===q?800:(String(deck.name).toLowerCase().startsWith(q)?500:(text.includes(q)?200:0)))):0)+counts.get(deck.id)*10+Number(deck.cards?.[0]?.count||0);
+  const followerCount=Number(counts.get(deck.id)||0); const cardCount=Number(deck.cards?.[0]?.count||0); return (q?(text===q?1000:(String(deck.name).toLowerCase()===q?800:(String(deck.name).toLowerCase().startsWith(q)?500:(text.includes(q)?200:0)))):0)+followerCount*10+cardCount;
  };
  const sort=String(params.sort||"recent");
- if(sort==="popular")decks.sort((a:any,b:any)=>(counts.get(b.id)||0)-(counts.get(a.id)||0)||new Date(b.updated_at).getTime()-new Date(a.updated_at).getTime());
+ if(sort==="popular")decks.sort((a:any,b:any)=>(counts.get(b.id)||0)-(counts.get(a.id)||0)||new Date(String(b.updated_at)).getTime()-new Date(String(a.updated_at)).getTime());
  else if(sort==="cards")decks.sort((a:any,b:any)=>(Number(b.cards?.[0]?.count||0)-Number(a.cards?.[0]?.count||0)));
  else if(query)decks.sort((a:any,b:any)=>score(b)-score(a));
- else decks.sort((a:any,b:any)=>new Date(b.updated_at).getTime()-new Date(a.updated_at).getTime());
+ else decks.sort((a:any,b:any)=>new Date(String(b.updated_at)).getTime()-new Date(String(a.updated_at)).getTime());
 
  const values=(key:string)=>[...new Set((rawDecks??[]).map((deck:any)=>String((deck.settings||{})[key]||"")).filter(Boolean))].sort();
  const categories=values("category"),subjects=values("subject"),languages=values("language"),difficulties=values("difficulty");
@@ -52,7 +52,7 @@ export default async function ExplorePage({searchParams}:{searchParams:Promise<S
   </form>
   <div className="mt-8 flex flex-wrap gap-2"><Link href="/explore" className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold">All</Link>{categories.slice(0,8).map(c=><Link key={c} href={"/explore?category="+encodeURIComponent(c)} className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold">{c}</Link>)}</div>
   {error?<div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error.message}</div>:null}
-  <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{decks.map((d:any)=>{const profile=profileById.get(d.owner_id);const settings=d.settings||{};return <Link href={"/explore/"+d.id} key={d.id} className="rounded-2xl border border-black/[0.06] bg-white p-6 hover:border-black/10 hover:shadow-sm"><div className="flex items-center justify-between"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold">S</div>{profile?.username?<span className="text-xs text-slate-400">@{profile.username}</span>:<span className="text-xs text-slate-400">{profile?.display_name||"Creator"}</span>}</div><h2 className="mt-5 font-semibold">{d.name}</h2><p className="mt-2 line-clamp-2 text-sm text-slate-500">{d.description||"No description"}</p><div className="mt-5 flex flex-wrap gap-1">{[settings.category,settings.subject,settings.language,settings.difficulty].filter(Boolean).map((value:any)=><span key={String(value)} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] text-slate-500">{String(value)}</span>)}</div><div className="mt-5 flex items-center justify-between text-xs text-slate-400"><span>{d.cards?.[0]?.count??0} cards</span><span>{counts.get(d.id)||0} followers</span></div></Link>})}</div>
+  <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{decks.map((d:any)=>{const profile=profileById.get(d.owner_id);const settings=d.settings||{};return <Link href={"/explore/"+d.id} key={d.id} className="rounded-2xl border border-black/[0.06] bg-white p-6 hover:border-black/10 hover:shadow-sm"><div className="flex items-center justify-between"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold">S</div>{profile?.username?<span className="text-xs text-slate-400">@{profile.username}</span>:<span className="text-xs text-slate-400">{profile?.display_name||"Creator"}</span>}</div><h2 className="mt-5 font-semibold">{d.name}</h2><p className="mt-2 line-clamp-2 text-sm text-slate-500">{d.description||"No description"}</p><div className="mt-5 flex flex-wrap gap-1">{[settings.category,settings.subject,settings.language,settings.difficulty].filter(Boolean).map((value:any)=><span key={String(value)} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] text-slate-500">{String(value)}</span>)}</div><div className="mt-5 flex items-center justify-between text-xs text-slate-400"><span>{d.cards?.[0]?.count??0} cards</span><span>{Number(counts.get(d.id)||0)} followers</span></div></Link>})}</div>
   {!decks.length?<div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">No public decks match these filters.</div>:null}
  </div></AppShell>;
 }
