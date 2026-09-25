@@ -14,6 +14,7 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
   const [ready, setReady] = useState(false);
   const [backupDecks, setBackupDecks] = useState<Array<{id:string;name:string;cards:number}>>([]);
   const [selectedDecks, setSelectedDecks] = useState<string[]>([]);
+  const [conflictMode, setConflictMode] = useState<"duplicate"|"skip">("duplicate");
 
   const duplicates = useMemo(() => {
     const seen = new Set<string>();
@@ -129,6 +130,8 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
           </div>
         )}
         <input type="hidden" name="restore_decks" value={JSON.stringify(selectedDecks)} />
+        {backupDecks.length > 0 && <div className="mt-4 rounded-2xl border border-slate-200 p-4"><p className="text-sm font-semibold">Deck name conflicts</p><p className="mt-1 text-xs text-slate-500">If a restored deck has the same name as an existing deck, choose whether to keep it as a separate restored copy or skip that deck.</p><select value={conflictMode} onChange={event => setConflictMode(event.target.value as "duplicate"|"skip")} className="mt-3 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="duplicate">Create separate restored copy</option><option value="skip">Skip conflicting deck</option></select></div>}
+        <input type="hidden" name="conflict_mode" value={conflictMode} />
         {file && file.name.toLowerCase().endsWith(".zip") && <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">ZIP integrity is checksum-verified on the server and restore rolls back newly created data if an import step fails.</div>}
         {parseError && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{parseError}</div>}
 
