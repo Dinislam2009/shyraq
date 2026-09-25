@@ -49,7 +49,7 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
         const decks = Array.isArray(backup.decks) ? backup.decks : [];
         const selected = decks.map((deck: any) => ({ id: String(deck.id), name: String(deck.name || "Untitled deck"), cards: (Array.isArray(backup.cards) ? backup.cards : []).filter((card: any) => String(card.deck_id) === String(deck.id)).length }));
         setBackupDecks(selected);
-        setSelectedDecks(selected.map(deck => deck.id));
+        setSelectedDecks(selected.map((deck: {id:string;name:string;cards:number}) => deck.id));
         setReady(selected.length > 0);
         return;
       }
