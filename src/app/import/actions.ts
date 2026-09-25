@@ -26,7 +26,7 @@ function contentFromRow(row:any){
  if(tags.length)content.tags=tags;
  const options=Array.isArray(row.options)?row.options:String(row.options||"").split("|").map((x:string)=>x.trim()).filter(Boolean).slice(0,10);
  if(options.length)content.options=options;
- if(row.answer!==undefined&&row.answer!=="")content.answer=Math.max(0,Number(row.answer)||0);
+ if(row.answer!==undefined&&row.answer!==""&&options.length){const rawAnswer=Number(row.answer);content.answer=Math.max(0,Math.min(options.length-1,Number.isFinite(rawAnswer)?Math.trunc(rawAnswer):0));}
  if(row.imageUrl)content.imageUrl=String(row.imageUrl);
  return content;
 }
