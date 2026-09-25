@@ -158,7 +158,7 @@ export async function getReviewStats(workspaceId?:string){
    if(member){
     const {data:workspaceDecks}=await supabase.from("decks").select("id").eq("workspace_id",workspaceId).is("deleted_at",null);
     const deckIds=(workspaceDecks??[]).map((row:any)=>row.id);
-    const {data:workspaceCards}=deckIds.length?await supabase.from("cards").select("id").in("deck_id",deckIds).eq("owner_id",workspaceUser.id).limit(20000):{data:[]};
+    const {data:workspaceCards}=deckIds.length?await supabase.from("cards").select("id").in("deck_id",deckIds).limit(20000):{data:[]};
     workspaceCardIds=(workspaceCards??[]).map((row:any)=>row.id);
    }
   }
@@ -254,7 +254,7 @@ export async function getDashboardStats(){
   : {data:[]};
  const workspaceDeckIds=(workspaceDecks??[]).map((row:any)=>row.id).filter(Boolean);
  const {data:workspaceCards}=workspaceDeckIds.length
-  ? await supabase.from("cards").select("id").eq("owner_id",user.id).eq("is_suspended",false).in("deck_id",workspaceDeckIds).limit(20000)
+  ? await supabase.from("cards").select("id").eq("is_suspended",false).in("deck_id",workspaceDeckIds).limit(20000)
   : {data:[]};
  const cardIds=(workspaceCards??[]).map((row:any)=>row.id);
 
