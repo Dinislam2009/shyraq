@@ -59,7 +59,7 @@ export async function updateCollection(id:string,formData:FormData):Promise<void
  const collection=await collectionForUser(supabase,user.id,id);if(!collection)fail("/collections","Collection not found.");
  if(collection.kind==="favorites")fail("/collections/"+id,"Favorites cannot be renamed.");
  const name=String(formData.get("name")||"").trim().slice(0,80);if(!name)fail("/collections/"+id,"Collection name is required.");
- let patch:any={name};
+ const patch:any={name};
  if(collection.kind==="smart"){
   const kind=String(formData.get("rule_kind")||"marked");const value=String(formData.get("rule_value")||"").trim().slice(0,80);
   patch.rule={tag:kind==="tag"?value:"",marked:kind==="marked",suspended:kind==="suspended",kind:["basic","reverse","cloze","multiple_choice","image","custom"].includes(value)?value:""};
