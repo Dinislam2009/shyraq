@@ -1,4 +1,5 @@
 "use server";
+import {redirect} from "next/navigation";
 import {createHash,randomBytes} from "crypto";
 import {createClient} from "@/lib/supabase/server";
 import {revalidatePath} from "next/cache";
@@ -26,7 +27,7 @@ export async function createWorkspaceInvite(formData:FormData):Promise<{ok?:bool
 export async function createTeamWorkspace(formData:FormData):Promise<void>{
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
- if(!user)redirect("/login");
+ if(!user){redirect("/login");return;}
  const name=String(formData.get("name")||"").trim().slice(0,80);
  const slug=String(formData.get("slug")||name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")).trim().slice(0,60);
  if(!name||!slug)return;
