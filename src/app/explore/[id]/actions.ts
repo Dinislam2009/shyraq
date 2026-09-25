@@ -50,8 +50,6 @@ export async function acceptDeckUpdate(copiedDeckId:string):Promise<void>{
 
 
  const sourceById=new Map((source.cards??[]).map((c:any)=>[c.id,c]));
- const targetBySourceId=new Map((target.cards??[]).filter((c:any)=>c.content?._sourceCardId).map((c:any)=>[c.content._sourceCardId,c]));
- for(const sourceCard of source.cards??[]){
    const local=targetBySourceId.get(sourceCard.id);
    const payload={kind:sourceCard.kind,content:{...sourceCard.content,_sourceCardId:sourceCard.id},sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked};
    if(local)await supabase.from("cards").update(payload).eq("id",local.id);
