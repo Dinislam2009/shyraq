@@ -11,15 +11,16 @@ export default async function CollectionPage({params,searchParams}:{params:Promi
  const {data:collection}=await supabase.from("collections").select("id,name,kind,owner_id,sort_mode,rule,collection_cards(card_id)").eq("id",id).eq("owner_id",user.id).maybeSingle();
  if(!collection)notFound();
 
+ const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
  let cards:any[]=[];
  if(collection.kind==="smart"){
   const rule=collection.rule||{};
-  let source:any[]= (await supabase.from("cards").select("id,deck_id,kind,content,updated_at,created_at").eq("owner_id",user.id).limit(50000)).data??[];
+  let source:any[]= (await supabase.from("cards").select("id,deck_id,kind,content,is_marked,is_suspended,updated_at,created_at").eq("owner_id",user.id).limit(50000)).data??[];
   if(rule.marked)source=source.filter((card:any)=>Boolean(card.is_marked));
   if(rule.suspended)source=source.filter((card:any)=>Boolean(card.is_suspended));
   if(rule.kind)source=source.filter((card:any)=>String(card.kind)===String(rule.kind));
   if(rule.tag){
-   const {data:tag}=await supabase.from("tags").select("id").eq("workspace_id",(await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle()).data?.id).eq("name",String(rule.tag)).maybeSingle();
+   const {data:tag}=await supabase.from("tags").select("id").eq("workspace_id",workspace?.id||"").eq("name",String(rule.tag)).maybeSingle();
    const ids=tag?(await supabase.from("card_tags").select("card_id").eq("tag_id",tag.id)).data??[]:[];
    const allowed=new Set(ids.map((x:any)=>x.card_id));source=source.filter((card:any)=>allowed.has(card.id));
   }
