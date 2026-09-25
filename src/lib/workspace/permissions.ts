@@ -22,6 +22,7 @@ export function workspaceRoleToDeckRole(role:WorkspaceRole):DeckRole{
  return "none";
 }
 export function resolveDeckRole(workspaceRole:WorkspaceRole,overrideRole:DeckRole|""):DeckRole{
+ if(workspaceRole==="owner"||workspaceRole==="admin")return "editor";
  return overrideRole||workspaceRoleToDeckRole(workspaceRole);
 }
 export function canReadDeck(role:DeckRole){return role!=="none";}
