@@ -145,6 +145,11 @@ export async function POST(request:NextRequest){
      const row=sanitizeDeckPayload({...payload,id:entityId},user.id);
      const {error}=await supabase.from("decks").upsert(row,{onConflict:"id"});
      if(error)throw new Error(error.message);
+     const {data:template}=await supabase.from("card_templates").select("id").eq("deck_id",row.id).limit(1).maybeSingle();
+     if(!template){
+      const {error:templateError}=await supabase.from("card_templates").insert({deck_id:row.id,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
+      if(templateError)throw new Error(templateError.message);
+     }
     }
    }else if(entityType==="cards"){
     if(operation==="delete"){
@@ -154,6 +159,18 @@ export async function POST(request:NextRequest){
      const row=sanitizeCardPayload({...payload,id:entityId},user.id);
      const {error}=await supabase.from("cards").upsert(row,{onConflict:"id"});
      if(error)throw new Error(error.message);
+     const {data:deckForCard}=await supabase.from("decks").select("workspace_id").eq("id",row.deck_id).maybeSingle();
+     const tagNames=Array.isArray((row.content as any)?.tags)?(row.content as any).tags.map((tag:any)=>String(tag).trim()).filter(Boolean).slice(0,30):[];
+     if(deckForCard?.workspace_id){
+      if(tagNames.length){
+       const {data:tags,error:tagError}=await supabase.from("tags").upsert(tagNames.map((name:string)=>({workspace_id:deckForCard.workspace_id,name})),{onConflict:"workspace_id,name"}).select("id");
+       if(tagError)throw new Error(tagError.message);
+       await supabase.from("card_tags").delete().eq("card_id",row.id);
+       if(tags?.length){const {error:linkError}=await supabase.from("card_tags").insert(tags.map((tag:any)=>({card_id:row.id,tag_id:tag.id})));if(linkError)throw new Error(linkError.message);}
+      }else{
+       await supabase.from("card_tags").delete().eq("card_id",row.id);
+      }
+     }
     }
    }else if(entityType==="card_templates"){
     if(operation==="delete"){
