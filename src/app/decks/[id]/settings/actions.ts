@@ -2,6 +2,7 @@
 import {redirect} from "next/navigation";
 import {revalidatePath} from "next/cache";
 import {createClient} from "@/lib/supabase/server";
+import {canDeleteDeck,canManageDeck} from "@/lib/workspace/permissions";
 
 async function requireAccess(id:string,write:boolean){
  const supabase=await createClient();
@@ -9,8 +10,8 @@ async function requireAccess(id:string,write:boolean){
  const {data:deck}=await supabase.from("decks").select("id,name,owner_id,workspace_id,settings").eq("id",id).maybeSingle();if(!deck)redirect("/decks");
  const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
  const role=String(member?.role||"");
- if(write&&!["owner","admin","editor"].includes(role))redirect("/decks/"+id+"?error=You+do+not+have+permission+to+edit+this+deck.");
- if(!write&&!["owner","admin"].includes(role))redirect("/decks/"+id+"?error=Only+an+owner+or+admin+can+perform+this+action.");
+ if(write&&!canManageDeck(role as any))redirect("/decks/"+id+"?error=You+do+not+have+permission+to+edit+this+deck.");
+ if(!write&&!canDeleteDeck(role as any))redirect("/decks/"+id+"?error=Only+an+owner+or+admin+can+perform+this+action.");
  return {supabase,user,deck,role};
 }
 
