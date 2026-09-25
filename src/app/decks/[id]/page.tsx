@@ -14,6 +14,11 @@ export default async function DeckPage({params}:{params:Promise<{id:string}>}){
 
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
+ let canEdit=false;
+ if(user){
+  const {data:membership}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
+  canEdit=["owner","admin","editor"].includes(String(membership?.role||""));
+ }
 
  let sourceUpdate:any=null;
  if(user){
@@ -121,7 +126,7 @@ export default async function DeckPage({params}:{params:Promise<{id:string}>}){
        <Link href={"/decks/"+id+"/cards/new"} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Add your first card</Link>
       </div>
      ) : (
-      <CardManager deckId={id} cards={cards} favoriteIds={favoriteIds}/>
+      <CardManager deckId={id} cards={cards} favoriteIds={favoriteIds} canEdit={canEdit}/>
      )}
     </div>
    </div>
