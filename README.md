@@ -293,7 +293,7 @@ Target editor:
 - [ ] Fully customizable columns
 - [ ] Column visibility settings
 - [ ] Column ordering
-- [ ] Multi-sort
+- [x] Multi-sort
 - [x] Saved table views
 - [x] Advanced filter builder
 - [x] Keyboard navigation
