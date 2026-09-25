@@ -150,7 +150,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Workspace activity/audit log
 - [x] Workspace-level settings
 - [x] Workspace member search/filter
-- [ ] Fine-grained per-deck permissions UI
+- [x] Fine-grained per-deck permissions UI
 
 ## Workspace switching
 
