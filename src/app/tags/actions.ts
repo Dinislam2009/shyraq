@@ -48,7 +48,7 @@ export async function mergeTag(sourceId:string,formData:FormData){
  const sourceCards=await cardIdsForTag(supabase,source.id);
  const {data:existingTarget}=await supabase.from("card_tags").select("card_id").eq("tag_id",target.id);
  const targetSet=new Set((existingTarget??[]).map((x:any)=>x.card_id));
- const links=sourceCards.filter(id=>!targetSet.has(id)).map(card_id=>({card_id,tag_id:target.id}));
+ const links=sourceCards.filter((id:string)=>!targetSet.has(id)).map((card_id:string)=>({card_id,tag_id:target.id}));
  if(links.length)await supabase.from("card_tags").insert(links);
  if(sourceCards.length)await supabase.from("card_tags").delete().eq("tag_id",source.id);
  await updateCardContentTag(supabase,user.id,String(source.name),String(target.name));
