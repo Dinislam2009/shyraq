@@ -10,7 +10,7 @@ const labelKeys={
  "Dashboard":"dashboard","My decks":"myDecks","Review":"review","Statistics":"statistics",
  "Public decks":"publicDecks","Collections":"collections","Tags":"tags","Markers":"markers","Review history":"history","Notifications":"notifications",
  "Import":"import","Export":"export","Profile":"profile","Review settings":"reviewSettings","Sync":"sync",
- "Review devices":"devices","Media library":"mediaLibrary","Moderation":"moderation","Workspace":"workspaceSettings","Settings":"settings",
+ "Review devices":"devices","Media library":"mediaLibrary","Health":"health","Moderation":"moderation","Workspace":"workspaceSettings","Settings":"settings",
 } as const;
 export function Sidebar(){
  const pathname=usePathname();const {t}=useI18n();
