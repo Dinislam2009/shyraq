@@ -480,3 +480,12 @@ for each row execute function private.prevent_deck_owner_change();
 -- Harden collaboration trigger functions.
 alter function private.prevent_card_owner_change() set search_path = pg_catalog;
 alter function private.prevent_deck_owner_change() set search_path = pg_catalog;
+
+-- Lock down legacy tables that are not part of Shyraq.
+alter table public.flashcards enable row level security;
+alter table public.card_states enable row level security;
+alter table public.flashcard_reviews enable row level security;
+alter table public.focus_sessions enable row level security;
+alter table public.flashcard_decks enable row level security;
+alter table public.projects enable row level security;
+alter table public._prisma_migrations enable row level security;
