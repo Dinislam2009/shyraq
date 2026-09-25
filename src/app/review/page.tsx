@@ -1,16 +1,22 @@
 import {AppShell} from "@/components/app-shell";
 import {getCurrentUser,getReviewBatch,getReviewPreferences} from "@/lib/supabase/queries";
-import {ReviewRunner} from "@/components/review-runner";
+import {ReviewBootstrap} from "@/components/review-bootstrap";
 
 const defaults={desired_retention:0.9,maximum_interval:36500,learning_steps:["1m","10m"],relearning_steps:["10m"],enable_fuzz:true,enable_short_term:true};
 
 export default async function ReviewPage({searchParams}:{searchParams:Promise<{deck?:string}>}){
  const {deck}=await searchParams;
- const queue:any[]=await getReviewBatch(deck,20);
- const user=await getCurrentUser();
- const raw:any=await getReviewPreferences();
- const preferences=raw?{...defaults,...raw,learning_steps:Array.isArray(raw.learning_steps)?raw.learning_steps:defaults.learning_steps,relearning_steps:Array.isArray(raw.relearning_steps)?raw.relearning_steps:defaults.relearning_steps}:defaults;
+ let queue:any[]=[];
+ let user:any=null;
+ let raw:any=null;
 
- if(!queue.length||!user)return <AppShell><div className="mx-auto max-w-2xl px-5 py-20 text-center"><h1 className="text-2xl font-semibold">Review queue is empty</h1><p className="mt-3 text-sm leading-6 text-slate-500">Create some cards first or choose another deck.</p></div></AppShell>;
- return <AppShell><ReviewRunner userId={user.id} queue={queue} preferences={preferences}/></AppShell>;
+ try{queue=await getReviewBatch(deck,20);}catch{}
+ try{user=await getCurrentUser();}catch{}
+ try{raw=await getReviewPreferences();}catch{}
+
+ const preferences=raw
+  ? {...defaults,...raw,learning_steps:Array.isArray(raw.learning_steps)?raw.learning_steps:defaults.learning_steps,relearning_steps:Array.isArray(raw.relearning_steps)?raw.relearning_steps:defaults.relearning_steps}
+  : defaults;
+
+ return <AppShell><ReviewBootstrap userId={user?.id||null} initialQueue={queue} initialPreferences={preferences}/></AppShell>;
 }
