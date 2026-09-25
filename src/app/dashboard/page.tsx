@@ -22,8 +22,8 @@ export default async function DashboardPage() {
           <Stat icon={<ClockIcon size={18}/>} label="Study time" value={String(stats.studyMinutesToday)+"m"} sub={stats.accuracyToday===null?"today":"today · "+stats.accuracyToday+"% accuracy"}/>
           <Stat icon={<FlameIcon size={18}/>} label="Study streak" value={String(stats.streak)} sub="days in a row"/>
         </section>
-        <section className="mt-4 grid gap-4 sm:grid-cols-3">
-          <Stat icon={<LayersIcon size={18}/>} label="Decks" value={String(decks.length)} sub="in your workspace"/>
+        <section className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_1fr]"><div className="rounded-2xl border border-black/[0.06] bg-white p-6"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Today&apos;s plan</p><h2 className="mt-2 text-xl font-semibold">{stats.planning.targetReviews} reviews · about {stats.planning.estimatedMinutes} min</h2><p className="mt-2 text-sm text-slate-500">{stats.planning.dueToday} due today · {stats.planning.newToday} new</p></div><Link href="/review" className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Start</Link></div></div><div className="rounded-2xl border border-black/[0.06] bg-white p-6"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Learning insights</p><div className="mt-3 space-y-2">{stats.insights.map((insight:string)=><p key={insight} className="text-sm leading-6 text-slate-600">• {insight}</p>)}</div></div></section><section className="mt-4 grid gap-4 sm:grid-cols-3">
+          <Stat icon={<LayersIcon size={18}/>} label="Decks" value={String(stats.workspaceOverview.decks)} sub={stats.workspaceOverview.members+" workspace members"}/>
           <Stat icon={<ClockIcon size={18}/>} label="30-day reviews" value="See statistics" sub="open detailed analytics"/>
           <Stat icon={<PlayIcon size={18}/>} label="Continue" value="Start review" sub="resume your queue"/>
         </section>
