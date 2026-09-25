@@ -42,12 +42,15 @@ export async function importAnki(formData:FormData):Promise<void>{
   const rows=sourceDeck.cards.map((card,index)=>{
     let front=card.front;
     let back=card.back;
-    for(const [name,info] of mediaPaths.entries()){
+    for(const name of card.mediaNames){
       const token="__SHYRAQ_MEDIA__"+encodeURIComponent(name);
-      front=front.replaceAll(token,info.path);
-      back=back.replaceAll(token,info.path);
+      front=front.replaceAll(token,"");
+      back=back.replaceAll(token,"");
     }
-    return {deck_id:deck.id,owner_id:user.id,kind:card.kind,content:{front,back,tags:card.tags},sort_order:index};
+    const mediaItems=card.mediaNames
+      .map(name=>mediaPaths.get(name)?{name,path:mediaPaths.get(name)!.path,mime_type:mediaPaths.get(name)!.mime_type}:null)
+      .filter(Boolean);
+    return {deck_id:deck.id,owner_id:user.id,kind:card.kind,content:{front,back,tags:card.tags,mediaItems},sort_order:index};
   });
   if(rows.length){
     const {data:created,error:cardsError}=await supabase.from("cards").insert(rows).select("id");
