@@ -2,9 +2,9 @@
 import {useState} from "react";
 import {createWorkspaceInvite} from "@/app/settings/workspace/actions";
 
-export function WorkspaceInviteForm(){
+export function WorkspaceInviteForm({workspaceId}:{workspaceId:string}){
  const [email,setEmail]=useState(""); const [role,setRole]=useState("reviewer"); const [link,setLink]=useState(""); const [error,setError]=useState(""); const [busy,setBusy]=useState(false);
- async function submit(formData:FormData){setBusy(true);setError("");setLink("");const result=await createWorkspaceInvite(formData);if(result?.error)setError(result.error);if(result?.link)setLink(window.location.origin+result.link);setBusy(false);}
+ async function submit(formData:FormData){formData.set("workspace_id",workspaceId);setBusy(true);setError("");setLink("");const result=await createWorkspaceInvite(formData);if(result?.error)setError(result.error);if(result?.link)setLink(window.location.origin+result.link);setBusy(false);}
  return <form action={submit} className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6">
   <h2 className="font-semibold">Create invite link</h2>
   <div className="mt-4 grid gap-4 md:grid-cols-3"><input name="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Optional email restriction" className="h-11 rounded-xl border border-slate-200 px-3 text-sm md:col-span-2"/><select name="role" value={role} onChange={e=>setRole(e.target.value)} className="h-11 rounded-xl border border-slate-200 px-3 text-sm"><option value="reviewer">Reviewer</option><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select></div>
