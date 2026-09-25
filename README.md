@@ -765,9 +765,9 @@ Analytics are a core feature, not a Premium feature.
 - [x] Study time
 - [x] Study streak
 - [x] Deck overview
-- [ ] More detailed daily planning
-- [ ] Workspace overview
-- [ ] Personalized but non-AI insights
+- [x] More detailed daily planning
+- [x] Workspace overview
+- [x] Personalized but non-AI insights
 
 ## Statistics
 
