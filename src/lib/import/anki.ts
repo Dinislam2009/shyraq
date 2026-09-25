@@ -3,7 +3,7 @@ import initSqlJs from "sql.js";
 import {join} from "node:path";
 
 type ParsedCard={
- front:string;back:string;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;sourceCardId:number;mediaNames:string[];
+ front:string;back:string;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;sourceCardId:number;mediaNames:string[];kind:"basic"|"cloze";
 };
 export type ParsedAnki={
  decks:Array<{id:string;name:string;description:string;cards:ParsedCard[]}>;
@@ -29,21 +29,24 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
  const db=new SQL.Database(collection);
  const colRows=db.exec("select decks, models from col limit 1")[0]?.values?.[0];
  const decksRaw=colRows?JSON.parse(String(colRows[0]||"{}")):{};
+ const modelsRaw=colRows?JSON.parse(String(colRows[1]||"{}")):{};
  const media=files.media?JSON.parse(decode(files.media)):{};
  const mediaFiles:Record<string,Uint8Array>={};
  for(const [numericName,originalName] of Object.entries(media)){if(files[numericName])mediaFiles[String(originalName)]=files[numericName];}
  const deckMap=new Map<number,{id:string;name:string;description:string;cards:ParsedCard[]}>();
  for(const [id,deck] of Object.entries(decksRaw))deckMap.set(Number(id),{id:String(id),name:String((deck as any).name||"Imported deck"),description:"Imported from Anki",cards:[]});
  const noteValues=db.exec("select id,mid,tags,flds from notes")[0]?.values||[];
- const notes=new Map<number,{fields:string[];tags:string[]}>();
- for(const row of noteValues)notes.set(Number(row[0]),{fields:String(row[3]||"").split("\x1f"),tags:String(row[2]||"").trim().split(/\s+/).filter(Boolean)});
+ const notes=new Map<number,{fields:string[];tags:string[];mid:number}>();
+ for(const row of noteValues)notes.set(Number(row[0]),{fields:String(row[3]||"").split("\x1f"),tags:String(row[2]||"").trim().split(/\s+/).filter(Boolean),mid:Number(row[1])});
  const cardValues=db.exec("select id,nid,did,ord,due,ivl,factor,reps,lapses from cards")[0]?.values||[];
  for(const row of cardValues){
   const note=notes.get(Number(row[1]));if(!note)continue;
   let deck=deckMap.get(Number(row[2]));
   if(!deck){deck={id:String(row[2]),name:"Imported deck",description:"Imported from Anki",cards:[]};deckMap.set(Number(row[2]),deck);}
   const front=parseField(note.fields[0]||"",media);const back=parseField(note.fields[1]||"",media);
-  deck.cards.push({front:front.text,back:back.text,tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),sourceCardId:Number(row[0]),mediaNames:[...new Set([...front.mediaNames,...back.mediaNames])]});
+  const model:any=modelsRaw[String(note.mid)]||{};
+  const kind:model["type"]|string===1||/\{\{c\d+::/i.test(front.text+back.text)?"cloze":"basic";
+  deck.cards.push({front:front.text,back:back.text,tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),sourceCardId:Number(row[0]),mediaNames:[...new Set([...front.mediaNames,...back.mediaNames])],kind});
  }
  const reviewValues=db.exec("select cid,id,ease,ivl,lastIvl,factor,time,type from revlog")[0]?.values||[];
  const reviews=reviewValues.map(row=>({cardId:Number(row[0]),timestamp:Number(row[1]),rating:Math.max(1,Math.min(4,Number(row[2]))) as 1|2|3|4,interval:Number(row[3]),lastInterval:Number(row[4]),factor:Number(row[5]),timeMs:Number(row[6]),type:Number(row[7])}));
