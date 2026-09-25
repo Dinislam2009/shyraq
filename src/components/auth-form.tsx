@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/components/i18n-provider";
 
@@ -21,19 +20,15 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     e.preventDefault();
     setBusy(true);
     setError("");
-    const supabase = createClient();
-    const result = signup
-      ? await supabase.auth.signUp({ email, password, options:{ data:{display_name:name} } })
-      : await supabase.auth.signInWithPassword({ email, password });
-
-    if (result.error) setError(result.error.message);
-    else if (signup && !result.data.session) {
-      setError(t("accountCreated"));
-    } else {
+    try{
+      const response=await fetch(signup?"/api/auth/signup":"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(signup?{email,password,name}:{email,password})});
+      const result=await response.json() as {ok?:boolean;session?:boolean;error?:string};
+      if(!response.ok){setError(result.error||"Authentication failed.");return;}
+      if(signup&&!result.session){setError(t("accountCreated"));return;}
       router.replace("/dashboard");
       router.refresh();
-    }
-    setBusy(false);
+    }catch{setError("Authentication service is temporarily unavailable.");}
+    finally{setBusy(false);}
   }
 
   return <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5">
