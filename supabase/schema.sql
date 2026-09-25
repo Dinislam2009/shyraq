@@ -417,3 +417,59 @@ grant select,insert,update on public.workspace_invitations to authenticated;
 
 -- Shyraq collaboration realtime
 alter publication supabase_realtime add table public.decks, public.cards, public.card_templates, public.workspace_members;
+
+
+-- Collaboration hardening: editors may update shared cards, ownership remains immutable.
+create or replace function private.prevent_card_owner_change()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.owner_id is distinct from old.owner_id then
+    raise exception 'card owner cannot be changed';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists cards_owner_immutable on public.cards;
+create trigger cards_owner_immutable
+before update on public.cards
+for each row execute function private.prevent_card_owner_change();
+
+drop policy if exists cards_update on public.cards;
+create policy cards_update
+on public.cards
+for update
+to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id = cards.deck_id
+      and private.is_workspace_member(d.workspace_id, 'editor'::workspace_role)
+  )
+)
+with check (
+  exists (
+    select 1 from public.decks d
+    where d.id = cards.deck_id
+      and private.is_workspace_member(d.workspace_id, 'editor'::workspace_role)
+  )
+);
+
+create or replace function private.prevent_deck_owner_change()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.owner_id is distinct from old.owner_id then
+    raise exception 'deck owner cannot be changed';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists decks_owner_immutable on public.decks;
+create trigger decks_owner_immutable
+before update on public.decks
+for each row execute function private.prevent_deck_owner_change();
