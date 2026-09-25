@@ -101,7 +101,7 @@ export async function bulkDeleteCards(deckId:string,cardIds:string[]):Promise<vo
  if(!user)redirect("/login");
  const ids=[...new Set(cardIds)].filter(Boolean).slice(0,500);
  if(!ids.length)redirect("/decks/"+deckId);
- const {error}=await supabase.from("cards").delete().eq("deck_id",deckId).eq("owner_id",user.id).in("id",ids);
+ const {error}=await supabase.from("cards").delete().eq("deck_id",deckId).in("id",ids);
  if(error)fail("/decks/"+deckId,error.message);
  revalidatePath("/decks/"+deckId);
  revalidatePath("/review");
