@@ -28,10 +28,14 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
   const [status, setStatus] = useState("all");
+  const [tagFilter, setTagFilter] = useState("");
+  const [markerFilter, setMarkerFilter] = useState("");
+  const [markedOnly, setMarkedOnly] = useState(false);
+  const [suspendedOnly, setSuspendedOnly] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [viewName, setViewName] = useState("");
-  const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string}>>([]);
+  const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string;tag:string;marker:string;markedOnly:boolean;suspendedOnly:boolean}>>([]);
   const { t } = useI18n();
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
@@ -62,9 +66,15 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
         (status === "suspended" && card.is_suspended) ||
         (status === "active" && !card.is_suspended) ||
         (status !== "all" && status !== "marked" && status !== "suspended" && status !== "active" && String(card.content?.status||"") === status);
-      return matchesQuery && matchesKind && matchesStatus;
+      const tags=Array.isArray(card.content?.tags)?card.content.tags.map(String):[];
+      const markers=Array.isArray(card.content?.markers)?card.content.markers.map(String):[];
+      const matchesTag=!tagFilter||tags.some(value=>value.toLowerCase()===tagFilter.toLowerCase());
+      const matchesMarker=!markerFilter||markers.some(value=>value.toLowerCase()===markerFilter.toLowerCase());
+      const matchesMarked=!markedOnly||Boolean(card.is_marked);
+      const matchesSuspended=!suspendedOnly||Boolean(card.is_suspended);
+      return matchesQuery && matchesKind && matchesStatus && matchesTag && matchesMarker && matchesMarked && matchesSuspended;
     });
-  }, [cards, kind, query, status]);
+  }, [cards, kind, query, status, tagFilter, markerFilter, markedOnly, suspendedOnly]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -81,11 +91,11 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
 
   function saveView(){
     const name=viewName.trim(); if(!name)return;
-    const next=[...savedViews.filter(view=>view.name!==name),{name,query,kind,status}];
+    const next=[...savedViews.filter(view=>view.name!==name),{name,query,kind,status,tag:tagFilter,marker:markerFilter,markedOnly,suspendedOnly}];
     setSavedViews(next); localStorage.setItem("shyraq:card-views:"+deckId,JSON.stringify(next)); setViewName("");
   }
-  function applyView(view:{name:string;query:string;kind:string;status:string}){
-    setQuery(view.query);setKind(view.kind);setStatus(view.status);
+  function applyView(view:{name:string;query:string;kind:string;status:string;tag?:string;marker?:string;markedOnly?:boolean;suspendedOnly?:boolean}){
+    setQuery(view.query);setKind(view.kind);setStatus(view.status);setTagFilter(view.tag||"");setMarkerFilter(view.marker||"");setMarkedOnly(Boolean(view.markedOnly));setSuspendedOnly(Boolean(view.suspendedOnly));
   }
 
   const selectedVisible = filtered.filter(card => selected.includes(card.id));
@@ -146,6 +156,16 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
           </div>
         </div>
 
+        <div className="mt-4 rounded-xl bg-slate-50 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-slate-600">Advanced filters</span>
+            <input value={tagFilter} onChange={event=>setTagFilter(event.target.value)} placeholder="Tag = exact" className="h-9 w-32 rounded-lg border border-slate-200 bg-white px-2 text-xs"/>
+            <input value={markerFilter} onChange={event=>setMarkerFilter(event.target.value)} placeholder="Marker = exact" className="h-9 w-32 rounded-lg border border-slate-200 bg-white px-2 text-xs"/>
+            <label className="flex items-center gap-2 rounded-lg bg-white px-2 py-2 text-xs"><input type="checkbox" checked={markedOnly} onChange={event=>setMarkedOnly(event.target.checked)} className="h-4 w-4"/>Marked</label>
+            <label className="flex items-center gap-2 rounded-lg bg-white px-2 py-2 text-xs"><input type="checkbox" checked={suspendedOnly} onChange={event=>setSuspendedOnly(event.target.checked)} className="h-4 w-4"/>Suspended</label>
+            <button type="button" onClick={()=>{setQuery("");setKind("all");setStatus("all");setTagFilter("");setMarkerFilter("");setMarkedOnly(false);setSuspendedOnly(false);}} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Reset</button>
+          </div>
+        </div>
         <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
           <input value={viewName} onChange={event=>setViewName(event.target.value)} placeholder="View name" className="h-9 w-36 rounded-lg border border-slate-200 bg-white px-2 text-xs"/>
           <button type="button" onClick={saveView} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Save view</button>
