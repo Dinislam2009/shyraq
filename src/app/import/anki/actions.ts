@@ -39,6 +39,8 @@ export async function importAnki(formData:FormData):Promise<void>{
  for(const sourceDeck of parsed.decks){
   const {data:deck,error}=await supabase.from("decks").insert({workspace_id:workspace.id,owner_id:user.id,name:sourceDeck.name,description:sourceDeck.description,visibility:"private",settings:{source:"anki",ankiDeckId:sourceDeck.id}}).select("id").single();
   if(error||!deck)fail(error?.message||"Unable to create imported deck.");
+  const {error:templateError}=await supabase.from("card_templates").insert({deck_id:deck.id,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
+  if(templateError)fail(templateError.message);
   const rows=sourceDeck.cards.map((card,index)=>{
     let front=card.front;
     let back=card.back;
