@@ -27,10 +27,10 @@ export async function getDecks(){
  if(!workspaceIds.length)return [];
  const {data}=await supabase
   .from("decks")
-  .select("id,name,description,visibility,workspace_id,owner_id,updated_at,cards(count)")
+  .select("id,name,description,visibility,workspace_id,owner_id,updated_at,settings,cards(count)")
   .in("workspace_id",workspaceIds)
   .order("updated_at",{ascending:false});
- return data??[];
+ return (data??[]).filter((deck:any)=>deck.settings?.archived!==true);
 }
 export async function getDeck(id:string){const supabase=await createClient();const {data}=await supabase.from("decks").select("id,name,description,visibility,workspace_id,owner_id,settings,created_at,updated_at,cards(id,content,kind,sort_order,is_suspended,is_marked,updated_at)").eq("id",id).maybeSingle();return data;}
 export async function getReviewPreferences(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return null;const {data}=await supabase.from("review_preferences").select("*").eq("user_id",user.id).maybeSingle();return data;}
