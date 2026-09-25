@@ -18,6 +18,7 @@ type CardRow = {
   };
   is_suspended?: boolean;
   is_marked?: boolean;
+  updated_at?: string;
 };
 
 export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { deckId: string; cards: CardRow[]; favoriteIds: string[]; canEdit?: boolean }) {
@@ -192,6 +193,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                   <textarea name="back" defaultValue={card.content?.back || ""} className="min-h-28 rounded-xl border border-slate-200 p-3 font-mono text-sm outline-none focus:border-slate-400" />
                 </div>
                 <input type="hidden" name="kind" value={card.kind} />
+                <input type="hidden" name="expected_updated_at" value={card.updated_at||""} />
                 <label className="mt-3 block">
                   <span className="text-xs font-medium text-slate-500">Tags</span>
                   <input name="tags" defaultValue={Array.isArray(card.content?.tags) ? card.content.tags.join(", ") : ""} className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs" />
