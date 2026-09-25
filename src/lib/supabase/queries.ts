@@ -30,14 +30,14 @@ export async function getReviewBatch(deckId?:string,limit=20){
  const {data:dueStates}=await dueQuery;
  const result:any[]=[];
  for(const due of dueStates??[]){
-   const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content").eq("id",due.card_id).maybeSingle();
+   const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content,is_suspended").eq("id",due.card_id).maybeSingle();
    if(card&&(!deckId||card.deck_id===deckId))result.push({card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false});
    if(result.length>=limit)break;
  }
  if(result.length<limit){
    const {data:tracked}=await supabase.from("review_states").select("card_id").eq("user_id",user.id).limit(5000);
    const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
-   let query=supabase.from("cards").select("id,deck_id,kind,content").order("updated_at",{ascending:true}).limit(limit-result.length);
+   let query=supabase.from("cards").select("id,deck_id,kind,content").eq("is_suspended",false).order("updated_at",{ascending:true}).limit(limit-result.length);
    if(deckId)query=query.eq("deck_id",deckId);
    if(trackedIds.length)query=query.not("id","in","("+trackedIds.join(",")+")");
    const {data:cards}=await query;
@@ -57,12 +57,12 @@ export async function getReviewCard(deckId?:string){
  const {data:dueStates}=await supabase.from("review_states").select("card_id,state_data,due_at").eq("user_id",user.id).lte("due_at",new Date().toISOString()).order("due_at",{ascending:true}).limit(20);
  for(const due of dueStates??[]){
    const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content").eq("id",due.card_id).maybeSingle();
-   if(card&&(!deckId||card.deck_id===deckId))return {card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false};
+   if(card&&!card.is_suspended&&(!deckId||card.deck_id===deckId))return {card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false};
  }
 
  const {data:tracked}=await supabase.from("review_states").select("card_id").eq("user_id",user.id).limit(5000);
  const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
- let query=supabase.from("cards").select("id,deck_id,kind,content").order("updated_at",{ascending:true}).limit(1);
+ let query=supabase.from("cards").select("id,deck_id,kind,content").eq("is_suspended",false).order("updated_at",{ascending:true}).limit(1);
  if(deckId)query=query.eq("deck_id",deckId);
  if(trackedIds.length)query=query.not("id","in","("+trackedIds.join(",")+")");
  const {count:newToday}=await supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id).eq("metadata->>event_kind","new-card").gte("reviewed_at",todayStart.toISOString());
