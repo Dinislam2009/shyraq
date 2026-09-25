@@ -12,8 +12,11 @@ export async function createDeck(formData:FormData):Promise<void>{
  const name=String(formData.get("name")||"").trim();
  const description=String(formData.get("description")||"").trim();
  if(!name)fail("/decks/new","Deck name is required.");
- const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
- if(!workspace)fail("/decks/new","Personal workspace not found.");
+ const requestedWorkspace=String(formData.get("workspace_id")||"").trim();
+ const {data:workspace}=requestedWorkspace
+  ? await supabase.from("workspaces").select("id").eq("id",requestedWorkspace).maybeSingle()
+  : await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
+ if(!workspace)fail("/decks/new","Workspace not found.");
  const {data,error}=await supabase.from("decks").insert({workspace_id:workspace.id,owner_id:user.id,name,description}).select("id").single();
  if(error||!data)fail("/decks/new",error?.message||"Unable to create deck.");
  const {error:templateError}=await supabase.from("card_templates").insert({
