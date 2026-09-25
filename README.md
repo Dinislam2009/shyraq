@@ -926,8 +926,8 @@ No paid notification tiers.
 
 - [ ] Enable Supabase leaked-password protection
 - [x] Password reset hardening
-- [ ] Login rate limiting
-- [ ] Abuse protection
+- [x] Login rate limiting
+- [x] Abuse protection
 - [x] Session/device management
 
 ## Privacy
