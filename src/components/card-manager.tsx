@@ -32,10 +32,12 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [markerFilter, setMarkerFilter] = useState("");
   const [markedOnly, setMarkedOnly] = useState(false);
   const [suspendedOnly, setSuspendedOnly] = useState(false);
+  const [sortPrimary, setSortPrimary] = useState("updated_desc");
+  const [sortSecondary, setSortSecondary] = useState("none");
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [viewName, setViewName] = useState("");
-  const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string;tag:string;marker:string;markedOnly:boolean;suspendedOnly:boolean}>>([]);
+  const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string;tag:string;marker:string;markedOnly:boolean;suspendedOnly:boolean;sortPrimary:string;sortSecondary:string}>>([]);
   const { t } = useI18n();
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
@@ -53,11 +55,12 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return cards.filter(card => {
+    const result=cards.filter(card => {
       const matchesQuery = !needle || [
         card.content?.front,
         card.content?.back,
-        ...(Array.isArray(card.content?.tags) ? card.content.tags : [])
+        ...(Array.isArray(card.content?.tags) ? card.content.tags : []),
+        ...(Array.isArray(card.content?.markers) ? card.content.markers : [])
       ].join(" ").toLowerCase().includes(needle);
       const matchesKind = kind === "all" || card.kind === kind;
       const matchesStatus =
@@ -74,7 +77,23 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       const matchesSuspended=!suspendedOnly||Boolean(card.is_suspended);
       return matchesQuery && matchesKind && matchesStatus && matchesTag && matchesMarker && matchesMarked && matchesSuspended;
     });
-  }, [cards, kind, query, status, tagFilter, markerFilter, markedOnly, suspendedOnly]);
+    const key=(card:any,sort:string)=>{
+      if(sort==="name")return String(card.content?.front||"").toLowerCase();
+      if(sort==="kind")return String(card.kind||"").toLowerCase();
+      if(sort==="status")return String(card.content?.status||"").toLowerCase();
+      if(sort==="created")return String(card.updated_at||"");
+      return String(card.updated_at||"");
+    };
+    const direction=(sort:string)=>sort==="name"||sort==="kind"||sort==="status"?1:-1;
+    result.sort((a:any,b:any)=>{
+      const primary=key(a,sortPrimary).localeCompare(key(b,sortPrimary),undefined,{numeric:true});
+      if(primary!==0)return primary*direction(sortPrimary);
+      if(sortSecondary==="none")return 0;
+      const secondary=key(a,sortSecondary).localeCompare(key(b,sortSecondary),undefined,{numeric:true});
+      return secondary*direction(sortSecondary);
+    });
+    return result;
+  }, [cards, kind, query, status, tagFilter, markerFilter, markedOnly, suspendedOnly, sortPrimary, sortSecondary]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -91,11 +110,11 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
 
   function saveView(){
     const name=viewName.trim(); if(!name)return;
-    const next=[...savedViews.filter(view=>view.name!==name),{name,query,kind,status,tag:tagFilter,marker:markerFilter,markedOnly,suspendedOnly}];
+    const next=[...savedViews.filter(view=>view.name!==name),{name,query,kind,status,tag:tagFilter,marker:markerFilter,markedOnly,suspendedOnly,sortPrimary,sortSecondary}];
     setSavedViews(next); localStorage.setItem("shyraq:card-views:"+deckId,JSON.stringify(next)); setViewName("");
   }
   function applyView(view:{name:string;query:string;kind:string;status:string;tag?:string;marker?:string;markedOnly?:boolean;suspendedOnly?:boolean}){
-    setQuery(view.query);setKind(view.kind);setStatus(view.status);setTagFilter(view.tag||"");setMarkerFilter(view.marker||"");setMarkedOnly(Boolean(view.markedOnly));setSuspendedOnly(Boolean(view.suspendedOnly));
+    setQuery(view.query);setKind(view.kind);setStatus(view.status);setTagFilter(view.tag||"");setMarkerFilter(view.marker||"");setMarkedOnly(Boolean(view.markedOnly));setSuspendedOnly(Boolean(view.suspendedOnly));setSortPrimary(view.sortPrimary||"updated_desc");setSortSecondary(view.sortSecondary||"none");
   }
 
   const selectedVisible = filtered.filter(card => selected.includes(card.id));
@@ -163,7 +182,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
             <input value={markerFilter} onChange={event=>setMarkerFilter(event.target.value)} placeholder="Marker = exact" className="h-9 w-32 rounded-lg border border-slate-200 bg-white px-2 text-xs"/>
             <label className="flex items-center gap-2 rounded-lg bg-white px-2 py-2 text-xs"><input type="checkbox" checked={markedOnly} onChange={event=>setMarkedOnly(event.target.checked)} className="h-4 w-4"/>Marked</label>
             <label className="flex items-center gap-2 rounded-lg bg-white px-2 py-2 text-xs"><input type="checkbox" checked={suspendedOnly} onChange={event=>setSuspendedOnly(event.target.checked)} className="h-4 w-4"/>Suspended</label>
-            <button type="button" onClick={()=>{setQuery("");setKind("all");setStatus("all");setTagFilter("");setMarkerFilter("");setMarkedOnly(false);setSuspendedOnly(false);}} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Reset</button>
+            <select value={sortPrimary} onChange={event=>setSortPrimary(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs" aria-label="Primary sort"><option value="updated_desc">Updated ↓</option><option value="name">Name A–Z</option><option value="kind">Kind A–Z</option><option value="status">Status A–Z</option></select><select value={sortSecondary} onChange={event=>setSortSecondary(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs" aria-label="Secondary sort"><option value="none">No secondary sort</option><option value="name">Then name</option><option value="kind">Then kind</option><option value="status">Then status</option></select><button type="button" onClick={()=>{setQuery("");setKind("all");setStatus("all");setTagFilter("");setMarkerFilter("");setMarkedOnly(false);setSuspendedOnly(false);setSortPrimary("updated_desc");setSortSecondary("none");}} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Reset</button>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
