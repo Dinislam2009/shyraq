@@ -185,7 +185,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Template management
 - [x] Public/private visibility
 - [x] Public deck updates
-- [ ] Deck cover image
+- [x] Deck cover image
 - [x] Deck color/icon customization
 - [x] Deck archive
 - [x] Deck trash / restore
