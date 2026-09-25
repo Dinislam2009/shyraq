@@ -1,4 +1,5 @@
 import {strToU8,zipSync} from "fflate";
+import {createHash} from "node:crypto";
 import {createClient} from "@/lib/supabase/server";
 
 export const runtime="nodejs";
@@ -60,6 +61,9 @@ export async function GET(){
    totalBytes+=bytes.byteLength;
    archive["media/"+item.storage_path.replace(/^\/+/, "")]=bytes;
  }
+ const checksums:any={algorithm:"sha256",files:{}};
+ for(const [name,bytes] of Object.entries(archive)){checksums.files[name]=createHash("sha256").update(bytes).digest("hex");}
+ archive["checksums.json"]=strToU8(JSON.stringify(checksums,null,2));
  const zipped=zipSync(archive,{level:6});
  return new Response(zipped,{headers:{"Content-Type":"application/zip","Content-Disposition":'attachment; filename="shyraq-backup.zip"'}});
 }
