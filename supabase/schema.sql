@@ -89,7 +89,7 @@ create table if not exists public.sync_conflicts (
  id uuid primary key default gen_random_uuid(),
  user_id uuid not null references auth.users(id) on delete cascade,
  card_id uuid not null references public.cards(id) on delete cascade,
- event_key text not null references public.review_events(event_key) on delete cascade,
+ event_key uuid not null references public.review_events(event_key) on delete cascade,
  detected_at timestamptz not null default now(),
  incoming_state jsonb not null default '{}'::jsonb,
  current_state jsonb not null default '{}'::jsonb,
