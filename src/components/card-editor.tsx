@@ -65,7 +65,7 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
     : front;
 
   const previewBack = kind === "cloze"
-    ? front.replace(/\{\{c\d+::([^}]+)\}\}/g, "$1") || back
+    ? [front.replace(/\{\{c\d+::([^}]+)\}\}/g, "$1"), back].filter(Boolean).join("\n\n")
     : back;
   const selectedTemplate = templates.find(template=>template.id===templateId);
   const templatePreviewFront = selectedTemplate ? applyTemplatePreview(selectedTemplate.front_template,{front:previewFront,back:previewBack}) : previewFront;
