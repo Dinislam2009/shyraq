@@ -186,6 +186,49 @@ async function restoreBackup(supabase:any,userId:string,workspaceId:string,paylo
  return {restoredCards,restoredMedia};
 }
 
+async function importStandardRows(supabase:any,userId:string,workspaceId:string,rows:ImportRow[],mode:"create"|"skip"|"replace"){
+ const issues=validateImportRows(rows);
+ if(issues.length)throw new Error("Validation failed: "+issues.slice(0,8).map(issue=>"row "+issue.row+" "+issue.message).join("; "));
+ const {data:existing,error:existingError}=await supabase.from("cards").select("id,deck_id,kind,content,is_suspended,is_marked").eq("owner_id",userId).limit(50000);
+ if(existingError)throw new Error(existingError.message);
+ const byKey=new Map<string,any>((existing??[]).map((card:any)=>[duplicateKey({front:String(card.content?.front||""),back:String(card.content?.back||"")}),card]));
+ const deckName="Imported "+new Date().toLocaleDateString("en-GB");
+ const {data:deck,error:deckError}=await supabase.from("decks").insert({workspace_id:workspaceId,owner_id:userId,name:deckName,description:"Imported into Shyraq",visibility:"private"}).select("id").single();
+ if(deckError||!deck)throw new Error(deckError?.message||"Unable to create import deck.");
+ const {error:templateError}=await supabase.from("card_templates").insert({deck_id:deck.id,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
+ if(templateError)throw new Error(templateError.message);
+ const inserted:string[]=[];
+ const updated:Array<{id:string;patch:any}>= [];
+ let skipped=0, replaced=0, created=0;
+ try{
+  let sortOrder=0;
+  for(const row of rows){
+   const key=duplicateKey(row);
+   const duplicate=byKey.get(key);
+   const payload={front:row.front,back:row.back,tags:row.tags,options:row.options,answer:row.answer,imageUrl:row.imageUrl,fields:row.fields};
+   if(duplicate&&mode==="skip"){skipped++;continue;}
+   if(duplicate&&mode==="replace"){
+    updated.push({id:duplicate.id,patch:{kind:duplicate.kind,content:duplicate.content,is_suspended:duplicate.is_suspended,is_marked:duplicate.is_marked}});
+    const {error}=await supabase.from("cards").update({kind:row.kind,content:payload}).eq("id",duplicate.id);
+    if(error)throw new Error(error.message);
+    replaced++;
+    continue;
+   }
+   const {data:card,error}=await supabase.from("cards").insert({deck_id:deck.id,owner_id:userId,kind:row.kind,content:payload,sort_order:sortOrder++}).select("id").single();
+   if(error||!card)throw new Error(error?.message||"Unable to insert imported card.");
+   inserted.push(card.id);
+   created++;
+  }
+  return {deckId:deck.id,created,replaced,skipped};
+ }catch(error){
+  for(const original of updated){await supabase.from("cards").update(original.patch).eq("id",original.id);}
+  if(inserted.length)await supabase.from("cards").delete().in("id",inserted);
+  await supabase.from("card_templates").delete().eq("deck_id",deck.id);
+  await supabase.from("decks").delete().eq("id",deck.id);
+  throw error;
+ }
+}
+
 export async function importCards(formData:FormData):Promise<void>{
  const file=formData.get("file");
  if(!(file instanceof File)||file.size===0)fail("Choose a file.");
@@ -208,37 +251,24 @@ export async function importCards(formData:FormData):Promise<void>{
   }
 
   const text=await file.text();
+  const previewConfirmed=String(formData.get("preview_confirmed")||"") === "1";
+  const duplicateMode=(["create","skip","replace"] as const).includes(String(formData.get("duplicate_mode"))) ? String(formData.get("duplicate_mode")) as "create"|"skip"|"replace" : "skip";
+  if(file.size>200*1024*1024)throw new Error("Import file is larger than 200 MB.");
+  if(!previewConfirmed)throw new Error("Run the import preview and validation before importing.");
+
   if(filename.endsWith(".json")){
    const data=JSON.parse(text);
    if(data?.format==="shyraq-backup-v2"){
     const result=await restoreBackup(supabase,user.id,workspace.id,data);
     revalidatePath("/decks");revalidatePath("/statistics");
-    redirect("/decks?restored="+result.restoredCards);
+    redirect("/decks?restored="+result.restoredCards+"&media="+result.restoredMedia);
    }
-   const source=(data.decks??[]).flatMap((d:any)=>d.cards??[]);
-   const rows=source.map((card:any)=>({front:String(card.content?.front??""),back:String(card.content?.back??""),kind:safeKind(String(card.kind||"basic")),tags:Array.isArray(card.content?.tags)?card.content.tags.join(","): "",options:card.content?.options,answer:card.content?.answer,imageUrl:card.content?.imageUrl})).filter((row:any)=>row.front||row.back);
-   if(!rows.length)throw new Error("No cards found.");
-   const {data:deck,error}=await supabase.from("decks").insert({workspace_id:workspace.id,owner_id:user.id,name:"Imported "+new Date().toLocaleDateString("en-GB"),description:"Imported into Shyraq",visibility:"private"}).select("id").single();
-   if(error||!deck)throw new Error(error?.message||"Unable to create import deck.");
-   await supabase.from("card_templates").insert({deck_id:deck.id,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
-   const {error:cardError}=await supabase.from("cards").insert(rows.map((row:any,index:number)=>({deck_id:deck.id,owner_id:user.id,kind:row.kind,content:contentFromRow(row),sort_order:index})));
-   if(cardError)throw new Error(cardError.message);
-   revalidatePath("/decks");redirect("/decks?imported="+rows.length);
   }
 
-  const lines=text.split(/\r?\n/).filter((line:string)=>line.trim());
-  const header=csvLine(lines.shift()||"").map((value:string)=>value.toLowerCase().trim());
-  const fi=Math.max(0,header.indexOf("front"));
-  const bi=Math.max(0,header.indexOf("back"));
-  if(header.indexOf("front")<0||header.indexOf("back")<0)throw new Error("CSV must contain front and back columns.");
-  const rows=lines.map((line:string)=>{const values=csvLine(line);return {front:values[fi]||"",back:values[bi]||"",kind:values[header.indexOf("kind")]||"basic",tags:values[header.indexOf("tags")]||"",options:values[header.indexOf("options")]||"",answer:values[header.indexOf("answer")]||"",imageUrl:values[header.indexOf("image_url")]||""};}).filter((row:any)=>row.front||row.back);
-  if(!rows.length)throw new Error("No cards found.");
-  const {data:deck,error}=await supabase.from("decks").insert({workspace_id:workspace.id,owner_id:user.id,name:"Imported "+new Date().toLocaleDateString("en-GB"),description:"Imported into Shyraq",visibility:"private"}).select("id").single();
-  if(error||!deck)throw new Error(error?.message||"Unable to create import deck.");
-  await supabase.from("card_templates").insert({deck_id:deck.id,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
-  const {error:cardError}=await supabase.from("cards").insert(rows.map((row:any,index:number)=>({deck_id:deck.id,owner_id:user.id,kind:safeKind(String(row.kind||"basic")),content:contentFromRow(row),sort_order:index})));
-  if(cardError)throw new Error(cardError.message);
-  revalidatePath("/decks");redirect("/decks?imported="+rows.length);
+  const rows=parseStandardText(text,file.name);
+  const result=await importStandardRows(supabase,user.id,workspace.id,rows,duplicateMode);
+  revalidatePath("/decks");revalidatePath("/statistics");
+  redirect("/decks?imported="+result.created+"&replaced="+result.replaced+"&skipped="+result.skipped);
  }catch(error){
   if(error instanceof Error&&error.message.startsWith("NEXT_REDIRECT"))throw error;
   fail(error instanceof Error?error.message:"Unable to import file.");
