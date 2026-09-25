@@ -6,7 +6,7 @@ export async function GET(request:NextRequest){
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return new Response("Unauthorized",{status:401});
  const params=request.nextUrl.searchParams;
- let query=supabase.from("review_events").select("id,event_key,card_id,reviewed_at,rating,elapsed_ms,device_id,client_sequence,metadata,previous_state,next_state").eq("user_id",user.id).order("reviewed_at",{ascending:true}).limit(10000);
+ let query=supabase.from("review_events").select("id,event_key,card_id,reviewed_at,rating,elapsed_ms,device_id,client_sequence,metadata,previous_state,next_state,cards!inner(deck_id)").eq("user_id",user.id).order("reviewed_at",{ascending:true}).limit(10000);
  if(["again","hard","good","easy"].includes(String(params.get("rating")||"")))query=query.eq("rating",String(params.get("rating")));
  if(params.get("deck"))query=query.eq("cards.deck_id",String(params.get("deck")));
  if(params.get("card"))query=query.eq("card_id",String(params.get("card")));
