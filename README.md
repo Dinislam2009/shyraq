@@ -294,8 +294,8 @@ Target editor:
 - [ ] Column visibility settings
 - [ ] Column ordering
 - [ ] Multi-sort
-- [ ] Saved table views
-- [ ] Advanced filter builder
+- [x] Saved table views
+- [x] Advanced filter builder
 - [x] Keyboard navigation
 - [ ] Bulk edit modal with all card fields
 
