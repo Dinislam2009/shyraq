@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {AppShell} from "@/components/app-shell";
 import {createClient} from "@/lib/supabase/server";
+import {deleteSavedFilter,saveHistoryFilter} from "@/app/history/actions";
 
 type Params={deck?:string;rating?:string;from?:string;to?:string;card?:string;event?:string};
 
@@ -19,7 +20,7 @@ export default async function HistoryPage({searchParams}:{searchParams:Promise<P
  if(params.event)query=query.eq("metadata->>event_kind",params.event);
  const {data,error}=await query;
  const events=data??[];
- const {data:decks}=await supabase.from("decks").select("id,name").eq("owner_id",user.id).order("name");
+ const [{data:decks},{data:savedFilters}]=await Promise.all([supabase.from("decks").select("id,name").eq("owner_id",user.id).order("name"),supabase.from("saved_filters").select("id,name,query,created_at").eq("user_id",user.id).eq("kind","review_history").order("created_at",{ascending:false}).limit(30)]);
  const eventKinds:string[]=Array.from(new Set<string>((events??[]).map((event:any)=>String(event.metadata?.event_kind||"review")))).sort();
  const exportQuery=new URLSearchParams();
  if(params.deck)exportQuery.set("deck",params.deck);if(params.card)exportQuery.set("card",params.card);if(params.rating)exportQuery.set("rating",params.rating);if(params.event)exportQuery.set("event",params.event);if(params.from)exportQuery.set("from",params.from);if(params.to)exportQuery.set("to",params.to);
@@ -37,6 +38,10 @@ export default async function HistoryPage({searchParams}:{searchParams:Promise<P
    <input type="date" name="from" defaultValue={params.from||""} className="h-10 rounded-xl border border-slate-200 px-3 text-sm"/>
    <div className="flex gap-2"><input type="date" name="to" defaultValue={params.to||""} className="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 px-3 text-sm"/><button className="rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-800">Filter</button></div>
   </form>
+  <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
+   <div className="rounded-2xl border border-black/[0.06] bg-white p-4"><p className="text-sm font-semibold">Saved filters</p><div className="mt-3 space-y-2">{(savedFilters??[]).map((filter:any)=>{const query=filter.query||{};const url=new URLSearchParams(Object.entries(query).filter(([,value])=>Boolean(value)).map(([key,value])=>[key,String(value)]));return <div key={filter.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2"><a href={"/history?"+url.toString()} className="min-w-0 flex-1 truncate text-sm font-medium">{filter.name}</a><form action={deleteSavedFilter.bind(null,filter.id)}><button className="text-xs font-semibold text-red-600">Delete</button></form></div>})}{!(savedFilters??[]).length?<p className="text-xs text-slate-400">No saved filters yet.</p>:null}</div></div>
+   <form action={saveHistoryFilter} className="rounded-2xl border border-black/[0.06] bg-white p-4"><p className="text-sm font-semibold">Save current filter</p><input name="name" required placeholder="e.g. Difficult cards" className="mt-3 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm"/><input type="hidden" name="query" value={JSON.stringify(Object.fromEntries(Object.entries(params).filter(([,value])=>Boolean(value))))}/><button className="mt-3 w-full rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Save filter</button></form>
+  </div>
   {error?<div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error.message}</div>:null}
   <div className="mt-6 grid gap-4 md:grid-cols-4">
    <Metric label="Events" value={String(events.length)}/>
