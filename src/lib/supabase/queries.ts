@@ -270,5 +270,19 @@ export async function getDashboardStats(){
  const dates=new Set((events??[]).map((e:any)=>new Date(e.reviewed_at).toISOString().slice(0,10)));
  let streak=0;
  for(let i=0;;i++){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);if(dates.has(d.toISOString().slice(0,10)))streak++;else break;}
- return {dueToday:dueCount,newToday,reviewsToday,studyMinutesToday,accuracyToday,streak,workspace};
+ const {data:recentEvents}=await supabase.from("review_events").select("elapsed_ms,reviewed_at,rating").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").gte("reviewed_at",new Date(Date.now()-7*24*60*60*1000).toISOString()).limit(5000);
+ const recent=recentEvents??[];
+ const avgSeconds=recent.length?recent.reduce((sum:number,event:any)=>sum+Number(event.elapsed_ms||0),0)/recent.length/1000:30;
+ const pref=(await supabase.from("review_preferences").select("reviews_per_day").eq("user_id",user.id).maybeSingle()).data;
+ const plannedReviews=Math.min(dueCount,Math.max(10,Number(pref?.reviews_per_day??20)));
+ const planning={targetReviews:plannedReviews,estimatedMinutes:Math.max(1,Math.round(plannedReviews*avgSeconds/60)),dueToday:dueCount,newToday};
+ const insights:string[]=[];
+ if(dueCount>20)insights.push("Your due queue is above 20 cards. A focused review session can reduce today's backlog.");
+ else if(dueCount>0)insights.push("You have "+dueCount+" cards due or overdue today.");
+ if(accuracyToday!==null&&accuracyToday<70)insights.push("Today's accuracy is below 70%. Consider slowing down and reviewing difficult cards.");
+ if(streak>=3)insights.push("You are on a "+streak+"-day study streak.");
+ if(!insights.length)insights.push("No urgent signals today. Keep your normal review cadence.");
+ const {count:workspaceMemberCount}=workspaceId?await supabase.from("workspace_members").select("user_id",{count:"exact",head:true}).eq("workspace_id",workspaceId):{count:0};
+ const workspaceOverview={decks:workspaceDeckIds.length,cards:cardIds.length,members:workspaceMemberCount??0};
+ return {dueToday:dueCount,newToday,reviewsToday,studyMinutesToday,accuracyToday,streak,workspace,planning,insights,workspaceOverview};
 }
