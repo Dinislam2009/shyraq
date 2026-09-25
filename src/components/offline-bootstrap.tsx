@@ -21,7 +21,7 @@ export function OfflineBootstrap(){
    }catch{}
   };
   void start();
-  return()=>{mounted=false;cleanup();};
+  return()=>{mounted=false;cleanup();navigator.serviceWorker.removeEventListener("message",onSyncMessage as EventListener);};
  },[]);
  return null;
 }
