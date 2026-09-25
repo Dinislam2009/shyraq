@@ -7,7 +7,7 @@ export async function GET(){
  const header=["id","deck_id","kind","front","back","tags","options","answer","image_url","sort_order","created_at","updated_at"];
  const lines=[header.join(","),...(data??[]).map((c:any)=>{
   const content=c.content??{};
-  const values=[c.id,c.deck_id,c.kind,content.front??"",content.back??",",Array.isArray(content.tags)?content.tags.join(", "):"",Array.isArray(content.options)?content.options.join("|"):"",content.answer??"",content.imageUrl??"",c.sort_order,c.created_at,c.updated_at];
+  const values=[c.id,c.deck_id,c.kind,content.front??"",content.back??"",Array.isArray(content.tags)?content.tags.join(", "):"",Array.isArray(content.options)?content.options.join("|"):"",content.answer??"",content.imageUrl??"",c.sort_order,c.created_at,c.updated_at];
   return values.map((v:any)=>esc(String(v??""))).join(",");
  })];
  return new Response(lines.join("\n"),{headers:{"Content-Type":"text/csv;charset=utf-8","Content-Disposition":'attachment; filename="shyraq-cards.csv"'}});
