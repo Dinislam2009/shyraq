@@ -1048,11 +1048,11 @@ Mobile is a planned first-class product.
 ## Web first
 
 - [ ] Finish production-grade responsive web app
-- [ ] Mobile review UX
+- [x] Mobile review UX
 - [ ] Mobile card editor
 - [ ] Mobile deck management
-- [ ] Mobile offline behavior
-- [ ] Mobile navigation
+- [x] Mobile offline behavior
+- [x] Mobile navigation
 
 ## Native/cross-platform later
 
