@@ -293,8 +293,8 @@ create policy workspace_owner_delete on public.workspaces for delete to authenti
 drop policy if exists members_read on public.workspace_members;
 create policy members_read on public.workspace_members for select to authenticated using(user_id=(select auth.uid()) or private.is_workspace_member(workspace_id,'admin'));
 drop policy if exists members_admin_write on public.workspace_members;
-create policy members_admin_insert on public.workspace_members for insert to authenticated with check(private.is_workspace_member(workspace_id,'admin'));
-create policy members_admin_update on public.workspace_members for update to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
+create policy members_admin_insert on public.workspace_members for insert to authenticated with check(private.is_workspace_member(workspace_id,'admin') or private.is_workspace_owner(workspace_id));
+create policy members_admin_update on public.workspace_members for update to authenticated using(private.is_workspace_member(workspace_id,'admin') or private.is_workspace_owner(workspace_id)) with check(private.is_workspace_member(workspace_id,'admin') or private.is_workspace_owner(workspace_id));
 create policy members_admin_delete on public.workspace_members for delete to authenticated using(private.is_workspace_member(workspace_id,'admin'));
 
 drop policy if exists decks_read on public.decks;
