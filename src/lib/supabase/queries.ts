@@ -26,7 +26,7 @@ export async function getReviewBatch(deckId?:string,limit=20){
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return [];
  const now=new Date().toISOString();
- let dueQuery=supabase.from("review_states").select("card_id,state_data,due_at").eq("user_id",user.id).lte("due_at",now).order("due_at",{ascending:true}).limit(limit);
+ const dueQuery=supabase.from("review_states").select("card_id,state_data,due_at").eq("user_id",user.id).lte("due_at",now).order("due_at",{ascending:true}).limit(limit);
  const {data:dueStates}=await dueQuery;
  const result:any[]=[];
  for(const due of dueStates??[]){
