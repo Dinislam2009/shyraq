@@ -64,3 +64,13 @@ export async function deleteCard(deckId:string,cardId:string):Promise<void>{
  const supabase=await createClient();const {error}=await supabase.from("cards").delete().eq("id",cardId);if(error)fail("/decks/"+deckId,error.message);
  revalidatePath("/decks/"+deckId);redirect("/decks/"+deckId);
 }
+export async function setCardFlag(deckId:string,cardId:string,field:"is_marked"|"is_suspended",value:boolean):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const {error}=await supabase.from("cards").update({[field]:value}).eq("id",cardId).eq("owner_id",user.id);
+ if(error)fail("/decks/"+deckId,error.message);
+ revalidatePath("/decks/"+deckId);
+ revalidatePath("/review");
+ redirect("/decks/"+deckId);
+}
