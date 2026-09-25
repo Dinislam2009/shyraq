@@ -2,23 +2,58 @@ import {unzipSync} from "fflate";
 import initSqlJs from "sql.js";
 import {join} from "node:path";
 
-type ParsedCard={
- front:string;back:string;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;sourceCardId:number;mediaNames:string[];kind:"basic"|"cloze";
+export type AnkiTemplate={
+ id:string;name:string;frontTemplate:string;backTemplate:string;css:string;fields:string[];cloze:boolean;
 };
+
+type ParsedCard={
+ front:string;back:string;fields:Record<string,string>;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;
+ sourceCardId:number;modelId:number;mediaNames:string[];kind:"basic"|"cloze";
+};
+
 export type ParsedAnki={
  decks:Array<{id:string;name:string;description:string;cards:ParsedCard[]}>;
  media:Record<string,string>;
  mediaFiles:Record<string,Uint8Array>;
  reviews:Array<{cardId:number;timestamp:number;rating:1|2|3|4;interval:number;lastInterval:number;factor:number;timeMs:number;type:number}>;
+ templates:AnkiTemplate[];
+ warnings:string[];
 };
 
 function decode(value:Uint8Array){return new TextDecoder().decode(value);}
+
+function convertAnkiTemplate(source:string){
+ return String(source||"")
+  .replace(/\{\{\s*FrontSide\s*\}\}/gi,"{{front}}")
+  .replace(/\{\{\s*BackSide\s*\}\}/gi,"{{back}}")
+  .replace(/\{\{\s*Front\s*\}\}/gi,"{{front}}")
+  .replace(/\{\{\s*Back\s*\}\}/gi,"{{back}}")
+  .replace(/\{\{\s*cloze\s*:\s*([^}]+)\}\}/gi,"{{$1}}")
+  .replace(/\{\{\s*text\s*:\s*([^}]+)\}\}/gi,"{{$1}}")
+  .replace(/\{\{\s*hint\s*:\s*([^}]+)\}\}/gi,"{{$1}}");
+}
+
+function normalizeHtml(value:string){
+ let html=String(value||"").replace(/\r\n/g,"\n");
+ html=html.replace(/<br\s*\/?>/gi,"\n");
+ html=html.replace(/<\/(?:div|p|li|tr|h[1-6])>/gi,"\n");
+ html=html.replace(/<(strong|b)>/gi,"**").replace(/<\/(strong|b)>/gi,"**");
+ html=html.replace(/<(em|i)>/gi,"*").replace(/<\/(em|i)>/gi,"*");
+ const tick=String.fromCharCode(96);
+ html=html.replace(/<code>/gi,tick).replace(/<\/code>/gi,tick);
+ html=html.replace(/<pre[^>]*>/gi,"\n\n"+tick+tick+tick+"\n").replace(/<\/pre>/gi,"\n"+tick+tick+tick+"\n");
+ return html.replace(/<[^>]+>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").trim();
+}
+
 function parseField(value:string,media:Record<string,string>){
  const mediaNames:string[]=[];
- let html=value.replace(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi,(_,name:string)=>{mediaNames.push(media[name]||name);return "__SHYRAQ_MEDIA__"+encodeURIComponent(media[name]||name);});
- html=html.replace(/\[sound:([^\]]+)\]/gi,(_,name:string)=>{mediaNames.push(media[name]||name);return "__SHYRAQ_MEDIA__"+encodeURIComponent(media[name]||name);});
- html=html.replace(/<br\s*\/?>(?=)/gi,"\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").trim();
- return {text:html,mediaNames:[...new Set(mediaNames)]};
+ let html=String(value||"").replace(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi,(_,name:string)=>{
+  const resolved=media[name]||name;mediaNames.push(resolved);return "__SHYRAQ_MEDIA__"+encodeURIComponent(resolved);
+ });
+ html=html.replace(/\[sound:([^\]]+)\]/gi,(_,name:string)=>{
+  const resolved=media[name]||name;mediaNames.push(resolved);return "__SHYRAQ_MEDIA__"+encodeURIComponent(resolved);
+ });
+ return {text:normalizeHtml(html),mediaNames:[...new Set(mediaNames)]};
 }
 
 export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
@@ -33,23 +68,62 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
  const media=files.media?JSON.parse(decode(files.media)):{};
  const mediaFiles:Record<string,Uint8Array>={};
  for(const [numericName,originalName] of Object.entries(media)){if(files[numericName])mediaFiles[String(originalName)]=files[numericName];}
+
+ const templates:AnkiTemplate[]=[];
+ const warnings:string[]=[];
+ const modelMeta=new Map<number,AnkiTemplate>();
+
+ for(const [id,modelValue] of Object.entries(modelsRaw)){
+  const model:any=modelValue;
+  const fieldNames=Array.isArray(model?.flds)?model.flds.map((field:any)=>String(field?.name||"Field")).filter(Boolean):[];
+  const firstTemplate=model?.tmpls?.[0]||{};
+  const frontTemplate=convertAnkiTemplate(String(firstTemplate?.qfmt||"{{front}}"));
+  const backTemplate=convertAnkiTemplate(String(firstTemplate?.afmt||"{{back}}"));
+  const css=String(model?.css||"");
+  const cloze=model?.type===1||/\{\{\s*cloze\s*:/i.test(String(firstTemplate?.qfmt||"")+" "+String(firstTemplate?.afmt||""));
+  const template={id:String(id),name:String(model?.name||"Anki template"),frontTemplate,backTemplate,css,fields:fieldNames,cloze};
+  templates.push(template);
+  modelMeta.set(Number(id),template);
+  if(css)warnings.push("Template "+template.name+" includes Anki CSS; Shyraq preserves it, but CSS parity may differ.");
+  if(/\{\{\s*[#^]/.test(String(firstTemplate?.qfmt||"")+" "+String(firstTemplate?.afmt||"")))warnings.push("Template "+template.name+" uses conditional sections that require compatibility review.");
+  if(/\{\{\s*[^}:]+\s*:\s*(?:text|cloze|hint)/i.test(String(firstTemplate?.qfmt||"")+" "+String(firstTemplate?.afmt||"")))warnings.push("Template "+template.name+" uses Anki filters; common text/cloze/hint filters are normalized.");
+ }
+
  const deckMap=new Map<number,{id:string;name:string;description:string;cards:ParsedCard[]}>();
- for(const [id,deck] of Object.entries(decksRaw))deckMap.set(Number(id),{id:String(id),name:String((deck as any).name||"Imported deck"),description:"Imported from Anki",cards:[]});
+ for(const [id,deck] of Object.entries(decksRaw)){
+  deckMap.set(Number(id),{id:String(id),name:String((deck as any).name||"Imported deck"),description:"Imported from Anki",cards:[]});
+ }
+
  const noteValues=db.exec("select id,mid,tags,flds from notes")[0]?.values||[];
  const notes=new Map<number,{fields:string[];tags:string[];mid:number}>();
- for(const row of noteValues)notes.set(Number(row[0]),{fields:String(row[3]||"").split("\x1f"),tags:String(row[2]||"").trim().split(/\s+/).filter(Boolean),mid:Number(row[1])});
+ for(const row of noteValues){
+  notes.set(Number(row[0]),{fields:String(row[3]||"").split("\x1f"),tags:String(row[2]||"").trim().split(/\s+/).filter(Boolean),mid:Number(row[1])});
+ }
+
  const cardValues=db.exec("select id,nid,did,ord,due,ivl,factor,reps,lapses from cards")[0]?.values||[];
  for(const row of cardValues){
   const note=notes.get(Number(row[1]));if(!note)continue;
   let deck=deckMap.get(Number(row[2]));
   if(!deck){deck={id:String(row[2]),name:"Imported deck",description:"Imported from Anki",cards:[]};deckMap.set(Number(row[2]),deck);}
-  const front=parseField(note.fields[0]||"",media);const back=parseField(note.fields[1]||"",media);
-  const model:any=modelsRaw[String(note.mid)]||{};
-  const kind = model["type"] === 1 || /\{\{c\d+::/i.test(front.text + back.text) ? "cloze" : "basic";
-  deck.cards.push({front:front.text,back:back.text,tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),sourceCardId:Number(row[0]),mediaNames:[...new Set([...front.mediaNames,...back.mediaNames])],kind});
+  const model=modelMeta.get(note.mid);
+  const fieldNames=model?.fields??[];
+  const fields:Record<string,string>={};
+  fieldNames.forEach((name,index)=>{fields[name]=parseField(note.fields[index]||"",media).text;});
+  const front=parseField(note.fields[0]||"",media);
+  const back=parseField(note.fields[1]||"",media);
+  const mediaNames=[...new Set([...Object.values(fields).flatMap(value=>parseField(value,media).mediaNames),...front.mediaNames,...back.mediaNames])];
+  const kind=model?.cloze||/\{\{c\d+::/i.test(Object.values(fields).join(" "))?"cloze":"basic";
+  deck.cards.push({
+   front:front.text,back:back.text,fields,tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),
+   factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),sourceCardId:Number(row[0]),modelId:note.mid,mediaNames,kind
+  });
  }
+
  const reviewValues=db.exec("select cid,id,ease,ivl,lastIvl,factor,time,type from revlog")[0]?.values||[];
- const reviews=reviewValues.map(row=>({cardId:Number(row[0]),timestamp:Number(row[1]),rating:Math.max(1,Math.min(4,Number(row[2]))) as 1|2|3|4,interval:Number(row[3]),lastInterval:Number(row[4]),factor:Number(row[5]),timeMs:Number(row[6]),type:Number(row[7])}));
+ const reviews=reviewValues.map(row=>({
+  cardId:Number(row[0]),timestamp:Number(row[1]),rating:Math.max(1,Math.min(4,Number(row[2]))) as 1|2|3|4,
+  interval:Number(row[3]),lastInterval:Number(row[4]),factor:Number(row[5]),timeMs:Number(row[6]),type:Number(row[7])
+ }));
  db.close();
- return {decks:[...deckMap.values()],media,mediaFiles,reviews};
+ return {decks:[...deckMap.values()],media,mediaFiles,reviews,templates,warnings:[...new Set(warnings)]};
 }
