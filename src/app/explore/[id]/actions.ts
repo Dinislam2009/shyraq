@@ -64,6 +64,10 @@ export async function reportDeck(deckId:string,formData:FormData):Promise<void>{
  const reason=String(formData.get("reason")||"").trim();
  const details=String(formData.get("details")||"").trim().slice(0,1000);
  if(!reason)fail("/explore/"+deckId,"Choose a report reason.");
+ const {count:recentReports}=await supabase.from("deck_reports").select("id",{count:"exact",head:true}).eq("reporter_id",user.id).gte("created_at",new Date(Date.now()-60*60*1000).toISOString());
+ if((recentReports??0)>=5)fail("/explore/"+deckId,"Report rate limit reached. Try again later.");
+ const {data:duplicate}=await supabase.from("deck_reports").select("id").eq("deck_id",deckId).eq("reporter_id",user.id).is("resolved_at",null).limit(1).maybeSingle();
+ if(duplicate)fail("/explore/"+deckId,"You already have an open report for this deck.");
  const {error}=await supabase.from("deck_reports").insert({deck_id:deckId,reporter_id:user.id,reason,details});
  if(error)fail("/explore/"+deckId,error.message);
  revalidatePath("/explore/"+deckId);redirect("/explore/"+deckId+"?reported=1");
