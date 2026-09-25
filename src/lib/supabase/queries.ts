@@ -29,10 +29,11 @@ export async function getDecks(){
   .from("decks")
   .select("id,name,description,visibility,workspace_id,owner_id,updated_at,settings,cards(count)")
   .in("workspace_id",workspaceIds)
+  .is("deleted_at",null)
   .order("updated_at",{ascending:false});
  return (data??[]).filter((deck:any)=>deck.settings?.archived!==true);
 }
-export async function getDeck(id:string){const supabase=await createClient();const {data}=await supabase.from("decks").select("id,name,description,visibility,workspace_id,owner_id,settings,created_at,updated_at,cards(id,content,kind,sort_order,is_suspended,is_marked,updated_at)").eq("id",id).maybeSingle();return data;}
+export async function getDeck(id:string){const supabase=await createClient();const {data}=await supabase.from("decks").select("id,name,description,visibility,workspace_id,owner_id,settings,deleted_at,created_at,updated_at,cards(id,content,kind,sort_order,is_suspended,is_marked,updated_at)").eq("id",id).maybeSingle();return data;}
 export async function getReviewPreferences(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return null;const {data}=await supabase.from("review_preferences").select("*").eq("user_id",user.id).maybeSingle();return data;}
 export async function getReviewBatch(deckId?:string,limit=20){
  const supabase=await createClient();
