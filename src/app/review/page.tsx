@@ -12,7 +12,6 @@ export default async function ReviewPage({searchParams}:{searchParams:Promise<{d
  let user:any=null;
  let raw:any=null;
 
- try{queue=await getReviewBatch(deck,requestedLimit);}catch{}
  try{user=await getCurrentUser();}catch{}
  try{raw=await getReviewPreferences();}catch{}
 
@@ -20,7 +19,11 @@ export default async function ReviewPage({searchParams}:{searchParams:Promise<{d
   ? {...defaults,...raw,learning_steps:Array.isArray(raw.learning_steps)?raw.learning_steps:defaults.learning_steps,relearning_steps:Array.isArray(raw.relearning_steps)?raw.relearning_steps:defaults.relearning_steps}
   : defaults;
  const storedSessionDefaults=preferences.session_defaults&&typeof preferences.session_defaults==="object"&&!Array.isArray(preferences.session_defaults)?preferences.session_defaults:{};
- preferences={...preferences,session_defaults:{...storedSessionDefaults,batchSize:requestedLimit,shuffle:params.shuffle==="1",autoRevealSeconds:params.auto?Math.min(60,Math.max(0,Number(params.auto))):Number((storedSessionDefaults as any).autoRevealSeconds||0)}};
+ const requestedLimit=Math.min(100,Math.max(1,Number(params.limit||Number((storedSessionDefaults as any).batchSize||20))));
+ const shuffleSession=params.shuffle!==undefined ? params.shuffle==="1" : (storedSessionDefaults as any).shuffle===true;
+ const autoReveal=params.auto!==undefined ? Math.min(60,Math.max(0,Number(params.auto||0))) : Number((storedSessionDefaults as any).autoRevealSeconds||0);
+ try{queue=await getReviewBatch(deck,requestedLimit);}catch{}
+ preferences={...preferences,session_defaults:{...storedSessionDefaults,batchSize:requestedLimit,shuffle:shuffleSession,autoRevealSeconds:autoReveal}};
  if(shuffleSession)queue=[...queue].sort(()=>Math.random()-0.5);
 
  return <AppShell><ReviewBootstrap userId={user?.id||null} initialQueue={queue} initialPreferences={preferences}/></AppShell>;
