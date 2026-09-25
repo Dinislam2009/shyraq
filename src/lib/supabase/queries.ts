@@ -235,20 +235,26 @@ export async function getDashboardStats(){
 
  const workspace=await getSelectedWorkspace();
  const workspaceId=workspace?.id?String(workspace.id):"";
- const {data:workspaceCards}=workspaceId
-  ? await supabase.from("cards").select("id").eq("owner_id",user.id).eq("deck_id",(await supabase.from("decks").select("id").eq("workspace_id",workspaceId).is("deleted_at",null)).data?.[0]?.id||"")
+ const {data:workspaceDecks}=workspaceId
+  ? await supabase.from("decks").select("id").eq("workspace_id",workspaceId).is("deleted_at",null)
+  : {data:[]};
+ const workspaceDeckIds=(workspaceDecks??[]).map((row:any)=>row.id).filter(Boolean);
+ const {data:workspaceCards}=workspaceDeckIds.length
+  ? await supabase.from("cards").select("id").eq("owner_id",user.id).in("deck_id",workspaceDeckIds).limit(20000)
   : {data:[]};
  const cardIds=(workspaceCards??[]).map((row:any)=>row.id);
 
  const start=new Date();start.setHours(0,0,0,0);
  const tomorrow=new Date(start);tomorrow.setDate(tomorrow.getDate()+1);
 
- let dueQuery=supabase.from("review_states").select("card_id,cards!inner(id,is_suspended,deck_id)",{count:"exact",head:true}).eq("user_id",user.id).eq("cards.is_suspended",false).lt("due_at",tomorrow.toISOString());
- if(workspaceId)dueQuery=dueQuery.eq("cards.decks.workspace_id",workspaceId);
- const {count:dueToday}=await dueQuery;
+ let dueCount=0;
+ if(cardIds.length){
+  const {count}=await supabase.from("review_states").select("card_id",{count:"exact",head:true}).eq("user_id",user.id).in("card_id",cardIds).eq("state_data->>suspended","false").lt("due_at",tomorrow.toISOString());
+  dueCount=count??0;
+ }
 
  let todayQuery=supabase.from("review_events").select("rating,elapsed_ms,metadata").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").gte("reviewed_at",start.toISOString()).lt("reviewed_at",tomorrow.toISOString());
- if(cardIds.length)todayQuery=todayQuery.in("card_id",cardIds);
+ if(cardIds.length)todayQuery=todayQuery.in("card_id",cardIds); else todayQuery=todayQuery.limit(0);
  const {data:todayEvents}=await todayQuery;
 
  const today=todayEvents??[];
@@ -259,10 +265,10 @@ export async function getDashboardStats(){
  const accuracyToday=reviewsToday?Math.round(goodToday/reviewsToday*100):null;
 
  let eventQuery=supabase.from("review_events").select("reviewed_at").eq("user_id",user.id).order("reviewed_at",{ascending:false}).limit(5000);
- if(cardIds.length)eventQuery=eventQuery.in("card_id",cardIds);
+ if(cardIds.length)eventQuery=eventQuery.in("card_id",cardIds); else eventQuery=eventQuery.limit(0);
  const {data:events}=await eventQuery;
  const dates=new Set((events??[]).map((e:any)=>new Date(e.reviewed_at).toISOString().slice(0,10)));
  let streak=0;
  for(let i=0;;i++){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);if(dates.has(d.toISOString().slice(0,10)))streak++;else break;}
- return {dueToday:dueToday??0,newToday,reviewsToday,studyMinutesToday,accuracyToday,streak,workspace};
+ return {dueToday:dueCount,newToday,reviewsToday,studyMinutesToday,accuracyToday,streak,workspace};
 }
