@@ -249,7 +249,8 @@ export async function importCards(formData:FormData):Promise<void>{
 
   const text=await file.text();
   const previewConfirmed=String(formData.get("preview_confirmed")||"") === "1";
-  const duplicateMode=(["create","skip","replace"] as const).includes(String(formData.get("duplicate_mode"))) ? String(formData.get("duplicate_mode")) as "create"|"skip"|"replace" : "skip";
+  const rawDuplicateMode=String(formData.get("duplicate_mode")||"skip");
+  const duplicateMode: "create"|"skip"|"replace" = rawDuplicateMode==="create"||rawDuplicateMode==="replace"||rawDuplicateMode==="skip" ? rawDuplicateMode : "skip";
   if(file.size>200*1024*1024)throw new Error("Import file is larger than 200 MB.");
   if(!previewConfirmed)throw new Error("Run the import preview and validation before importing.");
 
