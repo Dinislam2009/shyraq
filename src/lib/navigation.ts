@@ -8,11 +8,14 @@ export const mainNavigation:NavItem[]=[
 export const secondaryNavigation:NavItem[]=[
  {href:"/explore",label:"Public decks",icon:"layers"},
  {href:"/collections",label:"Collections",icon:"layers"},
+ {href:"/history",label:"Review history",icon:"layers"},
+ {href:"/notifications",label:"Notifications",icon:"settings"},
  {href:"/import",label:"Import",icon:"settings"},
  {href:"/export",label:"Export",icon:"settings"},
  {href:"/settings/profile",label:"Profile",icon:"settings"},
  {href:"/settings/review",label:"Review settings",icon:"settings"},
  {href:"/settings/sync",label:"Sync",icon:"settings"},
+ {href:"/settings/devices",label:"Review devices",icon:"settings"},
  {href:"/settings/moderation",label:"Moderation",icon:"settings"},
  {href:"/settings/workspace",label:"Workspace",icon:"settings"},
  {href:"/settings",label:"Settings",icon:"settings"}
