@@ -493,9 +493,9 @@ Target:
 - [ ] Exact Anki card styling compatibility
 - [ ] Exact Anki scheduling-state compatibility
 - [ ] Cloze/template edge-case compatibility
-- [ ] Import validation/diff report
-- [ ] Large collection performance optimization
-- [ ] Import progress UI
+- [x] Import validation/diff report
+- [x] Large collection performance optimization
+- [x] Import progress UI
 - [ ] Import recovery after interrupted upload
 
 Shyraq should maximize Anki compatibility while explicitly avoiding the claim that every internal Anki implementation detail is identical to FSRS/Shyraq.
