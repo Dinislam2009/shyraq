@@ -27,6 +27,25 @@ export async function toggleFavorite(cardId:string,deckId:string):Promise<void>{
  }catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to update favorite.");}
  revalidatePath("/decks/"+deckId);revalidatePath("/collections");redirect("/decks/"+deckId);
 }
+export async function createSmartCollection(formData:FormData):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const workspace=await personalWorkspace(supabase,user.id);if(!workspace)fail("/collections","Personal workspace not found.");
+ const name=String(formData.get("name")||"").trim().slice(0,80);if(!name)fail("/collections","Smart collection name is required.");
+ let rule:any={};try{rule=JSON.parse(String(formData.get("rule")||"{}"));}catch{}
+ const allowed={tag:String(rule.tag||"").trim().slice(0,80),marked:Boolean(rule.marked),suspended:Boolean(rule.suspended),kind:["basic","reverse","cloze","multiple_choice","image","custom"].includes(String(rule.kind))?String(rule.kind):""};
+ const {error}=await supabase.from("collections").insert({workspace_id:workspace.id,owner_id:user.id,name,kind:"smart",rule:allowed,sort_mode:"manual"});
+ if(error)fail("/collections",error.message);
+ revalidatePath("/collections");redirect("/collections");
+}
+
+export async function updateCollectionSort(id:string,formData:FormData):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const collection=await collectionForUser(supabase,user.id,id);if(!collection)fail("/collections","Collection not found.");
+ const mode=["manual","name","recent","size"].includes(String(formData.get("sort_mode"))) ? String(formData.get("sort_mode")) : "manual";
+ const {error}=await supabase.from("collections").update({sort_mode:mode}).eq("id",id).eq("owner_id",user.id);if(error)fail("/collections/"+id,error.message);
+ revalidatePath("/collections");revalidatePath("/collections/"+id);redirect("/collections/"+id);
+}
+
 export async function createCollection(formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const workspace=await personalWorkspace(supabase,user.id);if(!workspace)fail("/collections","Personal workspace not found.");
