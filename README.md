@@ -1002,8 +1002,8 @@ Target:
 - [x] Unit tests for import parsers
 - [x] Unit tests for export/restore
 - [x] Unit tests for sync conflict logic
-- [ ] Unit tests for permission logic
-- [ ] Unit tests for deck update reconciliation
+- [x] Unit tests for permission logic
+- [x] Unit tests for deck update reconciliation
 - [ ] Database/RLS integration tests
 - [ ] API tests
 
