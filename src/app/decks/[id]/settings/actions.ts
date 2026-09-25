@@ -2,17 +2,17 @@
 import {redirect} from "next/navigation";
 import {revalidatePath} from "next/cache";
 import {createClient} from "@/lib/supabase/server";
-import {canDeleteDeck,canManageDeck} from "@/lib/workspace/permissions";
+import {canDeleteDeck} from "@/lib/workspace/permissions";
+import {getEffectiveDeckRole} from "@/lib/workspace/deck-permissions";
 
 async function requireAccess(id:string,write:boolean){
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("id,name,owner_id,workspace_id,settings").eq("id",id).maybeSingle();if(!deck)redirect("/decks");
- const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
- const role=String(member?.role||"");
- if(write&&!canManageDeck(role as any))redirect("/decks/"+id+"?error=You+do+not+have+permission+to+edit+this+deck.");
- if(!write&&!canDeleteDeck(role as any))redirect("/decks/"+id+"?error=Only+an+owner+or+admin+can+perform+this+action.");
- return {supabase,user,deck,role};
+ const permission=await getEffectiveDeckRole(id);
+ if(write&&permission.deckRole!=="editor")redirect("/decks/"+id+"?error=You+do+not+have+permission+to+edit+this+deck.");
+ if(!write&&!canDeleteDeck(permission.workspaceRole as any))redirect("/decks/"+id+"?error=Only+an+owner+or+admin+can+perform+this+action.");
+ return {supabase,user,deck,role:permission.workspaceRole};
 }
 
 export async function updateDeckSettings(id:string,formData:FormData){
