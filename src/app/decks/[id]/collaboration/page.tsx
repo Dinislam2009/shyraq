@@ -16,15 +16,16 @@ export default async function CollaborationPage({params,searchParams}:{params:Pr
  const {data:membership}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
  if(!membership)return <AppShell><div className="mx-auto max-w-4xl px-5 py-10">You do not have workspace access.</div></AppShell>;
  const canEdit=["owner","admin","editor"].includes(String(membership.role||""));
- const [{data:comments},{data:activities},{data:versions}]=await Promise.all([
+ const [{data:comments},{data:activities},{data:versions},{data:cards}]=await Promise.all([
   supabase.from("comments").select("id,card_id,parent_id,author_id,body,resolved,created_at,updated_at").eq("deck_id",id).order("created_at",{ascending:false}).limit(200),
   supabase.from("activity_feed").select("id,actor_id,event_type,entity_type,entity_id,metadata,created_at").eq("workspace_id",deck.workspace_id).order("created_at",{ascending:false}).limit(100),
-  supabase.from("deck_versions").select("id,version_number,label,reason,created_by,created_at").eq("deck_id",id).order("version_number",{ascending:false}).limit(50)
+  supabase.from("deck_versions").select("id,version_number,label,reason,created_by,created_at").eq("deck_id",id).order("version_number",{ascending:false}).limit(50),
+  supabase.from("cards").select("id,content,kind").eq("deck_id",id).limit(5000)
  ]);
  const authorIds=[...new Set([...(comments??[]).map((c:any)=>c.author_id),...(activities??[]).map((a:any)=>a.actor_id),...(versions??[]).map((v:any)=>v.created_by)])];
  const {data:profiles}=authorIds.length?await supabase.from("profiles").select("id,username,display_name").in("id",authorIds):{data:[]};
  const profileMap=new Map((profiles??[]).map((p:any)=>[p.id,p]));
- const cardMap=new Map((deck.cards??[]).map((c:any)=>[c.id,c]));
+ const cardMap=new Map((cards??[]).map((c:any)=>[c.id,c]));
 
  return <AppShell><CollaborationRealtime deckId={id} workspaceId={deck.workspace_id}/><div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
   <Link href={"/decks/"+id} className="text-sm text-slate-400">← Deck</Link>
