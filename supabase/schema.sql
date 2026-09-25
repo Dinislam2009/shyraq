@@ -85,6 +85,20 @@ create table if not exists public.review_states (
  stability double precision, difficulty double precision, scheduled_days integer not null default 0,
  updated_at timestamptz not null default now(), primary key(user_id,card_id)
 );
+create table if not exists public.sync_conflicts (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references auth.users(id) on delete cascade,
+ card_id uuid not null references public.cards(id) on delete cascade,
+ event_key text not null references public.review_events(event_key) on delete cascade,
+ detected_at timestamptz not null default now(),
+ incoming_state jsonb not null default '{}'::jsonb,
+ current_state jsonb not null default '{}'::jsonb,
+ incoming_reviewed_at timestamptz,
+ current_reviewed_at timestamptz,
+ resolution text check(resolution in ('keep_remote','apply_incoming')),
+ resolved_at timestamptz
+);
+
 create table if not exists public.review_events (
  id uuid primary key default gen_random_uuid(), event_key uuid not null unique,
  user_id uuid not null references auth.users(id) on delete cascade, card_id uuid not null references public.cards(id) on delete cascade,
@@ -154,6 +168,7 @@ create index if not exists public_deck_follows_deck_id_idx on public.public_deck
 create index if not exists review_states_due_idx on public.review_states(user_id,due_at);
 create index if not exists review_states_card_id_idx on public.review_states(card_id);
 create index if not exists review_events_user_idx on public.review_events(user_id,reviewed_at desc);
+create index if not exists sync_conflicts_user_idx on public.sync_conflicts(user_id,resolved_at,detected_at desc);
 create index if not exists review_events_card_id_idx on public.review_events(card_id);
 create index if not exists sync_changes_user_cursor_idx on public.sync_changes(user_id,cursor);
 create index if not exists workspace_invitations_invited_by_idx on public.workspace_invitations(invited_by);
@@ -253,6 +268,7 @@ alter table public.collections enable row level security;
 alter table public.collection_cards enable row level security;
 alter table public.review_preferences enable row level security;
 alter table public.review_states enable row level security;
+alter table public.sync_conflicts enable row level security;
 alter table public.review_events enable row level security;
 alter table public.media enable row level security;
 alter table public.sync_cursors enable row level security;
