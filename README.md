@@ -94,9 +94,9 @@ Create a stable technical foundation before adding advanced product features.
 - [x] No email verification code requirement
 - [ ] Optional Google login
 - [ ] Optional Apple login
-- [ ] Password reset UX refinement
-- [ ] Auth error UX refinement
-- [ ] Session/device management UI
+- [x] Password reset UX refinement
+- [x] Auth error UX refinement
+- [x] Session/device management UI
 
 ## Profile
 
@@ -106,16 +106,16 @@ Create a stable technical foundation before adding advanced product features.
 - [x] Public creator profile
 - [x] Profile settings
 - [ ] Avatar upload
-- [ ] Profile statistics
+- [x] Profile statistics
 - [ ] Public creator deck collections
 - [ ] Creator activity/history controls
 
 ## Account lifecycle
 
 - [x] Account deletion backend foundation
-- [ ] Final account-deletion UI and confirmation flow
-- [ ] Data deletion/export explanation before deletion
-- [ ] Complete cleanup verification for user-owned media and data
+- [x] Final account-deletion UI and confirmation flow
+- [x] Data deletion/export explanation before deletion
+- [x] Complete cleanup verification for user-owned media and data
 
 ---
 
@@ -145,18 +145,18 @@ Shyraq supports both individual and collaborative learning.
 - [x] Editor
 - [x] Reviewer
 - [x] Viewer
-- [ ] Complete invite acceptance UX
-- [ ] Invite cancellation/revocation UI
-- [ ] Workspace activity/audit log
-- [ ] Workspace-level settings
-- [ ] Workspace member search/filter
+- [x] Complete invite acceptance UX
+- [x] Invite cancellation/revocation UI
+- [x] Workspace activity/audit log
+- [x] Workspace-level settings
+- [x] Workspace member search/filter
 - [ ] Fine-grained per-deck permissions UI
 
 ## Workspace switching
 
 - [x] Workspace selection foundation
-- [ ] Global workspace switcher in the main application shell
-- [ ] Persist selected workspace
+- [x] Global workspace switcher in the main application shell
+- [x] Persist selected workspace
 - [ ] Workspace-aware global search
 - [ ] Workspace-aware dashboard
 - [ ] Workspace-aware analytics
@@ -186,12 +186,12 @@ Shyraq supports both individual and collaborative learning.
 - [x] Public/private visibility
 - [x] Public deck updates
 - [ ] Deck cover image
-- [ ] Deck color/icon customization
-- [ ] Deck archive
+- [x] Deck color/icon customization
+- [x] Deck archive
 - [ ] Deck trash / restore
-- [ ] Permanent deletion confirmation with dependency summary
+- [x] Permanent deletion confirmation with dependency summary
 - [ ] Deck duplication UX improvements
-- [ ] Deck settings page
+- [x] Deck settings page
 
 ## Deck organization
 
@@ -200,7 +200,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Favorites
 - [x] Marked cards
 - [x] Suspended cards
-- [ ] Nested/tag hierarchy
+- [x] Nested/tag hierarchy
 - [ ] Saved filters
 - [x] Smart collections
 - [ ] Custom deck sorting
@@ -848,16 +848,16 @@ Target supported languages:
 
 Global search is planned as a major productivity feature.
 
-- [ ] Search decks
-- [ ] Search cards
-- [ ] Search tags
-- [ ] Search collections
-- [ ] Search creators
-- [ ] Search public decks
-- [ ] Search workspace content
+- [x] Search decks
+- [x] Search cards
+- [x] Search tags
+- [x] Search collections
+- [x] Search creators
+- [x] Search public decks
+- [x] Search workspace content
 - [x] Search filters
-- [ ] Keyboard shortcut
-- [ ] Command palette
+- [x] Keyboard shortcut
+- [x] Command palette
 - [x] Recent searches
 - [x] Saved searches
 
@@ -918,17 +918,17 @@ No paid notification tiers.
 - [x] Browser uses public Supabase key only
 - [x] Service-role key never shipped to client
 - [x] Privileged account deletion handled server-side
-- [ ] Final production secret audit
-- [ ] Environment-variable audit
-- [ ] Dependency security audit
+- [x] Final production secret audit
+- [x] Environment-variable audit
+- [x] Dependency security audit
 
 ## Authentication security
 
 - [ ] Enable Supabase leaked-password protection
-- [ ] Password reset hardening
+- [x] Password reset hardening
 - [ ] Login rate limiting
 - [ ] Abuse protection
-- [ ] Session/device management
+- [x] Session/device management
 
 ## Privacy
 
