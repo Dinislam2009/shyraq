@@ -1,0 +1,18 @@
+import {AppShell} from "@/components/app-shell";
+import {createClient} from "@/lib/supabase/server";
+import {updateReportStatus} from "@/app/settings/moderation/actions";
+
+export default async function PlatformModerationPage(){
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return null;
+ const {data:isModerator}=await supabase.rpc("is_platform_moderator");
+ if(!isModerator)return <AppShell><div className="mx-auto max-w-3xl px-5 py-10">You do not have platform moderation access.</div></AppShell>;
+ const {data:reports}=await supabase.from("deck_reports").select("id,deck_id,reporter_id,reason,details,status,created_at,resolved_at,decks(id,name,owner_id)").order("created_at",{ascending:false}).limit(500);
+ const reportIds=(reports??[]).map((r:any)=>r.id);
+ const {data:actions}=reportIds.length?await supabase.from("moderation_actions").select("report_id,moderator_id,action,note,created_at").in("report_id",reportIds).order("created_at",{ascending:false}):{data:[]};
+ const history=new Map<string,any[]>();
+ for(const action of actions??[]){const list=history.get(action.report_id)||[];list.push(action);history.set(action.report_id,list);}
+ return <AppShell><div className="mx-auto max-w-6xl px-5 py-8 sm:px-8"><div><p className="text-sm text-slate-400">Platform</p><h1 className="mt-1 text-3xl font-semibold tracking-tight">Moderation queue</h1><p className="mt-2 text-sm text-slate-500">Human review queue with deterministic rate limits and an append-only action trail.</p></div>
+  <div className="mt-8 space-y-4">{(reports??[]).map((r:any)=><div key={r.id} className="rounded-2xl border border-black/[0.06] bg-white p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{r.status}</p><h2 className="mt-1 text-lg font-semibold">{r.decks?.name||"Deck"}</h2><p className="mt-1 text-xs text-slate-400">{r.reason} · {new Date(r.created_at).toLocaleString()} · reporter {String(r.reporter_id).slice(0,8)}…</p></div><div className="flex flex-wrap gap-2"><form action={updateReportStatus.bind(null,r.id,"reviewing")}><button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Review</button></form><form action={updateReportStatus.bind(null,r.id,"escalated")}><button className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">Escalate</button></form><form action={updateReportStatus.bind(null,r.id,"resolved")}><button className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white">Resolve</button></form><form action={updateReportStatus.bind(null,r.id,"dismissed")}><button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Dismiss</button></form></div></div><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-600">{r.details||"No details supplied."}</p><details className="mt-4"><summary className="cursor-pointer text-xs font-semibold text-slate-600">Audit trail</summary><div className="mt-3 space-y-2">{(history.get(r.id)||[]).map((a:any)=><div key={a.created_at+a.action} className="rounded-xl bg-slate-50 p-3 text-xs"><span className="font-semibold">{a.action}</span> · {new Date(a.created_at).toLocaleString()} · {String(a.moderator_id).slice(0,8)}…</div>)}</div></details></div>)}</div></div></AppShell>;
+}
