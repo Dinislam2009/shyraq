@@ -63,3 +63,33 @@ export async function removeMember(workspaceId:string,userId:string):Promise<voi
  if(error)redirect("/settings/workspace?error="+encodeURIComponent(error.message));
  revalidatePath("/settings/workspace");redirect("/settings/workspace");
 }
+
+
+export async function updateWorkspaceSettings(workspaceId:string,formData:FormData):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ if(!await requireAdmin(supabase,user.id,workspaceId))redirect("/settings/workspace?error=Only+workspace+admins+can+edit+workspace+settings");
+ const name=String(formData.get("name")||"").trim().slice(0,80);const description=String(formData.get("description")||"").trim().slice(0,500);const slug=String(formData.get("slug")||"").trim().slice(0,60);
+ if(!name||!slug)redirect("/settings/workspace?error=Name+and+slug+are+required");
+ const {error}=await supabase.from("workspaces").update({name,description,slug}).eq("id",workspaceId);
+ if(error)redirect("/settings/workspace?error="+encodeURIComponent(error.message));
+ await supabase.from("workspace_audit_logs").insert({workspace_id:workspaceId,actor_id:user.id,event_type:"workspace.settings.updated",metadata:{name,slug}});
+ revalidatePath("/settings/workspace");revalidatePath("/dashboard");revalidatePath("/decks");redirect("/settings/workspace?workspace="+encodeURIComponent(workspaceId)+"&saved=1");
+}
+
+export async function selectWorkspace(workspaceId:string):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const {data:member}=await supabase.from("workspace_members").select("workspace_id").eq("workspace_id",workspaceId).eq("user_id",user.id).maybeSingle();
+ if(!member)redirect("/settings/workspace?error=Workspace+access+denied");
+ const {error}=await supabase.from("profiles").update({selected_workspace_id:workspaceId}).eq("id",user.id);
+ if(error)redirect("/settings/workspace?error="+encodeURIComponent(error.message));
+ revalidatePath("/dashboard");revalidatePath("/decks");revalidatePath("/settings/workspace");redirect("/dashboard");
+}
+
+export async function cancelWorkspaceInvite(inviteId:string):Promise<void>{
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
+ const {data:invite}=await supabase.from("workspace_invitations").select("id,workspace_id").eq("id",inviteId).maybeSingle();
+ if(!invite||!await requireAdmin(supabase,user.id,invite.workspace_id))redirect("/settings/workspace?error=Invite+access+denied");
+ await supabase.from("workspace_invitations").delete().eq("id",inviteId);
+ await supabase.from("workspace_audit_logs").insert({workspace_id:invite.workspace_id,actor_id:user.id,event_type:"workspace.invite.cancelled",metadata:{inviteId}});
+ revalidatePath("/settings/workspace");redirect("/settings/workspace?workspace="+encodeURIComponent(invite.workspace_id));
+}
