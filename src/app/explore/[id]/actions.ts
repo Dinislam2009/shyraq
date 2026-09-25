@@ -2,6 +2,7 @@
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
+import {diffCopiedCards} from "@/lib/decks/copy-diff";
 
 function fail(path:string,message:string):never{redirect(path+"?error="+encodeURIComponent(message));}
 
@@ -62,18 +63,12 @@ export async function acceptDeckUpdate(copiedDeckId:string):Promise<void>{
 
  const sourceCards=source.cards??[];
  const targetCards=target.cards??[];
+ const diff=diffCopiedCards(sourceCards,targetCards);
  const sourceById=new Map(sourceCards.map((card:any)=>[String(card.id),card]));
  const targetBySourceId=new Map(targetCards.filter((card:any)=>card.content?._sourceCardId).map((card:any)=>[String(card.content._sourceCardId),card]));
- let changed=0,added=0,removed=0;
 
  for(const sourceCard of sourceCards){
   const local=targetBySourceId.get(String(sourceCard.id));
-  if(!local){added++;}
-  else{
-   const sourceComparable=JSON.stringify({kind:sourceCard.kind,content:sourceCard.content,sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked});
-   const localComparable=JSON.stringify({kind:local.kind,content:local.content,sort_order:local.sort_order,is_suspended:local.is_suspended,is_marked:local.is_marked});
-   if(sourceComparable!==localComparable)changed++;
-  }
   const payload={kind:sourceCard.kind,content:{...sourceCard.content,_sourceCardId:sourceCard.id},sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked};
   if(local)await supabase.from("cards").update(payload).eq("id",local.id);
   else await supabase.from("cards").insert({...payload,deck_id:target.id,owner_id:user.id});
@@ -81,17 +76,14 @@ export async function acceptDeckUpdate(copiedDeckId:string):Promise<void>{
 
  for(const local of targetCards){
   const sourceId=local.content?._sourceCardId;
-  if(sourceId&&!sourceById.has(String(sourceId))){
-   removed++;
-   await supabase.from("cards").delete().eq("id",local.id);
-  }
+  if(sourceId&&!sourceById.has(String(sourceId)))await supabase.from("cards").delete().eq("id",local.id);
  }
 
  const {error:deckError}=await supabase.from("decks").update({name:source.name+" (copy)",description:source.description,settings:source.settings}).eq("id",target.id);
  if(deckError)fail("/decks/"+copiedDeckId,deckError.message);
 
  await supabase.from("deck_copies").update({source_updated_at:source.updated_at,last_synced_source_updated_at:source.updated_at}).eq("user_id",user.id).eq("copied_deck_id",copiedDeckId);
- await supabase.from("deck_copy_update_history").insert({user_id:user.id,source_deck_id:copy.source_deck_id,copied_deck_id:copiedDeckId,source_updated_at:source.updated_at,card_changes:{changed,added,removed}});
+ await supabase.from("deck_copy_update_history").insert({user_id:user.id,source_deck_id:copy.source_deck_id,copied_deck_id:copiedDeckId,source_updated_at:source.updated_at,card_changes:diff});
  revalidatePath("/decks/"+copiedDeckId);
  redirect("/decks/"+copiedDeckId);
 }
