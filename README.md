@@ -637,7 +637,7 @@ Public sharing is a major Shyraq feature.
 - [x] Sort by recent
 - [x] Sort by popularity
 - [x] Search ranking
-- [ ] Featured collections
+- [x] Featured collections
 
 ## Public deck actions
 
