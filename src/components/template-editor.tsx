@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { RichContent } from "@/components/rich-content";
 
 export function TemplateEditor({
   template,
@@ -31,11 +32,11 @@ export function TemplateEditor({
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Live front</p>
-          <div className="card mt-3 min-h-32 rounded-xl bg-white p-5" style={{whiteSpace:"pre-wrap"}}><div dangerouslySetInnerHTML={{__html:render(front)}}/></div>
+          <div className="card mt-3 min-h-32 rounded-xl bg-white p-5"><RichContent content={render(front)}/></div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Live back</p>
-          <div className="card mt-3 min-h-32 rounded-xl bg-white p-5" style={{whiteSpace:"pre-wrap"}}><div dangerouslySetInnerHTML={{__html:render(back)}}/></div>
+          <div className="card mt-3 min-h-32 rounded-xl bg-white p-5"><RichContent content={render(back)}/></div>
         </div>
       </div>
       <style dangerouslySetInnerHTML={{__html:css}} />
