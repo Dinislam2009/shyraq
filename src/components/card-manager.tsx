@@ -113,7 +113,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
     const next=[...savedViews.filter(view=>view.name!==name),{name,query,kind,status,tag:tagFilter,marker:markerFilter,markedOnly,suspendedOnly,sortPrimary,sortSecondary}];
     setSavedViews(next); localStorage.setItem("shyraq:card-views:"+deckId,JSON.stringify(next)); setViewName("");
   }
-  function applyView(view:{name:string;query:string;kind:string;status:string;tag?:string;marker?:string;markedOnly?:boolean;suspendedOnly?:boolean}){
+  function applyView(view:{name:string;query:string;kind:string;status:string;tag?:string;marker?:string;markedOnly?:boolean;suspendedOnly?:boolean;sortPrimary?:string;sortSecondary?:string}){
     setQuery(view.query);setKind(view.kind);setStatus(view.status);setTagFilter(view.tag||"");setMarkerFilter(view.marker||"");setMarkedOnly(Boolean(view.markedOnly));setSuspendedOnly(Boolean(view.suspendedOnly));setSortPrimary(view.sortPrimary||"updated_desc");setSortSecondary(view.sortSecondary||"none");
   }
 
