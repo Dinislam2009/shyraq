@@ -46,6 +46,9 @@ export const dictionaries = {
     accountCreated: "Аккаунт жасалды. Бапталған аккаунтты растауды аяқтағаннан кейін кіріңіз.",
     accountDeletionFailed: "Аккаунтты жою сәтсіз аяқталды.",
     confirmBulkCardDelete: "Таңдалған карталарды біржола жою керек пе?",
+    member: "қатысушы",
+    members: "қатысушы",
+    here: "осында",
   },
   ru: {
     workspace: "Рабочее пространство",
@@ -85,6 +88,9 @@ export const dictionaries = {
     accountCreated: "Аккаунт создан. Войдите после завершения настроенной процедуры подтверждения аккаунта.",
     accountDeletionFailed: "Не удалось удалить аккаунт.",
     confirmBulkCardDelete: "Удалить выбранные карточки навсегда?",
+    member: "участник",
+    members: "участников",
+    here: "здесь",
   },
   en: {
     workspace: "Workspace",
@@ -124,6 +130,9 @@ export const dictionaries = {
     accountCreated: "Account created. Sign in after completing the configured account setup.",
     accountDeletionFailed: "Account deletion failed.",
     confirmBulkCardDelete: "Delete the selected cards permanently?",
+    member: "member",
+    members: "members",
+    here: "here",
   },
 } as const;
 
