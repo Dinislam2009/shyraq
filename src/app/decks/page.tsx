@@ -15,7 +15,7 @@ export default async function DecksPage() {
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">My decks</h1>
             <p className="mt-2 text-sm text-slate-500">{decks.length} deck{decks.length===1?"":"s"} in your workspace.</p>
           </div>
-          <Link href="/decks/new" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800">
+          <Link href="/decks/trash" className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Trash</Link><Link href="/decks/new" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800">
             <PlusIcon size={16}/>New deck
           </Link>
         </div>
