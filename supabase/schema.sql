@@ -413,3 +413,7 @@ revoke all on all tables in schema public from anon;
 grant select,insert,update,delete on all tables in schema public to authenticated;
 revoke all on public.workspace_invitations from anon;
 grant select,insert,update on public.workspace_invitations to authenticated;
+
+
+-- Shyraq collaboration realtime
+alter publication supabase_realtime add table public.decks, public.cards, public.card_templates, public.workspace_members;
