@@ -63,6 +63,6 @@ export default async function EditCardPage({params}:{params:Promise<{id:string;c
   <Link href={"/decks/"+id} className="text-sm text-slate-400 hover:text-slate-700">← Back to deck</Link>
   <h1 className="mt-6 text-3xl font-semibold tracking-tight">Edit card</h1>
   <p className="mt-2 text-sm text-slate-500">Full editor with formatting, media, templates and live preview.</p>
-  <CardEditor action={updateCard.bind(null,id,cardId)} templates={templates??[]} mediaLibrary={mediaLibrary} initial={initial} submitLabel="Save changes"/>
+  <CardEditor action={updateCard.bind(null,id,cardId)} templates={templates??[]} mediaLibrary={mediaLibrary} initial={initial} submitLabel="Save changes" offlineContext={user?{userId:user.id,deckId:id,existing:{id:card.id,sortOrder:0,createdAt:String((card as any).created_at||"") ,updatedAt:String(card.updated_at||"")}}:undefined}/>
  </div></AppShell>;
 }
