@@ -296,7 +296,7 @@ Target editor:
 - [ ] Multi-sort
 - [ ] Saved table views
 - [ ] Advanced filter builder
-- [ ] Keyboard navigation
+- [x] Keyboard navigation
 - [ ] Bulk edit modal with all card fields
 
 ## Card state
@@ -305,10 +305,10 @@ Target editor:
 - [x] Suspended
 - [x] Favorite
 - [x] Difficult-card foundation
-- [ ] User-defined markers
-- [ ] Custom card statuses
-- [ ] Card history view
-- [ ] Trash / restore
+- [x] User-defined markers
+- [x] Custom card statuses
+- [x] Card history view
+- [x] Trash / restore
 
 ---
 
