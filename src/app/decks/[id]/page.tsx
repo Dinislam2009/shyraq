@@ -7,17 +7,24 @@ import {getDeck} from "@/lib/supabase/queries";
 import {acceptDeckUpdate,setDeckUpdatePolicy} from "@/app/explore/[id]/actions";
 import {createClient} from "@/lib/supabase/server";
 
-export default async function DeckPage({params}:{params:Promise<{id:string}>}){
+export default async function DeckPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{error?:string}>}){
  const {id}=await params;
+ const {error}=await searchParams;
  const deck:any=await getDeck(id);
  if(!deck)notFound();
  const cards=deck.cards??[];
 
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
+
  let canEdit=false;
  if(user){
-  const {data:membership}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
+  const {data:membership}=await supabase
+   .from("workspace_members")
+   .select("role")
+   .eq("workspace_id",deck.workspace_id)
+   .eq("user_id",user.id)
+   .maybeSingle();
   canEdit=["owner","admin","editor"].includes(String(membership?.role||""));
  }
 
@@ -78,16 +85,29 @@ export default async function DeckPage({params}:{params:Promise<{id:string}>}){
    <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
     <Link href="/decks" className="text-sm text-slate-400 hover:text-slate-700">← Back to decks</Link>
 
+    {error&&(
+     <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+      {error}
+     </div>
+    )}
+
     <div className="mt-6 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
      <div>
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold">S</div>
+      <div className="mb-4 flex items-center gap-3">
+       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold">S</div>
+       {user&&<CollaborationPresence deckId={id} userId={user.id}/>}
+      </div>
       <h1 className="text-3xl font-semibold tracking-tight">{deck.name}</h1>
       <p className="mt-2 text-sm text-slate-500">{deck.description||"No description"}</p>
      </div>
 
      <div className="flex flex-wrap gap-2">
-      <Link href={"/decks/"+id+"/cards/new"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Add card</Link>
-      <Link href={"/decks/"+id+"/templates"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Templates</Link>
+      {canEdit&&(
+       <>
+        <Link href={"/decks/"+id+"/cards/new"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Add card</Link>
+        <Link href={"/decks/"+id+"/templates"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Templates</Link>
+       </>
+      )}
       <Link href={"/review?deck="+id} className="inline-flex h-11 items-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white">Study</Link>
      </div>
     </div>
@@ -124,7 +144,7 @@ export default async function DeckPage({params}:{params:Promise<{id:string}>}){
      {cards.length===0 ? (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
        <p className="font-semibold">No cards yet</p>
-       <Link href={"/decks/"+id+"/cards/new"} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Add your first card</Link>
+       {canEdit&&<Link href={"/decks/"+id+"/cards/new"} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Add your first card</Link>}
       </div>
      ) : (
       <CardManager deckId={id} cards={cards} favoriteIds={favoriteIds} canEdit={canEdit}/>
