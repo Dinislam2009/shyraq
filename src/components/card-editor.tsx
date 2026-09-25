@@ -11,7 +11,7 @@ type FieldName = "front" | "back";
 const tick = String.fromCharCode(96);
 function applyTemplatePreview(source:string,fields:{front:string;back:string}){return String(source||"").replace(/\{\{\s*front\s*\}\}/gi,fields.front).replace(/\{\{\s*back\s*\}\}/gi,fields.back).replace(/\{\{\s*FrontSide\s*\}\}/g,fields.front);}
 
-export function CardEditor({ action, templates = [], initial, submitLabel = "Save card" }: { action: CardAction; templates?: Template[]; initial?: { kind?: string; front?: string; back?: string; tags?: string[]; options?: string[]; answer?: number; imageUrl?: string; mediaUrl?: string; occlusions?: OcclusionRect[]; templateId?: string }; submitLabel?: string }) {
+export function CardEditor({ action, templates = [], initial, submitLabel = "Save card" }: { action: CardAction; templates?: Template[]; initial?: { kind?: string; front?: string; back?: string; tags?: string[]; options?: string[]; answer?: number; imageUrl?: string; mediaUrl?: string; occlusions?: OcclusionRect[]; templateId?: string; updatedAt?: string }; submitLabel?: string }) {
   const [templateId, setTemplateId] = useState(initial?.templateId || "");
   const [kind, setKind] = useState(initial?.kind || "basic");
   const [front, setFront] = useState(initial?.front || "");
@@ -73,6 +73,7 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
 
   return (
     <form action={action} className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6">
+      {initial?.updatedAt&&<input type="hidden" name="expected_updated_at" value={initial.updatedAt} />}
       <div className="grid gap-4 sm:grid-cols-4">
         <label className="block text-sm font-medium">
           Template
