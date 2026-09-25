@@ -114,14 +114,62 @@ export async function getReviewCard(deckId?:string){
  return {card:await withMediaUrl(supabase,cards[0]),stateData:null,isNew:true};
 }
 export async function getReviewStats(){
- const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return {reviews:0,accuracy:null,studyMinutes:0,daily:[]};
- const {count:reviews}=await supabase.from("review_events").select("*",{count:"exact",head:true}).eq("user_id",user.id);
- const {data:events}=await supabase.from("review_events").select("rating,elapsed_ms,reviewed_at").eq("user_id",user.id);
- const list=events??[];const good=list.filter((e:any)=>e.rating!=="again").length;const studyMinutes=Math.round(list.reduce((sum:number,e:any)=>sum+Number(e.elapsed_ms||0),0)/60000);
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return {reviews:0,accuracy:null,studyMinutes:0,averageSeconds:0,ratings:{again:0,hard:0,good:0,easy:0},daily:[],deckBreakdown:[]};
+
+ const {data:events}=await supabase.from("review_events").select("card_id,rating,elapsed_ms,reviewed_at").eq("user_id",user.id);
+ const list=events??[];
+ const cardIds=[...new Set(list.map((event:any)=>event.card_id).filter(Boolean))];
+ const {data:cards}=cardIds.length
+  ? await supabase.from("cards").select("id,deck_id,decks(id,name)").in("id",cardIds)
+  : {data:[]};
+
+ const cardsById=new Map((cards??[]).map((card:any)=>[card.id,card]));
+ const ratings={again:0,hard:0,good:0,easy:0};
+ for(const event of list){if(event.rating in ratings)ratings[event.rating as keyof typeof ratings]++;}
+ const good=list.filter((event:any)=>event.rating!=="again").length;
+ const totalMs=list.reduce((sum:number,event:any)=>sum+Number(event.elapsed_ms||0),0);
+ const studyMinutes=Math.round(totalMs/60000);
+ const averageSeconds=list.length?Math.round(totalMs/list.length/100)/10:0;
+
  const dailyMap=new Map<string,{reviews:number;minutes:number;again:number}>();
- for(let i=29;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);dailyMap.set(d.toISOString().slice(0,10),{reviews:0,minutes:0,again:0});}
- for(const event of list){const key=new Date(event.reviewed_at).toISOString().slice(0,10);const day=dailyMap.get(key);if(day){day.reviews+=1;day.minutes+=Number(event.elapsed_ms||0)/60000;if(event.rating==="again")day.again+=1;}}
- return {reviews:reviews??0,accuracy:list.length?Math.round(good/list.length*100):null,studyMinutes,daily:[...dailyMap.entries()].map(([date,value])=>({date,...value}))};
+ for(let i=29;i>=0;i--){
+  const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);
+  dailyMap.set(d.toISOString().slice(0,10),{reviews:0,minutes:0,again:0});
+ }
+ for(const event of list){
+  const key=new Date(event.reviewed_at).toISOString().slice(0,10);
+  const day=dailyMap.get(key);
+  if(day){day.reviews++;day.minutes+=Number(event.elapsed_ms||0)/60000;if(event.rating==="again")day.again++;}
+ }
+
+ const deckMap=new Map<string,{name:string;reviews:number;again:number;minutes:number}>();
+ for(const event of list){
+  const card=cardsById.get(event.card_id) as any;
+  const deck=Array.isArray(card?.decks)?card.decks[0]:card?.decks;
+  if(!deck)continue;
+  const current=deckMap.get(deck.id)||{name:String(deck.name||"Deck"),reviews:0,again:0,minutes:0};
+  current.reviews++;
+  current.minutes+=Number(event.elapsed_ms||0)/60000;
+  if(event.rating==="again")current.again++;
+  deckMap.set(deck.id,current);
+ }
+
+ const deckBreakdown=[...deckMap.entries()]
+  .map(([id,value])=>({id,...value,accuracy:value.reviews?Math.round((value.reviews-value.again)/value.reviews*100):null}))
+  .sort((a,b)=>b.reviews-a.reviews)
+  .slice(0,20);
+
+ return {
+  reviews:list.length,
+  accuracy:list.length?Math.round(good/list.length*100):null,
+  studyMinutes,
+  averageSeconds,
+  ratings,
+  daily:[...dailyMap.entries()].map(([date,value])=>({date,...value})),
+  deckBreakdown
+ };
 }
 export async function getDashboardStats(){
  const supabase=await createClient();
