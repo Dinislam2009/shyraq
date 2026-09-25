@@ -2,6 +2,7 @@ import Link from "next/link";
 import {notFound} from "next/navigation";
 import {AppShell} from "@/components/app-shell";
 import {CardManager} from "@/components/card-manager";
+import {CollaborationPresence} from "@/components/collaboration-presence";
 import {getDeck} from "@/lib/supabase/queries";
 import {acceptDeckUpdate,setDeckUpdatePolicy} from "@/app/explore/[id]/actions";
 import {createClient} from "@/lib/supabase/server";
