@@ -34,6 +34,25 @@ jobs:
             git push
           fi
 
+      - name: Secret and environment audit
+        run: |
+          set -e
+          if git grep -nE 'NEXT_PUBLIC_[A-Z0-9_]*(SERVICE|SECRET|PRIVATE)|SUPABASE_(SERVICE_ROLE|SECRET)|SERVICE_ROLE_KEY' -- ':!package-lock.json'; then
+            echo "Potential browser-exposed privileged Supabase secret detected."
+            exit 1
+          fi
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+; then
+            echo "A non-example environment file is tracked."
+            exit 1
+          fi
+          echo "Static secret/environment audit passed."
+
       - name: Lint
         run: npm run lint
 
