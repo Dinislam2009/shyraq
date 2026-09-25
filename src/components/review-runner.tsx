@@ -7,7 +7,7 @@ import {useRouter} from "next/navigation";
 import {RichContent} from "@/components/rich-content";
 import {OccludedImage} from "@/components/image-occlusion";
 
-type Preferences={desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean};
+type Preferences={desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean;rating_labels?:Record<string,string>;rating_order?:string[];show_keyboard_hints?:boolean;swipe_enabled?:boolean};
 type CardContent={front?:string;back?:string;options?:string[];answer?:number;imageUrl?:string;occlusions?:Array<{x:number;y:number;w:number;h:number}>;mediaUrl?:string;mediaType?:string;mediaItems?:Array<{name:string;path:string;mime_type:string;url?:string}>};
 function templateOne(template:QueueItem["card"]["card_templates"]){
  if(Array.isArray(template))return template[0]||null;
@@ -78,7 +78,9 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
      if(event.target instanceof HTMLInputElement||event.target instanceof HTMLTextAreaElement||event.target instanceof HTMLSelectElement)return;
      if(event.code==="Space"){event.preventDefault();if(!revealed)setRevealed(true);return;}
      if(!revealed||busy)return;
-     const map:{[key:string]:"again"|"hard"|"good"|"easy"}={Digit1:"again",Digit2:"hard",Digit3:"good",Digit4:"easy"};
+     const order=(preferences.rating_order??["again","hard","good","easy"]).filter((x):x is "again"|"hard"|"good"|"easy"=>["again","hard","good","easy"].includes(x)).slice(0,4);
+     const map:Record<string,"again"|"hard"|"good"|"easy">={};
+     order.forEach((rating,i)=>{map["Digit"+(i+1)]=rating;});
      const rating=map[event.code];
      if(rating)void answer(rating);
    };
@@ -103,13 +105,13 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  const onPointerDown=(event:React.PointerEvent<HTMLDivElement>)=>{if(event.pointerType==="mouse"&&event.button!==0)return;swipeStartX.current=event.clientX;};
  const onPointerUp=(event:React.PointerEvent<HTMLDivElement>)=>{
    const start=swipeStartX.current;swipeStartX.current=null;
-   if(start===null||!revealed||busy)return;
+   if(start===null||!revealed||busy||preferences.swipe_enabled===false)return;
    const delta=event.clientX-start;
    if(Math.abs(delta)<90)return;
    void answer(delta<0?"again":"easy");
  };
  return <div ref={shellRef} tabIndex={0} onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="outline-none mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-4xl flex-col px-5 py-8 sm:px-8">{templateCss&&<style>{templateCss}</style>}
-  <div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {index+1}/{queue.length} · swipe ← again / → easy</p></div><div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-slate-900" style={{width:((index+1)/queue.length*100)+"%"}}/></div></div>
+  <div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {index+1}/{queue.length} {preferences.swipe_enabled===false?"":" · swipe ← again / → easy"}</p></div><div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-slate-900" style={{width:((index+1)/queue.length*100)+"%"}}/></div></div>
   <div className="flex flex-1 items-center">
    <div className="w-full rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12">
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p>
@@ -124,9 +126,9 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
       const selected=i===selectedOption;
       return <button type="button" key={option+i} disabled={revealed||busy} onClick={()=>{if(!revealed&&!busy){setSelectedOption(i);setRevealed(true);}}} className={"w-full rounded-xl border px-4 py-3 text-left text-sm transition "+(revealed&&correct?"border-emerald-300 bg-emerald-50":revealed&&selected&&!correct?"border-red-300 bg-red-50":"border-slate-200 bg-white hover:bg-slate-50 disabled:hover:bg-white")}><RichContent content={option} /><span className="mt-1 block text-[11px] font-medium text-slate-400">{revealed&&correct?"Correct":revealed&&selected&&!correct?"Your choice":"Choose this answer"}</span></button>;
     })}</div>}
-    {revealed?<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>{card.kind==="multiple_choice"&&<p className="mt-5 text-sm font-semibold text-slate-900">Correct option: {(card.content.options??[])[card.content.answer??0]||"—"}</p>}<RichContent content={back} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600" /></div>:card.kind!=="multiple_choice"&&<button onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-50">Show answer <span className="ml-2 text-xs text-slate-400">Space</span></button>}
+    {revealed?<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>{card.kind==="multiple_choice"&&<p className="mt-5 text-sm font-semibold text-slate-900">Correct option: {(card.content.options??[])[card.content.answer??0]||"—"}</p>}<RichContent content={back} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600" /></div>:card.kind!=="multiple_choice"&&<button onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-50">Show answer {preferences.show_keyboard_hints!==false&&<span className="ml-2 text-xs text-slate-400">Space</span>}</button>}
    </div>
   </div>
-  {revealed&&<div className="mt-5 grid grid-cols-4 gap-2">{(["again","hard","good","easy"] as const).map(r=><button key={r} disabled={busy} onClick={()=>void answer(r)} className="rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold capitalize hover:bg-slate-50 disabled:opacity-50">{r}<span className="ml-2 text-xs text-slate-400">{["again","hard","good","easy"].indexOf(r)+1}</span></button>)}</div>}
+  {revealed&&<div className="mt-5 grid grid-cols-4 gap-2">{((preferences.rating_order??["again","hard","good","easy"]).filter((x):x is "again"|"hard"|"good"|"easy"=>["again","hard","good","easy"].includes(x)).slice(0,4) as ("again"|"hard"|"good"|"easy")[]).map((r,i)=><button key={r} disabled={busy} onClick={()=>void answer(r)} className="rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold capitalize hover:bg-slate-50 disabled:opacity-50">{preferences.rating_labels?.[r]||r}<span className="ml-2 text-xs text-slate-400">{preferences.show_keyboard_hints===false?"":i+1}</span></button>)}</div>}
  </div>;
 }
