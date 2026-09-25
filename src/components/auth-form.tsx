@@ -28,7 +28,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
     if (result.error) setError(result.error.message);
     else if (signup && !result.data.session) {
-      setError("Account created. Sign in after completing the configured account setup.");
+      setError(t("accountCreated"));
     } else {
       router.replace("/dashboard");
       router.refresh();
