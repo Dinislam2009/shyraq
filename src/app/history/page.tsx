@@ -20,7 +20,7 @@ export default async function HistoryPage({searchParams}:{searchParams:Promise<P
  const {data,error}=await query;
  const events=data??[];
  const {data:decks}=await supabase.from("decks").select("id,name").eq("owner_id",user.id).order("name");
- const eventKinds=[...new Set(events.map((event:any)=>String(event.metadata?.event_kind||"review")))].sort();
+ const eventKinds:string[]=Array.from(new Set<string>((events??[]).map((event:any)=>String(event.metadata?.event_kind||"review")))).sort();
  const exportQuery=new URLSearchParams();
  if(params.deck)exportQuery.set("deck",params.deck);if(params.card)exportQuery.set("card",params.card);if(params.rating)exportQuery.set("rating",params.rating);if(params.event)exportQuery.set("event",params.event);if(params.from)exportQuery.set("from",params.from);if(params.to)exportQuery.set("to",params.to);
 
