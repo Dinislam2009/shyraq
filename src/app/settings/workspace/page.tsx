@@ -2,6 +2,7 @@ import {AppShell} from "@/components/app-shell";
 import {createClient} from "@/lib/supabase/server";
 import {WorkspaceInviteForm} from "@/components/workspace-invite-form";
 import {createTeamWorkspace,updateMemberRole,removeMember} from "@/app/settings/workspace/actions";
+import {WorkspaceRealtime} from "@/components/workspace-realtime";
 
 export default async function WorkspacePage({searchParams}:{searchParams:Promise<{workspace?:string}>}){
  const {workspace:workspaceParam}=await searchParams;
@@ -14,7 +15,7 @@ export default async function WorkspacePage({searchParams}:{searchParams:Promise
  if(!selected)return <AppShell><div className="mx-auto max-w-4xl px-5 py-10">No workspace found.</div></AppShell>;
  const {data:members}=await supabase.from("workspace_members").select("user_id,role,created_at").eq("workspace_id",selected.id).order("created_at");
  const myMember=(members??[]).find(m=>m.user_id===user.id);
- return <AppShell><div className="mx-auto max-w-5xl px-5 py-8 sm:px-8">
+ return <AppShell><WorkspaceRealtime workspaceId={selected.id}/><div className="mx-auto max-w-5xl px-5 py-8 sm:px-8">
   <p className="text-sm text-slate-400">Workspace</p>
   <h1 className="mt-1 text-3xl font-semibold tracking-tight">Workspaces & collaboration</h1>
   <p className="mt-2 text-sm text-slate-500">Personal and team workspaces share the same Shyraq feature set.</p>
