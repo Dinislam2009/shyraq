@@ -572,11 +572,11 @@ Target principle:
 - [x] Back template
 - [x] CSS
 - [x] Live review rendering
-- [ ] Advanced template editor
-- [ ] Template variables
-- [ ] Conditional fields
-- [ ] Template duplication
-- [ ] Template import/export
+- [x] Advanced template editor
+- [x] Template variables
+- [x] Conditional fields
+- [x] Template duplication
+- [x] Template import/export
 - [ ] Template compatibility layer for Anki
 
 ---
