@@ -10,7 +10,8 @@ export default async function CollaborationPage({params,searchParams}:{params:Pr
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return <AppShell><div className="mx-auto max-w-4xl px-5 py-10">Sign in to collaborate.</div></AppShell>;
- const {data:deck}=await supabase.from("decks").select("id,name,description,workspace_id,owner_id").eq("id",id).maybeSingle();
+ const {data:deckRaw}=await supabase.from("decks").select("id,name,description,workspace_id,owner_id").eq("id",id).maybeSingle();
+ const deck:any=deckRaw;
  if(!deck)notFound();
  const {data:membership}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
  if(!membership)return <AppShell><div className="mx-auto max-w-4xl px-5 py-10">You do not have workspace access.</div></AppShell>;
