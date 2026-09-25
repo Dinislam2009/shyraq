@@ -1,7 +1,47 @@
 "use client";
-import {offlineStore,type OfflineReview} from "@/lib/offline/store";
+import {
+ cacheMirror,cacheMediaBlob,getCachedReviewSession,getDeviceId,getOfflineStorageUsage,
+ getPendingMutations,offlineStore,queueMutation,removeMirroredEntity,setSyncMeta
+} from "@/lib/offline/store";
+import type {OfflineReview} from "@/lib/offline/store";
 
-const CURSOR_KEY="shyraq:sync-cursor";
+export type SyncOperation={
+ id:string;entity_type:"decks"|"cards"|"card_templates";
+ operation:"upsert"|"delete";entity_id:string;payload:Record<string,unknown>;
+};
+
+type SyncProgress={phase:"idle"|"pushing"|"pulling"|"done"|"error";completed:number;total:number;message:string};
+
+let progress:SyncProgress={phase:"idle",completed:0,total:0,message:"Idle"};
+
+function emitProgress(next:SyncProgress){
+ progress=next;
+ if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("shyraq:sync-progress",{detail:progress}));
+}
+
+export function getSyncProgress(){return progress;}
+
+async function syncMutations(userId:string){
+ const pending=await getPendingMutations(userId);
+ if(!pending.length)return {accepted:0,conflicts:[] as string[],failed:0};
+ emitProgress({phase:"pushing",completed:0,total:pending.length,message:"Uploading offline changes…"});
+ const operations:SyncOperation[]=pending.map(item=>({
+  id:item.id,entity_type:item.entityType,operation:item.operation,entity_id:item.entityId,payload:item.payload
+ }));
+ const response=await fetch("/api/sync",{
+  method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({operations})
+ });
+ if(!response.ok)throw new Error("Offline changes could not be synced.");
+ const result=(await response.json()) as {accepted:number;conflicts:string[];failed?:string[]};
+ const failedSet=new Set(result.failed??[]);
+ await offlineStore.mutations.bulkDelete(pending.filter(item=>!failedSet.has(item.id)).map(item=>item.id));
+ for(const item of pending.filter(item=>failedSet.has(item.id))){
+  await offlineStore.mutations.put({...item,status:"failed",attempts:item.attempts+1,lastError:"Server rejected the change."});
+ }
+ emitProgress({phase:"pushing",completed:pending.length,total:pending.length,message:"Offline changes uploaded."});
+ return {...result,failed:failedSet.size};
+}
 
 export async function queueReview(event:OfflineReview){
  await offlineStore.reviews.put({...event,status:"pending"});
@@ -10,19 +50,153 @@ export async function queueReview(event:OfflineReview){
 export async function syncReviews(){
  const events=await offlineStore.reviews.where("status").equals("pending").limit(500).toArray();
  if(!events.length)return {accepted:0,conflicts:[] as string[]};
- const response=await fetch("/api/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({events:events.map(e=>({...e,event_key:e.id}))})});
- if(!response.ok)throw new Error("Sync failed");
+ const response=await fetch("/api/sync",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({events:events.map(e=>({...e,event_key:e.id}))})
+ });
+ if(!response.ok)throw new Error("Review sync failed.");
  const result=(await response.json()) as {accepted:number;conflicts:string[]};
  const conflictSet=new Set(result.conflicts??[]);
  await offlineStore.reviews.bulkPut(events.map(e=>({...e,status:conflictSet.has(e.id)?"failed" as const:"synced" as const})));
  return result;
 }
 
-export async function pullChanges(){
- const since=Number(localStorage.getItem(CURSOR_KEY)||"0");
- const response=await fetch("/api/sync?since="+encodeURIComponent(String(since)),{cache:"no-store"});
- if(!response.ok)throw new Error("Pull failed");
- const result=(await response.json()) as {changes:any[];cursor:number;conflicts:any[]};
- if(typeof result.cursor==="number")localStorage.setItem(CURSOR_KEY,String(result.cursor));
+function mapDeck(item:Record<string,unknown>,userId:string){
+ return {
+  id:String(item.id),userId,workspaceId:String(item.workspace_id??item.workspaceId??""),
+  ownerId:String(item.owner_id??item.ownerId??userId),name:String(item.name??""),
+  description:String(item.description??""),visibility:String(item.visibility??"private"),
+  settings:(item.settings&&typeof item.settings==="object"?item.settings:{}) as Record<string,unknown>,
+  createdAt:String(item.created_at??item.createdAt??new Date().toISOString()),
+  updatedAt:String(item.updated_at??item.updatedAt??new Date().toISOString())
+ };
+}
+
+function mapCard(item:Record<string,unknown>,userId:string){
+ return {
+  id:String(item.id),userId,deckId:String(item.deck_id??item.deckId??""),
+  templateId:item.template_id?String(item.template_id):null,kind:String(item.kind??"basic"),
+  content:(item.content&&typeof item.content==="object"?item.content:{}) as Record<string,unknown>,
+  sortOrder:Number(item.sort_order??item.sortOrder??0),isSuspended:Boolean(item.is_suspended??item.isSuspended),
+  isMarked:Boolean(item.is_marked??item.isMarked),
+  createdAt:String(item.created_at??item.createdAt??new Date().toISOString()),
+  updatedAt:String(item.updated_at??item.updatedAt??new Date().toISOString())
+ };
+}
+
+async function applyPulledChanges(userId:string,changes:Array<Record<string,unknown>>){
+ for(const change of changes){
+  const type=String(change.entity_type||"");
+  const operation=String(change.operation||"");
+  const id=String(change.entity_id||"");
+  if(operation==="delete"){
+   await removeMirroredEntity(type,id);
+   continue;
+  }
+  const payload=(change.payload&&typeof change.payload==="object"?change.payload:{}) as Record<string,unknown>;
+  if(type==="decks")await offlineStore.decks.put(mapDeck(payload,userId));
+  if(type==="cards")await offlineStore.cards.put(mapCard(payload,userId));
+ }
+}
+
+export async function pullChanges(userId:string){
+ const meta=await import("@/lib/offline/store").then(m=>m.getSyncMeta(userId));
+ const response=await fetch("/api/sync?since="+encodeURIComponent(String(meta.cursor)),{cache:"no-store"});
+ if(!response.ok)throw new Error("Sync pull failed.");
+ const result=(await response.json()) as {
+  changes:Array<Record<string,unknown>>;cursor:number;conflicts:Array<Record<string,unknown>>;
+ };
+ await applyPulledChanges(userId,result.changes??[]);
+ await setSyncMeta(userId,{cursor:typeof result.cursor==="number"?result.cursor:meta.cursor,lastSyncAt:new Date().toISOString(),lastError:null});
  return result;
 }
+
+export async function hydrateOfflineMirror(userId:string){
+ const response=await fetch("/api/sync?bootstrap=1",{cache:"no-store"});
+ if(!response.ok)throw new Error("Offline mirror bootstrap failed.");
+ const data=(await response.json()) as {decks:Record<string,unknown>[];cards:Record<string,unknown>[];media?:Record<string,unknown>[]};
+ await cacheMirror(userId,(data.decks??[]).map(item=>mapDeck(item,userId)),(data.cards??[]).map(item=>mapCard(item,userId)));
+ return data;
+}
+
+export async function syncAll(userId:string){
+ if(typeof navigator!=="undefined"&&!navigator.onLine)return {offline:true,accepted:0,conflicts:[] as string[]};
+ try{
+  const mutations=await syncMutations(userId);
+  emitProgress({phase:"pulling",completed:0,total:1,message:"Downloading remote changes…"});
+  const pulled=await pullChanges(userId);
+  const reviews=await syncReviews();
+  await setSyncMeta(userId,{lastAccepted:mutations.accepted+reviews.accepted,lastConflicts:(mutations.conflicts?.length??0)+(reviews.conflicts?.length??0),lastError:null,lastSyncAt:new Date().toISOString()});
+  emitProgress({phase:"done",completed:1,total:1,message:"Sync complete."});
+  return {offline:false,...mutations,pulled,reviews};
+ }catch(error){
+  const message=error instanceof Error?error.message:"Sync failed.";
+  await setSyncMeta(userId,{lastError:message});
+  emitProgress({phase:"error",completed:0,total:1,message});
+  throw error;
+ }
+}
+
+export function startBackgroundSync(userId:string){
+ if(typeof window==="undefined")return()=>{};
+ let stopped=false;
+ const run=async()=>{if(stopped||!navigator.onLine)return;try{await syncAll(userId);}catch{}};
+ const onOnline=()=>void run();
+ const onVisibility=()=>{if(document.visibilityState==="visible")void run();};
+ window.addEventListener("online",onOnline);
+ document.addEventListener("visibilitychange",onVisibility);
+ const interval=window.setInterval(()=>void run(),60000);
+ void run();
+ return()=>{
+  stopped=true;
+  window.removeEventListener("online",onOnline);
+  document.removeEventListener("visibilitychange",onVisibility);
+  window.clearInterval(interval);
+ };
+}
+
+export async function requestBackgroundSync(){
+ if(typeof window==="undefined"||!("serviceWorker" in navigator))return false;
+ try{
+  const registration=await navigator.serviceWorker.ready;
+  const syncManager=(registration as ServiceWorkerRegistration&{sync?:{register:(tag:string)=>Promise<void>}}).sync;
+  if(!syncManager)return false;
+  await syncManager.register("shyraq-sync");
+  return true;
+ }catch{return false;}
+}
+
+export async function cacheMediaAsset(userId:string,path:string,url:string,name:string){
+ const response=await fetch(url,{cache:"no-store"});
+ if(!response.ok)throw new Error("Media download failed.");
+ const blob=await response.blob();
+ await cacheMediaBlob(userId,path,blob,name);
+ return blob.size;
+}
+
+export async function getOfflineOverview(){
+ return getOfflineStorageUsage();
+}
+
+export function listenToSyncProgress(callback:(progress:SyncProgress)=>void){
+ if(typeof window==="undefined")return()=>{};
+ const handler=(event:Event)=>{
+  const custom=event as CustomEvent<SyncProgress>;
+  callback(custom.detail);
+ };
+ window.addEventListener("shyraq:sync-progress",handler);
+ return()=>window.removeEventListener("shyraq:sync-progress",handler);
+}
+
+export async function clearFailedMutations(userId:string){
+ const failed=await offlineStore.mutations.where("userId").equals(userId).filter(item=>item.status==="failed").toArray();
+ await offlineStore.mutations.bulkDelete(failed.map(item=>item.id));
+ return failed.length;
+}
+
+export async function createOfflineMutation(userId:string,operation:SyncOperation){
+ await queueMutation({id:operation.id,userId,entityType:operation.entity_type,operation:operation.operation,entityId:operation.entity_id,payload:operation.payload});
+}
+
+export {getCachedReviewSession,getDeviceId};
