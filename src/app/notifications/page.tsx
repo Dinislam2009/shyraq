@@ -10,7 +10,7 @@ export default async function NotificationsPage({searchParams}:{searchParams?:Pr
  if(params.kind)query=query.eq("kind",params.kind);
  if(params.unread==="1")query=query.is("read_at",null);
  const [{data:notifications},{data:preferences}]=await Promise.all([query,supabase.from("notification_preferences").select("*").eq("user_id",user.id).maybeSingle()]);
- const kinds=[...new Set((notifications??[]).map((n:any)=>String(n.kind)))];
+ const kinds:string[]=Array.from(new Set<string>((notifications??[]).map((n:any)=>String(n.kind))));
  const pref=preferences??{sync_conflicts:true,author_updates:true,workspace_invites:true,collaboration:true,moderation:true,backup:true,offline_state:true,in_app:true};
 
  return <AppShell><div className="mx-auto max-w-4xl px-5 py-8 sm:px-8">
