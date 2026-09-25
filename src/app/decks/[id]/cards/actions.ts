@@ -4,6 +4,7 @@ import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
 import {normalizeCustomFields,normalizeMediaItems} from "@/lib/card-fields";
 import {duplicateKey} from "@/lib/import/standard";
+import {isStaleVersion} from "@/lib/concurrency";
 
 function fail(path:string,message:string):never{redirect(path+"?error="+encodeURIComponent(message));}
 function payload(formData:FormData){
@@ -171,7 +172,7 @@ export async function updateCard(deckId:string,cardId:string,formData:FormData):
  const libraryMedia=await validateLibraryMedia(supabase,user.id,p.content.mediaItems||[]); if(libraryMedia.length)p.content.mediaItems=libraryMedia; else delete p.content.mediaItems;
  const {data:existingCard}=await supabase.from("cards").select("content,updated_at").eq("id",cardId).maybeSingle();
  const expectedUpdatedAt=String(formData.get("expected_updated_at")||"").trim();
- if(expectedUpdatedAt&&existingCard?.updated_at&&new Date(existingCard.updated_at).getTime()!==new Date(expectedUpdatedAt).getTime()){
+ if(isStaleVersion(expectedUpdatedAt,existingCard?.updated_at)){
   fail("/decks/"+deckId,"This card changed in another session. Reload it before saving.");
  }
  const oldMediaPath=existingCard?.content&&typeof existingCard.content==="object"?String((existingCard.content as any).mediaPath||""):"";
