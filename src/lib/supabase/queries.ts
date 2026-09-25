@@ -54,7 +54,7 @@ export async function getReviewBatch(deckId?:string,limit=20){
 
  let dueQuery=supabase
   .from("review_states")
-  .select("card_id,state_data,due_at,cards!inner(id,deck_id,kind,content,is_suspended)")
+  .select("card_id,state_data,due_at,cards!inner(id,deck_id,kind,content,is_suspended,template_id,card_templates(id,name,front_template,back_template,css))")
   .eq("user_id",user.id)
   .eq("cards.is_suspended",false)
   .lte("due_at",now)
@@ -75,7 +75,7 @@ export async function getReviewBatch(deckId?:string,limit=20){
   const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
   let query=supabase
    .from("cards")
-   .select("id,deck_id,kind,content")
+   .select("id,deck_id,kind,content,template_id,card_templates(id,name,front_template,back_template,css)")
    .eq("is_suspended",false)
    .order("updated_at",{ascending:true})
    .limit(newLimit);
@@ -98,7 +98,7 @@ export async function getReviewCard(deckId?:string){
 
  const {data:dueStates}=await supabase.from("review_states").select("card_id,state_data,due_at").eq("user_id",user.id).lte("due_at",new Date().toISOString()).order("due_at",{ascending:true}).limit(20);
  for(const due of dueStates??[]){
-   const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content,is_suspended").eq("id",due.card_id).maybeSingle();
+   const {data:card}=await supabase.from("cards").select("id,deck_id,kind,content,is_suspended,template_id,card_templates(id,name,front_template,back_template,css)").eq("id",due.card_id).maybeSingle();
    if(card&&!card.is_suspended&&(!deckId||card.deck_id===deckId))return {card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false};
  }
 
