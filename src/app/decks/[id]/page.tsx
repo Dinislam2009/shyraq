@@ -106,7 +106,7 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
        <>
         <Link href={"/decks/"+id+"/cards/new"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Add card</Link>
         <Link href={"/decks/"+id+"/cards/bulk"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Bulk create</Link>
-        <Link href={"/decks/"+id+"/templates"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Templates</Link>
+        <Link href={"/decks/"+id+"/templates"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Templates</Link><Link href={"/decks/"+id+"/settings"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Settings</Link>
        </>
       )}
       <Link href={"/review?deck="+id} className="inline-flex h-11 items-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white">Study</Link>
