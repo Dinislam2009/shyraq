@@ -11,11 +11,11 @@ type MediaItem = { path: string; url: string; mimeType: string; name: string };
 type FieldName = "front" | "back";
 
 function applyTemplatePreview(source: string, fields: Record<string, string>) {
-  return String(source || "").replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, key) => {
-    const normalized = String(key).trim();
-    if (/^frontside$/i.test(normalized)) return fields.front || "";
-    return fields[normalized] ?? fields[normalized.toLowerCase()] ?? "";
-  });
+  let output=String(source||"");
+  const resolve=(key:string)=>{const normalized=String(key).trim();if(/^frontside$/i.test(normalized))return fields.front||"";return fields[normalized]??fields[normalized.toLowerCase()]??"";};
+  output=output.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key,body)=>resolve(key)?body:"");
+  output=output.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key,body)=>resolve(key)?"":body);
+  return output.replace(/\{\{\s*([^}]+?)\s*\}\}/g,(_,key)=>resolve(key));
 }
 
 export function CardEditor({
