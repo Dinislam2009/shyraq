@@ -683,7 +683,7 @@ If a local edit conflicts with an author update:
 - [x] Creator avatar
 - [x] Creator statistics
 - [ ] Creator collections
-- [x] Creator activity controls
+- [ ] Creator activity controls
 - [ ] Block/mute creator
 - [ ] Community moderation/report history
 
