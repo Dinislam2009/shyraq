@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {createEmptyCard,fsrs,Rating} from "ts-fsrs";
 import {queueReview,syncReviews} from "@/lib/sync/client";
-import {getDeviceId} from "@/lib/offline/store";
+import {getDeviceId,cacheReviewSession} from "@/lib/offline/store";
 import {useRouter} from "next/navigation";
 import {RichContent} from "@/components/rich-content";
 import {OccludedImage} from "@/components/image-occlusion";
@@ -51,6 +51,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
      status:"pending",
      metadata:{event_kind:current.isNew?"new-card":"review"}
    });
+   try{ await cacheReviewSession(userId,queue.slice(index+1),preferences); }catch{}
    try{
      const syncResult=await syncReviews();
      if(syncResult.conflicts?.length){router.push("/settings/sync");return;}
