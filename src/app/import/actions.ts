@@ -15,6 +15,7 @@ function csvLine(line:string){
  }
  out.push(current); return out;
 }
+function safeCollectionKind(value:string){return value==="favorites"?"favorites":"custom";}
 function safeKind(value:string){
  const allowed=["basic","reverse","cloze","multiple_choice","image","custom"];
  return allowed.includes(value)?value:"basic";
@@ -108,7 +109,8 @@ async function restoreBackup(supabase:any,userId:string,workspaceId:string,paylo
  let restoredCards=0;
  for(const source of cards){
   const deckId=deckMap.get(String(source.deck_id)); if(!deckId)continue;
-  const content=replaceMediaRefs(source.content||{},mediaMap);
+  let content=replaceMediaRefs(source.content||{},mediaMap);
+  if(!archive&&content&&typeof content==="object"){const copy={...content};delete copy.mediaPath;delete copy.mediaType;delete copy.mediaItems;content=copy;}
   const templateId=source.template_id?templateMap.get(String(source.template_id)):null;
   const {data,error}=await supabase.from("cards").insert({deck_id:deckId,owner_id:userId,kind:safeKind(String(source.kind||"basic")),content,template_id:templateId||null,sort_order:Number(source.sort_order)||0,is_suspended:Boolean(source.is_suspended),is_marked:Boolean(source.is_marked)}).select("id").single();
   if(error)throw new Error(error.message);
@@ -125,7 +127,7 @@ async function restoreBackup(supabase:any,userId:string,workspaceId:string,paylo
 
  const collections=Array.isArray(payload.collections)?payload.collections:[];
  for(const collection of collections){
-  const {data,error}=await supabase.from("collections").insert({workspace_id:workspaceId,owner_id:userId,name:String(collection.name||"Imported collection"),kind:String(collection.kind||"custom"),description:String(collection.description||"")}).select("id").single();
+  const {data,error}=await supabase.from("collections").insert({workspace_id:workspaceId,owner_id:userId,name:String(collection.name||"Imported collection"),kind:safeCollectionKind(String(collection.kind||"custom")),description:String(collection.description||"")}).select("id").single();
   if(error)throw new Error(error.message);
   if(data&&collection.id)collectionMap.set(String(collection.id),data.id);
  }
