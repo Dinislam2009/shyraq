@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "supabase db push",
-    "db:types": "supabase gen types typescript --linked > src/types/database.generated.ts"
+    "db:types": "supabase gen types typescript --linked > src/types/database.generated.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "next": "16.3.6",
@@ -32,6 +34,7 @@
     "supabase": "2.117.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "@types/sql.js": "1.4.11"
+    "@types/sql.js": "1.4.11",
+    "vitest": "5.0.1"
   }
 }
