@@ -1034,7 +1034,7 @@ Target:
 
 - [ ] Desktop verification
 - [ ] Mobile responsive verification
-- [ ] Dark mode verification
+- [x] Dark mode verification
 - [ ] All three language verification
 - [ ] Console-error audit
 - [ ] Accessibility audit
