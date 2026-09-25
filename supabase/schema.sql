@@ -75,6 +75,10 @@ create table if not exists public.review_preferences (
  reviews_per_day integer not null default 9999 check(reviews_per_day >= 0),
  enable_fuzz boolean not null default true,
  enable_short_term boolean not null default true,
+ rating_labels jsonb not null default '{"again":"Again","hard":"Hard","good":"Good","easy":"Easy"}'::jsonb,
+ rating_order jsonb not null default '["again","hard","good","easy"]'::jsonb,
+ show_keyboard_hints boolean not null default true,
+ swipe_enabled boolean not null default true,
  updated_at timestamptz not null default now()
 );
 
