@@ -9,8 +9,10 @@ type Template = {id:string;name:string;front_template:string;back_template:strin
 type FieldName = "front" | "back";
 
 const tick = String.fromCharCode(96);
+function applyTemplatePreview(source:string,fields:{front:string;back:string}){return String(source||"").replace(/\{\{\s*front\s*\}\}/gi,fields.front).replace(/\{\{\s*back\s*\}\}/gi,fields.back).replace(/\{\{\s*FrontSide\s*\}\}/g,fields.front);}
 
 export function CardEditor({ action, templates = [], initial, submitLabel = "Save card" }: { action: CardAction; templates?: Template[]; initial?: { kind?: string; front?: string; back?: string; tags?: string[]; options?: string[]; answer?: number; imageUrl?: string; mediaUrl?: string; occlusions?: OcclusionRect[]; templateId?: string }; submitLabel?: string }) {
+  const [templateId, setTemplateId] = useState(initial?.templateId || "");
   const [kind, setKind] = useState(initial?.kind || "basic");
   const [front, setFront] = useState(initial?.front || "");
   const [back, setBack] = useState(initial?.back || "");
@@ -65,13 +67,16 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
   const previewBack = kind === "cloze"
     ? front.replace(/\{\{c\d+::([^}]+)\}\}/g, "$1") || back
     : back;
+  const selectedTemplate = templates.find(template=>template.id===templateId);
+  const templatePreviewFront = selectedTemplate ? applyTemplatePreview(selectedTemplate.front_template,{front:previewFront,back:previewBack}) : previewFront;
+  const templatePreviewBack = selectedTemplate ? applyTemplatePreview(selectedTemplate.back_template,{front:previewFront,back:previewBack}) : previewBack;
 
   return (
     <form action={action} className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6">
       <div className="grid gap-4 sm:grid-cols-4">
         <label className="block text-sm font-medium">
           Template
-          <select name="template_id" defaultValue={initial?.templateId || ""} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
+          <select name="template_id" value={templateId} onChange={e=>setTemplateId(e.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
             <option value="">Default</option>
             {templates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
           </select>
@@ -184,7 +189,7 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
           <p className="text-sm font-medium">Live preview</p>
           <div className="mt-2 min-h-[32rem] rounded-2xl border border-slate-200 bg-slate-50 p-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p>
-            <RichContent content={previewFront || "Start typing..."} className="mt-5 text-xl font-semibold" />
+            <RichContent content={templatePreviewFront || "Start typing..."} className="mt-5 text-xl font-semibold" />
 
             {kind === "multiple_choice" && (
               <div className="mt-6 space-y-2">
@@ -198,7 +203,7 @@ export function CardEditor({ action, templates = [], initial, submitLabel = "Sav
 
             <div className="my-8 h-px bg-slate-200" />
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>
-            <RichContent content={previewBack || "Your answer will appear here."} className="mt-5 text-base text-slate-600" />
+            <RichContent content={templatePreviewBack || "Your answer will appear here."} className="mt-5 text-base text-slate-600" />
           </div>
         </div>
       </div>
