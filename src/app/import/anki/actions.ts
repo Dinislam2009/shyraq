@@ -54,6 +54,7 @@ export async function importAnki(formData:FormData):Promise<void>{
  const file=formData.get("file");
  if(!(file instanceof File))fail("Choose an .apkg file.");
  if(!file.name.toLowerCase().endsWith(".apkg"))fail("Only .apkg files are accepted here.");
+ if(file.size>512*1024*1024)fail("This .apkg is larger than 512 MB. Split the export into smaller packages before importing.");
 
  let parsed;
  try{parsed=await parseAnkiPackage(new Uint8Array(await file.arrayBuffer()));}
