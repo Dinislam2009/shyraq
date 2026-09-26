@@ -19,3 +19,13 @@ test("CardEditor exposes persistent marker and status fields",()=>{
  assert.ok(cardActions.includes('const markers=String(formData.get("markers")'));
  assert.ok(cardActions.includes('const status=String(formData.get("status")'));
 });
+
+
+test("offline mirror includes card templates",()=>{
+ const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
+ const sync=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
+ assert.match(store,/cardTemplates!:Table<OfflineCardTemplate,string>/);
+ assert.match(store,/this\.version\(4\)\.stores/);
+ assert.match(sync,/function mapTemplate/);
+ assert.match(sync,/offlineStore\.cardTemplates\.put/);
+});
