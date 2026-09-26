@@ -735,7 +735,7 @@ Collaboration is planned after the public sharing foundation.
 - [ ] Realtime card editing
 - [ ] Realtime deck editing
 - [x] Presence indicators
-- [ ] Active editor indicators
+- [x] Active editor indicators
 - [ ] Cursor/selection presence where practical
 - [ ] Optimistic updates
 - [ ] Conflict detection
