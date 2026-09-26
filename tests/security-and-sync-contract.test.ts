@@ -97,3 +97,20 @@ test("legal policy pages remain publicly reachable",()=>{
  const source=readFileSync(new URL("../src/proxy.ts",import.meta.url),"utf8");
  assert.match(source,/["']\/legal["']/);
 });
+test("offline sync honors direct deck and collection editor overrides",()=>{
+ assert.match(syncRoute,/async function canEditDeck/);
+ assert.match(syncRoute,/from\("deck_members"\)/);
+ assert.match(syncRoute,/role\|\|"\)===\"editor\"/);
+ assert.match(syncRoute,/async function canEditCollection/);
+ assert.match(syncRoute,/from\("collection_members"\)/);
+ assert.match(syncRoute,/canEditDeck\(supabase,user\.id,String\(cardDeck\.id\)\)/);
+ assert.match(syncRoute,/canEditCollection\(supabase,user\.id,String\(collection\.id\)\)/);
+});
+
+test("secondary RLS policies use direct membership checks instead of helper-policy calls",()=>{
+ for(const policy of ["tags_member","card_tags_member","collections_read","collections_write","collections_update","collections_delete","collection_cards_select","collection_cards_write","collection_cards_update","collection_cards_delete","media_read","media_insert","media_update","media_delete"]){
+  assert.match(schema,new RegExp("create policy "+policy+"[\\s\\S]*workspace_members"));
+ }
+ assert.doesNotMatch(schema,/create policy tags_member[\\s\\S]*private\.is_workspace_member/);
+ assert.doesNotMatch(schema,/create policy card_tags_member[\\s\\S]*private\./);
+});
