@@ -97,6 +97,8 @@ test("offline service worker is registered and avoids protected-route precache",
  const reg=readFileSync(new URL("../src/components/service-worker-registration.tsx",import.meta.url),"utf8");
  assert.match(sw,/const APP_SHELL=\["\/offline","\/favicon\.ico"\]/);
  assert.match(sw,/request\.mode==="navigate"/);
+ assert.match(sw,/text\/x-component/);
+ assert.match(sw,/url\.searchParams\.has\("_rsc"\)/);
  assert.ok(layout.includes("<ServiceWorkerRegistration/>"));
  assert.match(reg,/serviceWorker\.register\("\/sw\.js"/);
 });
