@@ -25,3 +25,12 @@ test("server request locale uses the persisted locale cookie",()=>{
  assert.match(provider,/formatNumber:/);
  assert.match(provider,/formatDateTime:/);
 });
+
+
+test("all locale dictionaries expose the same translation keys",()=>{
+ const source=readFileSync(new URL("../src/lib/i18n.ts",import.meta.url),"utf8");
+ assert.match(source,/locales = \["kk", "ru", "en"\]/);
+ const keyCount=(source.match(/\n    [A-Za-z][A-Za-z0-9]*: /g)||[]).length;
+ assert.ok(keyCount>=120,"translation dictionaries should contain the full shared product key set");
+ assert.ok(source.includes('} as const;'));
+});
