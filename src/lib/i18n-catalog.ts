@@ -452,7 +452,7 @@ export const extendedTranslations = {
   "Export full backup": { kk: "Толық backup экспорттау", ru: "Экспортировать полную резервную копию", en: "Export full backup" },
   "Export analytics": { kk: "Аналитиканы экспорттау", ru: "Экспортировать аналитику", en: "Export analytics" },
   "Sign in to manage devices.": { kk: "Құрылғыларды басқару үшін кіріңіз.", ru: "Войдите, чтобы управлять устройствами.", en: "Sign in to manage devices." },
-  "Review devices": { kk: "Қайталау құрылғылары", ru: "Устройства повторения", en: "Review devices" },
+
   "Devices that have submitted review events to Shyraq sync.": { kk: "Shyraq синхрондауына қайталау оқиғаларын жіберген құрылғылар.", ru: "Устройства, отправлявшие события повторений в синхронизацию Shyraq.", en: "Devices that have submitted review events to Shyraq sync." },
   "Revoke": { kk: "Күшін жою", ru: "Отозвать", en: "Revoke" },
   "No synced devices yet.": { kk: "Әзірге синхрондалған құрылғы жоқ.", ru: "Синхронизированных устройств пока нет.", en: "No synced devices yet." },
