@@ -8,10 +8,13 @@ export default async function ExplorePage({searchParams}:{searchParams:Promise<S
  const params=await searchParams;
  const query=String(params.q||"").trim();
  const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ const {data:creatorRelations}=user?await supabase.from("creator_relations").select("creator_id,relation").eq("user_id",user.id).in("relation",["mute","block"]):{data:[]};
+ const hiddenCreators=new Set((creatorRelations??[]).map((row:any)=>String(row.creator_id)));
  let request=supabase.from("decks").select("id,name,description,updated_at,owner_id,settings,cards(count)").eq("visibility","public").order("updated_at",{ascending:false}).limit(100);
  if(query)request=request.or("name.ilike.%"+query+"%,description.ilike.%"+query+"%");
  const {data:rawDecks,error}=await request;
- const decks=(rawDecks??[]).filter((deck:any)=>{
+ const decks=(rawDecks??[]).filter((deck:any)=>!hiddenCreators.has(String(deck.owner_id))).filter((deck:any)=>{
   const settings=deck.settings||{};
   return (!params.category||String(settings.category||"")===params.category)&&(!params.subject||String(settings.subject||"")===params.subject)&&(!params.language||String(settings.language||"")===params.language)&&(!params.difficulty||String(settings.difficulty||"")===params.difficulty);
  });
