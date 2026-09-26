@@ -579,7 +579,7 @@ begin
  end if;
  operation_name:=case when tg_op='DELETE' then 'delete' else 'upsert' end;
 
- if eid is not null and workspace_id_value is not null and tg_table_name in ('decks','cards','card_templates') then
+ if eid is not null and workspace_id_value is not null and tg_table_name in ('decks','cards','card_templates','tags','collections') then
    insert into public.sync_changes(event_key,user_id,entity_type,entity_id,operation,payload)
    select gen_random_uuid(),wm.user_id,tg_table_name,eid,operation_name,payload
    from public.workspace_members wm
