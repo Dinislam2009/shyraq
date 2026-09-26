@@ -17,7 +17,7 @@ export async function GET(){
   try{
     const supabase=await createClient();
     const started=Date.now();
-    const {error}=await supabase.from("profiles").select("id",{head:true,count:"exact"});
+    const {error}=await supabase.from("public_profiles").select("id",{head:true,count:"exact"});
     if(error){
       return NextResponse.json({
         ok:false,
