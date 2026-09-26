@@ -14,25 +14,25 @@ function renderMath(expr: string, displayMode: boolean) {
   }
 }
 
-function renderClozes(value:string,clozeIndex:number|undefined,reveal:boolean){
- return value.replace(/\\{\\{c(\\d+)::([^}]+?)(?:::(.*?))?\\}\\}/gi,(_,index:string,answer:string,hint?:string)=>{
+function renderClozes(value:string,clozeIndex:number|undefined,reveal:boolean,protect:(html:string)=>string){
+ return value.replace(/\{\{c(\d+)::([^}]+?)(?:::(.*?))?\}\}/gi,(_,index:string,answer:string,hint?:string)=>{
   const target=clozeIndex===undefined||Number(index)===clozeIndex;
-  if(reveal)return escapeHtml(answer);
-  if(!target)return escapeHtml(answer);
+  if(reveal||!target)return escapeHtml(answer);
   const label=hint?hint:"…";
-  return "<span class=\"inline-flex min-w-[3rem] items-center justify-center rounded border border-dashed border-slate-400 px-1 text-slate-400\" data-cloze=\""+String(index)+"\">"+escapeHtml(label)+"</span>";
+  return protect("<span class=\"inline-flex min-w-[3rem] items-center justify-center rounded border border-dashed border-slate-400 px-1 text-slate-400\" data-cloze=\""+String(index)+"\">"+escapeHtml(label)+"</span>");
  });
 }
 
 function renderInline(value: string,clozeIndex?:number,revealCloze=true) {
   const protectedParts: string[] = [];
-  let text = renderClozes(value,clozeIndex,revealCloze);
+  let text = value;
   const protect = (html: string) => {
     const token = "@@SHYRAQ_" + protectedParts.length + "@@";
     protectedParts.push(html);
     return token;
   };
 
+  text = renderClozes(text,clozeIndex,revealCloze,protect);
   text = text.replace(/\$\$([^$]+)\$\$/g, (_, expr) => protect(renderMath(expr, true)));
   text = text.replace(/\$([^$\n]+)\$/g, (_, expr) => protect(renderMath(expr, false)));
 
