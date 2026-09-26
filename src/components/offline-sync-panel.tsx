@@ -56,7 +56,7 @@ export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[
  return <div className="mt-8 space-y-5">
   <div className="grid gap-4 sm:grid-cols-3">
    <Metric label="Connection" value={online?"Online":"Offline"} detail={online?"Automatic sync enabled":"Changes stay local until reconnect"}/>
-   <Metric label="Local mirror" value={overview.decks+" decks · "+overview.cards+" cards"} detail={overview.mutations+" pending changes"}/>
+   <Metric label="Local mirror" value={overview.decks+" decks · "+overview.cards+" cards · "+overview.cardTemplates+" templates"} detail={overview.mutations+" pending changes"}/>
    <Metric label="Last sync" value={meta.lastSyncAt?new Date(meta.lastSyncAt).toLocaleTimeString():"Never"} detail={"Cursor "+meta.cursor}/>
   </div>
   <div className="rounded-2xl border border-black/[0.06] bg-white p-5">
@@ -66,7 +66,7 @@ export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[
   </div>
   <div className="rounded-2xl border border-black/[0.06] bg-white p-5">
    <div className="flex items-center justify-between gap-3"><div><p className="font-semibold">Offline storage</p><p className="mt-1 text-sm text-slate-400">{overview.mediaFiles} cached media files · {formatBytes(overview.mediaBytes)}</p></div><button onClick={()=>void clearFailed()} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Clear failed queue</button></div>
-   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5"><Info label="Reviews" value={String(overview.reviews)}/><Info label="Cards" value={String(overview.cards)}/><Info label="Decks" value={String(overview.decks)}/><Info label="Mutations" value={String(overview.mutations)}/><Info label="Media" value={String(overview.mediaFiles)}/></div>
+   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5"><Info label="Reviews" value={String(overview.reviews)}/><Info label="Cards" value={String(overview.cards)}/><Info label="Templates" value={String(overview.cardTemplates)}/><Info label="Decks" value={String(overview.decks)}/><Info label="Mutations" value={String(overview.mutations)}/><Info label="Media" value={String(overview.mediaFiles)}/></div>
    <StorageMeter/>
   </div>
   <div className="rounded-2xl border border-black/[0.06] bg-white p-5">
