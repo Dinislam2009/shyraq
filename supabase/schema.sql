@@ -1389,3 +1389,312 @@ grant execute on function private.effective_collection_role(uuid) to authenticat
 grant execute on function private.effective_deck_role(uuid) to authenticated;
 grant execute on function private.is_workspace_member(uuid,public.workspace_role) to authenticated;
 grant execute on function private.is_workspace_owner(uuid) to authenticated;
+
+-- Core RLS hardening: direct membership checks for deck/template/card CRUD.
+grant usage on schema private to authenticated;
+grant execute on function private.effective_collection_role(uuid) to authenticated;
+grant execute on function private.effective_deck_role(uuid) to authenticated;
+grant execute on function private.is_workspace_member(uuid,public.workspace_role) to authenticated;
+grant execute on function private.is_workspace_owner(uuid) to authenticated;
+
+drop policy if exists decks_insert on public.decks;
+create policy decks_insert on public.decks
+for insert to authenticated
+with check (
+  owner_id=(select auth.uid())
+  and exists (
+    select 1 from public.workspace_members wm
+    where wm.workspace_id=decks.workspace_id
+      and wm.user_id=(select auth.uid())
+      and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+  )
+);
+
+drop policy if exists decks_read on public.decks;
+create policy decks_read on public.decks
+for select to authenticated
+using (
+  visibility='public'::deck_visibility
+  or exists (
+    select 1 from public.workspace_members wm
+    where wm.workspace_id=decks.workspace_id
+      and wm.user_id=(select auth.uid())
+      and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role,'reviewer'::workspace_role,'viewer'::workspace_role)
+  )
+  or exists (
+    select 1 from public.deck_members dm
+    where dm.deck_id=decks.id
+      and dm.user_id=(select auth.uid())
+      and dm.role in ('viewer','commenter','editor')
+  )
+);
+
+drop policy if exists decks_update on public.decks;
+create policy decks_update on public.decks
+for update to authenticated
+using (
+  exists (
+    select 1 from public.workspace_members wm
+    where wm.workspace_id=decks.workspace_id
+      and wm.user_id=(select auth.uid())
+      and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+  )
+  or exists (
+    select 1 from public.deck_members dm
+    where dm.deck_id=decks.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+  )
+)
+with check (
+  exists (
+    select 1 from public.workspace_members wm
+    where wm.workspace_id=decks.workspace_id
+      and wm.user_id=(select auth.uid())
+      and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+  )
+  or exists (
+    select 1 from public.deck_members dm
+    where dm.deck_id=decks.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+  )
+);
+
+drop policy if exists decks_delete on public.decks;
+create policy decks_delete on public.decks
+for delete to authenticated
+using (
+  owner_id=(select auth.uid())
+  or exists (
+    select 1 from public.workspace_members wm
+    where wm.workspace_id=decks.workspace_id
+      and wm.user_id=(select auth.uid())
+      and wm.role in ('owner'::workspace_role,'admin'::workspace_role)
+  )
+);
+
+drop policy if exists templates_insert on public.card_templates;
+create policy templates_insert on public.card_templates
+for insert to authenticated
+with check (
+  exists (
+    select 1 from public.decks d
+    where d.id=card_templates.deck_id
+      and (
+        exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+        )
+      )
+  )
+);
+
+drop policy if exists templates_read on public.card_templates;
+create policy templates_read on public.card_templates
+for select to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=card_templates.deck_id
+      and (
+        d.visibility='public'::deck_visibility
+        or exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role,'reviewer'::workspace_role,'viewer'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role in ('viewer','commenter','editor')
+        )
+      )
+  )
+);
+
+drop policy if exists templates_update on public.card_templates;
+create policy templates_update on public.card_templates
+for update to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=card_templates.deck_id
+      and (
+        exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+        )
+      )
+  )
+)
+with check (
+  exists (
+    select 1 from public.decks d
+    where d.id=card_templates.deck_id
+      and (
+        exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+        )
+      )
+  )
+);
+
+drop policy if exists templates_delete on public.card_templates;
+create policy templates_delete on public.card_templates
+for delete to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=card_templates.deck_id
+      and (
+        exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+        )
+      )
+  )
+);
+
+drop policy if exists cards_insert on public.cards;
+create policy cards_insert on public.cards
+for insert to authenticated
+with check (
+  owner_id=(select auth.uid())
+  and exists (
+    select 1 from public.decks d
+    where d.id=cards.deck_id
+      and (
+        exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+        )
+      )
+  )
+  and (
+    cards.template_id is null
+    or exists (
+      select 1 from public.card_templates t
+      where t.id=cards.template_id and t.deck_id=cards.deck_id
+    )
+  )
+);
+
+drop policy if exists cards_read on public.cards;
+create policy cards_read on public.cards
+for select to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=cards.deck_id
+      and (
+        d.visibility='public'::deck_visibility
+        or exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role,'reviewer'::workspace_role,'viewer'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role in ('viewer','commenter','editor')
+        )
+      )
+  )
+);
+
+drop policy if exists cards_update on public.cards;
+create policy cards_update on public.cards
+for update to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=cards.deck_id
+      and (
+        exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+        )
+      )
+  )
+)
+with check (
+  exists (
+    select 1 from public.decks d
+    where d.id=cards.deck_id
+      and (
+        exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+        )
+      )
+  )
+  and (
+    cards.template_id is null
+    or exists (
+      select 1 from public.card_templates t
+      where t.id=cards.template_id and t.deck_id=cards.deck_id
+    )
+  )
+);
+
+drop policy if exists cards_delete on public.cards;
+create policy cards_delete on public.cards
+for delete to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=cards.deck_id
+      and (
+        exists (
+          select 1 from public.workspace_members wm
+          where wm.workspace_id=d.workspace_id
+            and wm.user_id=(select auth.uid())
+            and wm.role in ('owner'::workspace_role,'admin'::workspace_role,'editor'::workspace_role)
+        )
+        or exists (
+          select 1 from public.deck_members dm
+          where dm.deck_id=d.id and dm.user_id=(select auth.uid()) and dm.role='editor'
+        )
+      )
+  )
+);
