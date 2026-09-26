@@ -12,7 +12,7 @@ export default async function CreatorPage({params,searchParams}:{params:Promise<
  const {error}=searchParams?await searchParams:{};
  const supabase=await createClient();
  const locale=await getRequestLocale();
- const {data:profile}=await supabase.from("profiles").select("id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers").eq("username",username.toLowerCase()).maybeSingle();
+ const {data:profile}=await supabase.from("public_profiles").select("id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers").eq("username",username.toLowerCase()).maybeSingle();
  if(!profile)notFound();
 
  let avatarSrc=String(profile.avatar_url||"");
