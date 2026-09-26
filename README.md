@@ -639,7 +639,7 @@ Public sharing is a major Shyraq feature.
 - [x] Sort by recent
 - [x] Sort by popularity
 - [x] Search ranking
-- [ ] Featured public collection discovery/curation workflow
+- [x] Featured public collection discovery/curation workflow
 
 ## Public deck actions
 
