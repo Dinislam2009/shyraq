@@ -90,6 +90,34 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
 
   const disabled = !file || !ready || (backupDecks.length > 0 && selectedDecks.length === 0);
 
+  async function startServerJob() {
+    if (!file || !ready || backupDecks.length > 0) return false;
+    const form = new FormData();
+    form.set("file", file);
+    form.set("duplicate_mode", mode);
+    const response = await fetch("/api/import/jobs", { method: "POST", body: form });
+    const data = await response.json() as { jobId?: string; error?: string };
+    if (!response.ok || !data.jobId) {
+      throw new Error(data.error || "Unable to start server import.");
+    }
+    localStorage.setItem("shyraq:import-job", data.jobId);
+    window.dispatchEvent(new CustomEvent("shyraq:import-job", { detail: data.jobId }));
+    return true;
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    const filename = file?.name.toLowerCase() || "";
+    const standard = !!file && !filename.endsWith(".zip") && !filename.endsWith(".apkg") && backupDecks.length === 0;
+    if (!standard) return;
+    event.preventDefault();
+    setParseError("");
+    try {
+      await startServerJob();
+    } catch (error) {
+      setParseError(error instanceof Error ? error.message : "Unable to start server import.");
+    }
+  }
+
   return (
     <div className="space-y-6">
       {initialError && <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">{initialError}</div>}
