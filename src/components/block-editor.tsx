@@ -116,7 +116,9 @@ function htmlToMarkdown(html:string){
    const href=node.getAttribute("href")||"";
    return href?"["+inner+"]("+href+")":inner;
   }
-  if(tag==="li")return "- "+inner+"\n";
+  if(tag==="ol"){const items=Array.from(node.children).filter(child=>child instanceof HTMLLIElement).map(child=>render(child));return items.map((item,index)=>(index+1)+". "+item.replace(/^(- )?/,"")).join("\n")+"\n";}
+  if(tag==="ul"){const items=Array.from(node.children).filter(child=>child instanceof HTMLLIElement).map(child=>render(child));return items.map(item=>"- "+item.replace(/^(- )?/,"")).join("\n")+"\n";}
+  if(tag==="li")return inner+"\n";
   if(["div","p","h1","h2","h3"].includes(tag))return inner+"\n";
   return inner;
  };
@@ -220,17 +222,46 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
         <button type="button" onClick={() => inline(focused, String.fromCharCode(96))} className="rounded-lg px-2.5 py-2 text-xs font-mono hover:bg-white">Code</button>
         <button type="button" onClick={() => {
           const url = window.prompt("Link URL");
-          if (url) {
-            const area = document.querySelector<HTMLTextAreaElement>('textarea[data-block="' + focused + '"]');
-            const block = blocks.find(item => item.id === focused);
-            if (area && block) {
-              const start = area.selectionStart;
-              const end = area.selectionEnd;
-              const selected = block.text.slice(start, end) || "link";
-              patch(focused, { text: block.text.slice(0, start) + "[" + selected + "](" + url + ")" + block.text.slice(end) });
+          if (!url) return;
+          if (visualMode) {
+            const area = visualRefs.current[focused];
+            if (area) {
+              area.focus();
+              document.execCommand("createLink", false, url);
+              patch(focused, { text: htmlToMarkdown(area.innerHTML) });
             }
+            return;
+          }
+          const area = document.querySelector<HTMLTextAreaElement>('textarea[data-block="' + focused + '"]');
+          const block = blocks.find(item => item.id === focused);
+          if (area && block) {
+            const start = area.selectionStart;
+            const end = area.selectionEnd;
+            const selected = block.text.slice(start, end) || "link";
+            patch(focused, { text: block.text.slice(0, start) + "[" + selected + "](" + url + ")" + block.text.slice(end) });
           }
         }} className="rounded-lg px-2.5 py-2 text-xs hover:bg-white">Link</button>
+        {visualMode?<><button type="button" onClick={() => {
+          const area = visualRefs.current[focused];
+          if (!area) return;
+          area.focus();
+          document.execCommand("formatBlock", false, "h2");
+          patch(focused,{text:htmlToMarkdown(area.innerHTML)});
+        }} className="rounded-lg px-2.5 py-2 text-xs hover:bg-white">H2</button>
+        <button type="button" onClick={() => {
+          const area = visualRefs.current[focused];
+          if (!area) return;
+          area.focus();
+          document.execCommand("insertUnorderedList");
+          patch(focused,{text:htmlToMarkdown(area.innerHTML)});
+        }} className="rounded-lg px-2.5 py-2 text-xs hover:bg-white">• List</button>
+        <button type="button" onClick={() => {
+          const area = visualRefs.current[focused];
+          if (!area) return;
+          area.focus();
+          document.execCommand("insertOrderedList");
+          patch(focused,{text:htmlToMarkdown(area.innerHTML)});
+        }} className="rounded-lg px-2.5 py-2 text-xs hover:bg-white">1. List</button></>:null}
       </div>
 
       <div className="space-y-2 p-3">
