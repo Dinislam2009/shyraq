@@ -52,5 +52,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Bundle audit
+        run: npm run audit:bundle
+
       - name: API smoke test
         run: npm run test:api
