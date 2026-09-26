@@ -2196,8 +2196,6 @@ export type Database = {
         Relationships: []
       }
     }
-    Views: {}
-        Tables: {
       public_profiles: {
         Row: {
           id: string
@@ -2231,7 +2229,7 @@ export type Database = {
         }
         Relationships: []
       }
-    }
+    Views: {}
     Functions: {
       is_platform_moderator: { Args: never; Returns: boolean }
     }
