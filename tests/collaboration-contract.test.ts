@@ -34,5 +34,9 @@ test("presence tracks collaborator identity and active editor roles",()=>{
  assert.ok(presence.includes('channel.track({userId,displayName:displayName||"Member",role:role||"viewer",joinedAt:Date.now()})'));
  assert.ok(presence.includes('const editors=members.filter'));
  assert.ok(presence.includes("active {editors.length===1?"editor":"editors"}"));
+ assert.ok(presence.includes("activeCardId"));
+ assert.ok(presence.includes("selectionStart"));
+ assert.ok(presence.includes("shyraq:editor-presence"));
+ assert.ok(deckPage.includes("displayName={String(currentProfile?.display_name||currentProfile?.username||"Member")"));
  assert.ok(deckPage.includes("displayName={String(currentProfile?.display_name||currentProfile?.username||"Member")"));
 });
