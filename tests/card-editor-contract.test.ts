@@ -39,7 +39,7 @@ test("offline storage usage counts templates independently",()=>{
 
 test("offline bootstrap keeps templates in the local mirror",()=>{
  const sync=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
- assert.match(sync,/templates\?:Record<string,unknown>\[\]/);
- assert.match(sync,/data\.templates\?\.map\(item=>mapTemplate\(item,userId\)\)/);
- assert.match(sync,/return \{userId,decks:data\.decks\?\?\[\],cards:data\.cards\?\?\[\],templates:data\.templates\?\?\[\]\}/);
+ assert.ok(sync.includes("templates?:Record<string,unknown>[]"));
+ assert.ok(sync.includes("(data.templates??[]).map(item=>mapTemplate(item,userId))"));
+ assert.ok(sync.includes("return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[]}"));
 });
