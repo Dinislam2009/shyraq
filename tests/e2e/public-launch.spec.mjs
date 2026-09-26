@@ -15,14 +15,28 @@ test.describe("public browser launch gate",()=>{
   expect(errors).toEqual([]);
  });
 
- test("all supported locales switch the auth UI",async({page})=>{
-  await page.goto("/login");
-  const select=page.getByRole("combobox",{name:/language|язык|тіл/i});
-  await expect(select).toBeVisible();
-  for(const locale of ["kk","ru","en"]){
+ test("all supported locales switch the core public UI",async({page})=>{
+  const expectations={
+   kk:{privacy:"Құпиялылық",terms:"Шарттар",offline:"Офлайн қайталау"},
+   ru:{privacy:"Конфиденциальность",terms:"Условия",offline:"Офлайн-повторение"},
+   en:{privacy:"Privacy",terms:"Terms",offline:"Offline review"},
+  };
+  for(const [locale,labels] of Object.entries(expectations)){
+   await page.goto("/login");
+   const select=page.getByRole("combobox",{name:/language|язык|тіл/i});
+   await expect(select).toBeVisible();
    await select.selectOption(locale);
    await expect(page.locator("html")).toHaveAttribute("lang",locale);
    await expect(select).toHaveValue(locale);
+
+   await page.goto("/legal/privacy");
+   await expect(page.getByRole("heading",{name:labels.privacy})).toBeVisible();
+
+   await page.goto("/legal/terms");
+   await expect(page.getByRole("heading",{name:labels.terms})).toBeVisible();
+
+   await page.goto("/offline");
+   await expect(page.getByRole("heading",{name:labels.offline})).toBeAttached();
   }
  });
 
