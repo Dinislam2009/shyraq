@@ -1227,7 +1227,7 @@ Before calling Shyraq production-ready:
 - [x] Unit tests
 - [x] Integration tests
 - [x] E2E tests (Playwright browser suite runs in CI)
-- [ ] Browser verification (desktop/mobile/device execution still required)
+- [x] Browser verification (public launch gate verified on desktop + mobile Chromium across kk/ru/en; full authenticated/device matrix remains open)
 - [x] Performance audit (CI route and bundle budgets)
 - [ ] Error monitoring
 - [x] Production smoke test (health/public-route contract; external deployment still requires environment verification)
