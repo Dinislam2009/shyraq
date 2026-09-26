@@ -14,9 +14,19 @@ function renderMath(expr: string, displayMode: boolean) {
   }
 }
 
-function renderInline(value: string) {
+function renderClozes(value:string,clozeIndex:number|undefined,reveal:boolean){
+ return value.replace(/\\{\\{c(\\d+)::([^}]+?)(?:::(.*?))?\\}\\}/gi,(_,index:string,answer:string,hint?:string)=>{
+  const target=clozeIndex===undefined||Number(index)===clozeIndex;
+  if(reveal)return escapeHtml(answer);
+  if(!target)return escapeHtml(answer);
+  const label=hint?hint:"…";
+  return "<span class=\"inline-flex min-w-[3rem] items-center justify-center rounded border border-dashed border-slate-400 px-1 text-slate-400\" data-cloze=\""+String(index)+"\">"+escapeHtml(label)+"</span>";
+ });
+}
+
+function renderInline(value: string,clozeIndex?:number,revealCloze=true) {
   const protectedParts: string[] = [];
-  let text = value;
+  let text = renderClozes(value,clozeIndex,revealCloze);
   const protect = (html: string) => {
     const token = "@@SHYRAQ_" + protectedParts.length + "@@";
     protectedParts.push(html);
@@ -40,7 +50,7 @@ function renderInline(value: string) {
   return html;
 }
 
-function renderRichHtml(value: string) {
+function renderRichHtml(value: string,clozeIndex?:number,revealCloze=true) {
   const source = String(value || "").replace(/\r\n/g, "\n");
   const lines = source.split("\n");
   const parts: string[] = [];
@@ -71,7 +81,7 @@ function renderRichHtml(value: string) {
 
     if (/^\s*[-*]\s+/.test(line)) {
       const content = line.replace(/^\s*[-*]\s+/, "");
-      parts.push("<div class=\"flex gap-2\"><span class=\"mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-current\"></span><span>" + renderInline(content) + "</span></div>");
+      parts.push("<div class=\"flex gap-2\"><span class=\"mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-current\"></span><span>" + renderInline(content,clozeIndex,revealCloze) + "</span></div>");
       continue;
     }
 
@@ -80,7 +90,7 @@ function renderRichHtml(value: string) {
       continue;
     }
 
-    parts.push("<div>" + renderInline(line) + "</div>");
+    parts.push("<div>" + renderInline(line,clozeIndex,revealCloze) + "</div>");
   }
 
   if (inCode && codeLines.length) {
@@ -90,11 +100,11 @@ function renderRichHtml(value: string) {
   return parts.join("");
 }
 
-export function RichContent({ content, className = "" }: { content: string; className?: string }) {
+export function RichContent({ content, className = "", clozeIndex, revealCloze = true }: { content: string; className?: string; clozeIndex?: number; revealCloze?: boolean }) {
   return (
     <div
       className={"whitespace-normal break-words leading-7 " + className}
-      dangerouslySetInnerHTML={{ __html: renderRichHtml(content) }}
+      dangerouslySetInnerHTML={{ __html: renderRichHtml(content,clozeIndex,revealCloze) }}
     />
   );
 }
