@@ -58,7 +58,7 @@ create table if not exists public.cards (
  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 alter table public.cards add column if not exists duplicate_fingerprint text generated always as (
- md5(lower(trim(coalesce(content->>'front',''))) || chr(0) || lower(trim(coalesce(content->>'back',''))))
+ md5(lower(trim(coalesce(content->>'front',''))) || '␟' || lower(trim(coalesce(content->>'back',''))))
 ) stored;
 create index if not exists cards_owner_duplicate_fingerprint_idx on public.cards(owner_id,duplicate_fingerprint);
 create table if not exists public.tags (
