@@ -32,6 +32,18 @@ async function createDeckWithTemplate(supabase:any,userId:string,workspaceId:str
  deckMap.set(String(sourceDeck.id),deck.id);
  return deck.id;
 }
+async function cleanupRestore(supabase:any,deckIds:string[],collectionIds:string[],mediaPaths:string[]){
+ const uniqueDecks=[...new Set(deckIds.filter(Boolean))];
+ const uniqueCollections=[...new Set(collectionIds.filter(Boolean))];
+ const uniqueMedia=[...new Set(mediaPaths.filter(Boolean))];
+ if(uniqueCollections.length)await supabase.from("collections").delete().in("id",uniqueCollections);
+ if(uniqueDecks.length)await supabase.from("decks").delete().in("id",uniqueDecks);
+ if(uniqueMedia.length){
+  await supabase.from("media").delete().in("storage_path",uniqueMedia);
+  await supabase.storage.from("user-media").remove(uniqueMedia);
+ }
+}
+
 export async function restoreBackup(supabase:any,userId:string,workspaceId:string,payload:any,archive?:Record<string,Uint8Array>,selectedDeckIds?:Set<string>,conflictMode:"duplicate"|"skip"="duplicate"){
  if(payload?.format!=="shyraq-backup-v2")throw new Error("Unsupported Shyraq backup format.");
  const deckMap=new Map<string,string>();
@@ -40,10 +52,14 @@ export async function restoreBackup(supabase:any,userId:string,workspaceId:strin
  const cardMap=new Map<string,string>();
  const collectionMap=new Map<string,string>();
  const mediaMap=new Map<string,string>();
+ const createdDeckIds:string[]=[];
+ const createdCollectionIds:string[]=[];
+ const uploadedMediaPaths:string[]=[];
  let restoredMedia=0;
 
- const media=Array.isArray(payload.media)?payload.media:[];
- for(const item of media){
+ try{
+  const media=Array.isArray(payload.media)?payload.media:[];
+  for(const item of media){
   const oldPath=String(item.storage_path||"");
   if(!oldPath||!archive)continue;
   const exactKey="media/"+oldPath.replace(/^\/+/, "");
@@ -55,6 +71,7 @@ export async function restoreBackup(supabase:any,userId:string,workspaceId:strin
   const newPath=userId+"/restore/"+crypto.randomUUID()+"-"+safe;
   const {error:uploadError}=await supabase.storage.from("user-media").upload(newPath,bytes,{contentType:String(item.mime_type||"application/octet-stream"),upsert:false});
   if(uploadError)throw new Error(uploadError.message);
+   uploadedMediaPaths.push(newPath);
   const {error:metaError}=await supabase.from("media").insert({workspace_id:workspaceId,owner_id:userId,storage_path:newPath,mime_type:String(item.mime_type||"application/octet-stream"),byte_size:bytes.byteLength});
   if(metaError)throw new Error(metaError.message);
   mediaMap.set(oldPath,newPath); restoredMedia++;
@@ -67,7 +84,10 @@ export async function restoreBackup(supabase:any,userId:string,workspaceId:strin
  const conflictNames=new Set((existingDecks??[]).map((deck:any)=>String(deck.name||"")));
  const conflicts=selectedSourceDecks.filter((deck:any)=>conflictNames.has(String(deck.name||""))).length;
  const sourceDecks=conflictMode==="skip"?selectedSourceDecks.filter((deck:any)=>!conflictNames.has(String(deck.name||""))):selectedSourceDecks;
- for(const deck of sourceDecks){ await createDeckWithTemplate(supabase,userId,workspaceId,deck,deckMap); }
+ for(const deck of sourceDecks){
+   const deckId=await createDeckWithTemplate(supabase,userId,workspaceId,deck,deckMap);
+   createdDeckIds.push(deckId);
+  }
 
  const templates=Array.isArray(payload.templates)?payload.templates:[];
  const restoredTemplateDecks=new Set<string>();
@@ -117,9 +137,22 @@ export async function restoreBackup(supabase:any,userId:string,workspaceId:strin
 
  const collections=Array.isArray(payload.collections)?payload.collections:[];
  for(const collection of collections){
-  const {data,error}=await supabase.from("collections").insert({workspace_id:workspaceId,owner_id:userId,name:String(collection.name||"Imported collection"),kind:safeCollectionKind(String(collection.kind||"custom")),description:String(collection.description||"")}).select("id").single();
-  if(error)throw new Error(error.message);
-  if(data&&collection.id)collectionMap.set(String(collection.id),data.id);
+  const {data,error}=await supabase.from("collections").insert({
+    workspace_id:workspaceId,
+    owner_id:userId,
+    name:String(collection.name||"Imported collection"),
+    description:String(collection.description||"").slice(0,5000),
+    kind:safeCollectionKind(String(collection.kind||"custom")),
+    rule:collection.rule&&typeof collection.rule==="object"&&!Array.isArray(collection.rule)?collection.rule:{},
+    sort_mode:String(collection.sort_mode||"manual").slice(0,40),
+    is_public:Boolean(collection.is_public),
+    is_featured:Boolean(collection.is_featured)
+   }).select("id").single();
+   if(error)throw new Error(error.message);
+   if(data){
+    createdCollectionIds.push(data.id);
+    if(collection.id)collectionMap.set(String(collection.id),data.id);
+   }
  }
 
  const collectionCards=Array.isArray(payload.collectionCards)?payload.collectionCards:[];
@@ -161,6 +194,25 @@ export async function restoreBackup(supabase:any,userId:string,workspaceId:strin
    copied_deck_id:copiedDeckId,
    source_updated_at:copy.source_updated_at??null,
    last_synced_source_updated_at:copy.last_synced_source_updated_at??null,
+   update_policy:copy.update_policy==="accept_all"?"accept_all":"ask"
+  },{onConflict:"user_id,source_deck_id,copied_deck_id"});
+  if(error)throw new Error(error.message);
+ }
+
+ const follows=Array.isArray(payload.publicDeckFollows)?payload.publicDeckFollows:[];
+ for(const follow of follows){
+  const deckId=deckMap.get(String(follow.deck_id)); if(!deckId)continue;
+  const {error}=await supabase.from("public_deck_follows").upsert({user_id:userId,deck_id:deckId},{onConflict:"user_id,deck_id"});
+  if(error)throw new Error(error.message);
+ }
+
+ return {restoredCards,restoredMedia,conflicts};
+ }catch(error){
+  await cleanupRestore(supabase,createdDeckIds,createdCollectionIds,uploadedMediaPaths);
+  throw error;
+ }
+
+ated_at:copy.last_synced_source_updated_at??null,
    update_policy:copy.update_policy==="accept_all"?"accept_all":"ask"
   },{onConflict:"user_id,source_deck_id,copied_deck_id"});
   if(error)throw new Error(error.message);
