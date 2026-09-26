@@ -3,7 +3,7 @@ import {fileURLToPath} from "node:url";
 
 const port=process.env.SHYRAQ_SMOKE_PORT||"3100";
 const nextBin=fileURLToPath(new URL("../node_modules/next/dist/bin/next",import.meta.url));
-const child=spawn(process.execPath,[nextBin.pathname,"start","-p",port],{stdio:["ignore","pipe","pipe"],env:{...process.env,NODE_ENV:"production"}});
+const child=spawn(process.execPath,[nextBin,"start","-p",port],{stdio:["ignore","pipe","pipe"],env:{...process.env,NODE_ENV:"production"}});
 let output="";
 child.stdout.on("data",chunk=>{output+=String(chunk);});
 child.stderr.on("data",chunk=>{output+=String(chunk);});
