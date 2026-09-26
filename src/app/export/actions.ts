@@ -18,8 +18,9 @@ export async function createBackupVersion(){
  if(uploadError)redirect("/export?error="+encodeURIComponent(uploadError.message));
  const {error}=await supabase.from("backup_versions").insert({user_id:user.id,format:"json",storage_path:path,size_bytes:bytes.byteLength,checksum});
  if(error){
-  await supabase.storage.from("user-media").remove([path]);
-  redirect("/export?error="+encodeURIComponent(error.message));
+  const {error:cleanupError}=await supabase.storage.from("user-media").remove([path]);
+  const message=cleanupError?error.message+" Cleanup failed: "+cleanupError.message:error.message;
+  redirect("/export?error="+encodeURIComponent(message));
  }
  revalidatePath("/export");
  redirect("/export?backup=created");
@@ -31,8 +32,10 @@ export async function deleteBackupVersion(id:string){
  if(!user)redirect("/login");
  const {data:version}=await supabase.from("backup_versions").select("id,storage_path").eq("id",id).eq("user_id",user.id).maybeSingle();
  if(version){
-  await supabase.storage.from("user-media").remove([version.storage_path]);
-  await supabase.from("backup_versions").delete().eq("id",id).eq("user_id",user.id);
+  const {error:storageError}=await supabase.storage.from("user-media").remove([version.storage_path]);
+  if(storageError)redirect("/export?error="+encodeURIComponent(storageError.message));
+  const {error:deleteError}=await supabase.from("backup_versions").delete().eq("id",id).eq("user_id",user.id);
+  if(deleteError)redirect("/export?error="+encodeURIComponent(deleteError.message));
  }
  revalidatePath("/export");
  redirect("/export?backup=deleted");
@@ -49,7 +52,8 @@ export async function restoreBackupVersion(id:string){
  try{
   const bytes=new Uint8Array(await file.arrayBuffer());
   const checksum=createHash("sha256").update(bytes).digest("hex");
-  const {data:record}=await supabase.from("backup_versions").select("checksum").eq("id",id).eq("user_id",user.id).maybeSingle();
+  const {data:record,error:recordError}=await supabase.from("backup_versions").select("checksum").eq("id",id).eq("user_id",user.id).maybeSingle();
+  if(recordError)throw new Error(recordError.message);
   if(record?.checksum&&record.checksum!==checksum)throw new Error("Backup integrity check failed.");
   const payload=JSON.parse(new TextDecoder().decode(bytes));
   const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
