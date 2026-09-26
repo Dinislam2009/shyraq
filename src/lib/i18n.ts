@@ -1,3 +1,4 @@
+import {extendedTranslations,type SupportedLocale} from "./i18n-catalog";
 export const locales = ["kk", "ru", "en"] as const;
 export type Locale = (typeof locales)[number];
 
@@ -250,4 +251,10 @@ export const dictionaries = {
   },
 } as const;
 
-export type TranslationKey = keyof typeof dictionaries.en;
+export type TranslationKey = keyof typeof dictionaries.en | keyof typeof extendedTranslations;
+export function translateKey(locale:Locale,key:TranslationKey):string{
+ const base=(dictionaries[locale] as Record<string,string>)[key];
+ if(typeof base==="string")return base;
+ const extended=extendedTranslations[key as keyof typeof extendedTranslations] as Record<SupportedLocale,string>|undefined;
+ return extended?.[locale] ?? (extended?.en ?? key);
+}
