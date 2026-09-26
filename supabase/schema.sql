@@ -57,6 +57,10 @@ create table if not exists public.cards (
  is_suspended boolean not null default false, is_marked boolean not null default false,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
+alter table public.cards add column if not exists duplicate_fingerprint text generated always as (
+ md5(lower(trim(coalesce(content->>'front',''))) || chr(0) || lower(trim(coalesce(content->>'back',''))))
+) stored;
+create index if not exists cards_owner_duplicate_fingerprint_idx on public.cards(owner_id,duplicate_fingerprint);
 create table if not exists public.tags (
  id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
  name text not null, unique(workspace_id,name)
