@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
+import {readFileSync,readdirSync} from "node:fs";
 
 const schema=readFileSync(new URL("../supabase/schema.sql",import.meta.url),"utf8");
 const syncRoute=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
