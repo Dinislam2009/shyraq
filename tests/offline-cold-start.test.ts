@@ -11,5 +11,5 @@ test("offline route is a local review app with a precached fallback",()=>{
  assert.match(app,/queueReview/);
  assert.match(app,/upsertOfflineReviewState/);
  assert.match(worker,/const APP_SHELL=\["\/offline","\/favicon\.ico"\]/);
- assert.match(worker,/caches\.match\("/offline")/);
+ assert.match(worker,/caches\.match\("\/offline"\)/);
 });
