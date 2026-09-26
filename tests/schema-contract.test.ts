@@ -73,7 +73,7 @@ test("backup restore stays inside current schema enums and collection metadata",
  assert.match(restore,/\["private","workspace","public"\]/);
  assert.doesNotMatch(restore,/\["private","public","unlisted"\]/);
  assert.match(restore,/value==="favorites"\|\|value==="smart"\?value:"custom"/);
- assert.match(restore,/description:String\(collection\.description\|\|"\)/);
+ assert.match(restore,/description:String\(collection\.description\|\|"\)\.slice\(0,5000\)/);
  assert.match(restore,/rule:collection\.rule/);
  assert.match(restore,/sort_mode:String\(collection\.sort_mode/);
 });
