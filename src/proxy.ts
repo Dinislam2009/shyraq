@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const publicPaths = ["/", "/login", "/signup", "/auth", "/api/auth", "/api/health", "/offline", "/manifest.webmanifest", "/sw.js"];
+  const publicPaths = ["/", "/login", "/signup", "/auth", "/api/auth", "/api/health", "/offline", "/legal", "/manifest.webmanifest", "/sw.js"];
   const isPublic = publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
