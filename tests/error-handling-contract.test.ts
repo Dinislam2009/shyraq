@@ -25,3 +25,10 @@ test("sync diagnostics fails on database query errors instead of returning incom
  assert.match(diagnostics,/const firstError=[devicesResult,eventsResult,changesResult,conflictsResult].find(result=>result.error)?.error/);
  assert.match(diagnostics,/if(firstError)return NextResponse.json({error:firstError.message},{status:500})/);
 });
+
+const notifications=readFileSync(new URL("../src/app/notifications/actions.ts",import.meta.url),"utf8");
+
+test("notification update actions surface database write failures",()=>{
+ assert.match(notifications,/const \{error\}=await supabase\.from\("notifications"\)\.update/);
+ assert.match(notifications,/if\(error\)redirect\("\/notifications\?error="/);
+});
