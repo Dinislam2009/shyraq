@@ -38,7 +38,7 @@ test("supports Anki special fields",()=>{
 
 test("resolves field names case-insensitively and renders FrontSide through filters",()=>{
  const fields={Front:"<b>Question</b>",Back:"Answer"};
- assert.equal(renderAnkiTemplate("{{front}}|{{text:FRONT}}|{{FrontSide}}",fields,{side:"back"}),"Question|Question|<b>Question</b>");
+ assert.equal(renderAnkiTemplate("{{front}}|{{text:FRONT}}|{{FrontSide}}",fields,{side:"back"}),"<b>Question</b>|Question|<b>Question</b>");
 });
 
 test("nested conditional blocks preserve inner sections",()=>{
