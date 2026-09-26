@@ -31,7 +31,7 @@ test("presence tracks collaborator identity and active editor roles",()=>{
  const presence=readFileSync(new URL("../src/components/collaboration-presence.tsx",import.meta.url),"utf8");
  assert.ok(presence.includes("displayName"));
  assert.ok(presence.includes("role"));
- assert.ok(presence.includes('channel.track({userId,displayName:displayName||"Member",role:role||"viewer",joinedAt:Date.now()})'));
+ assert.ok(presence.includes("channel.track(localPresence.current)"));
  assert.ok(presence.includes('const editors=members.filter'));
  assert.ok(presence.includes('active {editors.length===1?"editor":"editors"}'));
  assert.ok(presence.includes("activeCardId"));
