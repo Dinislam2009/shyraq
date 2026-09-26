@@ -26,7 +26,13 @@ try{
  try{body=JSON.parse(text);}catch{throw new Error("Health endpoint did not return JSON.\n"+text.slice(0,1000));}
  if(!("ok" in body)||body.service!=="shyraq")throw new Error("Health endpoint contract mismatch: "+JSON.stringify(body));
  if(response.status!==200&&response.status!==503)throw new Error("Unexpected health status "+response.status+": "+JSON.stringify(body));
- console.log("API smoke passed:",response.status,JSON.stringify(body));
+
+ const publicRoutes=["/","/login","/signup","/offline","/manifest.webmanifest","/sw.js"];
+ for(const pathname of publicRoutes){
+  const routeResponse=await fetch("http://127.0.0.1:"+port+pathname,{redirect:"manual"});
+  if(routeResponse.status<200||routeResponse.status>=400)throw new Error("Public smoke route failed "+pathname+": "+routeResponse.status);
+ }
+ console.log("API smoke passed:",response.status,JSON.stringify(body),"public routes:",publicRoutes.join(", "));
 }finally{
  if(!child.killed)child.kill("SIGTERM");
  await sleep(500);
