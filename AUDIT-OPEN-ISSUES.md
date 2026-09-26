@@ -280,3 +280,28 @@ Review state IDs pagination арқылы толық оқылып, fixed 5000 cap
 - unit/contract test;
 - CI;
 - large-deck review smoke test.
+
+## 11. MEDIUM — Analytics/dashboard fixed row caps
+
+**Status:** OPEN — FIX IN PROGRESS  
+**Priority:** MEDIUM  
+**Detected:** 2026-09-26
+
+### Мәселе
+`src/lib/supabase/queries.ts` ішінде analytics/dashboard деректері fixed caps қолданады:
+
+- workspace cards: `20,000`
+- review events: `50,000`
+- review states: `50,000`
+- dashboard streak events: `5,000`
+- 7-day average timing events: `5,000`
+
+Үлкен деректер жиынында statistics/dashboard толық емес болып қалуы мүмкін.
+
+### Қажет әрекет
+Осы read paths pagination арқылы толық оқылуы керек.
+
+### Қайта тексеру
+- large dataset contract test;
+- CI;
+- statistics/dashboard smoke test.
