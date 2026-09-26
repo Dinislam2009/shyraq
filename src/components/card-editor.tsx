@@ -75,17 +75,28 @@ export function CardEditor({
   const backRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [offlineError,setOfflineError] = useState("");
+  const [pendingRemoteDraft,setPendingRemoteDraft] = useState<ReturnType<typeof useCardDraftChannel>["remoteDraft"]>(null);
   const draftEnabled=Boolean(offlineContext?.userId&&offlineContext?.deckId&&offlineContext?.existing?.id);
   const suppressDraftRef=useRef(false);
   const {remoteDraft,publish,dismissRemote}=useCardDraftChannel(offlineContext?.deckId||"",offlineContext?.existing?.id,offlineContext?.userId);
 
   useEffect(()=>{
-   if(!remoteDraft||suppressDraftRef.current)return;
+   if(remoteDraft)setPendingRemoteDraft(remoteDraft);
+  },[remoteDraft]);
+
+  function applyRemoteDraft(){
+   if(!pendingRemoteDraft)return;
    suppressDraftRef.current=true;
-   setFront(remoteDraft.front);setBack(remoteDraft.back);setTags(remoteDraft.tags);setMarkers(remoteDraft.markers);setStatus(remoteDraft.status);
-   setOptions(remoteDraft.options);setAnswer(remoteDraft.answer);setImageUrl(remoteDraft.imageUrl);setFields(remoteDraft.fields);setReviewPreferences(remoteDraft.reviewPreferences as typeof reviewPreferences);
+   setFront(pendingRemoteDraft.front);setBack(pendingRemoteDraft.back);setTags(pendingRemoteDraft.tags);setMarkers(pendingRemoteDraft.markers);setStatus(pendingRemoteDraft.status);
+   setOptions(pendingRemoteDraft.options);setAnswer(pendingRemoteDraft.answer);setImageUrl(pendingRemoteDraft.imageUrl);setFields(pendingRemoteDraft.fields);setReviewPreferences(pendingRemoteDraft.reviewPreferences as typeof reviewPreferences);
+   setPendingRemoteDraft(null);
    dismissRemote();
-  },[dismissRemote,remoteDraft]);
+  }
+
+  function ignoreRemoteDraft(){
+   setPendingRemoteDraft(null);
+   dismissRemote();
+  }
 
   useEffect(()=>{
    if(!draftEnabled||suppressDraftRef.current){suppressDraftRef.current=false;return;}
@@ -155,6 +166,7 @@ export function CardEditor({
       <input type="hidden" name="fields" value={JSON.stringify(fields)} />
       <input type="hidden" name="review_preferences" value={JSON.stringify(reviewPreferences)} />
       {offlineError?<div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{offlineError}</div>:null}
+      {pendingRemoteDraft?<div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900"><div><p className="font-semibold">A newer remote draft is available</p><p className="mt-1 text-xs text-blue-800">Review it before applying it to your current local draft.</p></div><div className="flex gap-2"><button type="button" onClick={ignoreRemoteDraft} className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold">Ignore</button><button type="button" onClick={applyRemoteDraft} className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white">Apply remote draft</button></div></div>:null}
       {draftEnabled?<div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Live draft collaboration is enabled for this card.</div>:null}
       <input type="hidden" name="media_items" value={JSON.stringify(mediaItems.map(item => ({ path: item.path, mimeType: item.mimeType, name: item.name })))} />
       <div className="grid gap-4 sm:grid-cols-6">
