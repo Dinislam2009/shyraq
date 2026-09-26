@@ -21,12 +21,12 @@ function getInitialLocale():Locale{
  return "en";
 }
 
-export function I18nProvider({children}:{children:ReactNode}){
- const [locale,setLocaleState]=useState<Locale>("en");
+export function I18nProvider({children,initialLocale="en"}:{children:ReactNode;initialLocale?:Locale}){
+ const [locale,setLocaleState]=useState<Locale>(initialLocale);
 
  useEffect(()=>{
   const local=getInitialLocale();
-  setLocaleState(local);
+  if(local!==initialLocale)setLocaleState(local);
   void fetch("/api/preferences/locale",{cache:"no-store"})
    .then(async response=>{
     if(!response.ok)return null;
