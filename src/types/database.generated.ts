@@ -2229,7 +2229,9 @@ export type Database = {
         }
         Relationships: []
       }
-    Views: {}
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
       is_platform_moderator: { Args: never; Returns: boolean }
     }
