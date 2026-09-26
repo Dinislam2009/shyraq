@@ -182,7 +182,7 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
       <div className="space-y-2 p-3">
         {blocks.map((block, index) => (
           <div key={block.id} draggable className="flex gap-2" onDragStart={() => setDragged(block.id)} onDragOver={event => event.preventDefault()} onDrop={() => move(dragged || "", block.id)}>
-            <button type="button" title="Drag block" className="mt-2 w-7 cursor-grab rounded-lg text-slate-300 hover:bg-slate-50">⋮⋮</button>
+            <button type="button" title="Drag block" aria-label="Reorder block" className="mt-2 w-7 cursor-grab rounded-lg text-slate-300 hover:bg-slate-50">⋮⋮</button>
             <div className="min-w-0 flex-1">
               {block.type === "divider" ? (
                 <div className="flex items-center gap-2 py-3"><div className="h-px flex-1 bg-slate-200" /><button type="button" onClick={() => remove(block.id)} className="text-xs text-slate-400">Delete</button></div>
@@ -245,7 +245,7 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
                 </>
               )}
             </div>
-            <button type="button" onClick={() => remove(block.id)} className="mt-2 w-8 rounded-lg text-slate-300 hover:text-red-600">×</button>
+            <button type="button" onClick={() => remove(block.id)} aria-label="Delete block" title="Delete block" className="mt-2 w-8 rounded-lg text-slate-300 hover:text-red-600">×</button>
           </div>
         ))}
         <button type="button" onClick={() => addAfter(blocks[blocks.length - 1]?.id || "")} className="rounded-lg px-2 py-2 text-xs text-slate-400 hover:bg-slate-50">+ Add block</button>
