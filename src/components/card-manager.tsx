@@ -9,7 +9,10 @@ import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag, 
 import { toggleFavorite } from "@/app/collections/actions";
 import { useI18n } from "@/components/i18n-provider";
 
-type CardRow = {
+type CardColumnKey="front"|"back"|"kind"|"status"|"tags"|"markers"|"updated";
+const DEFAULT_COLUMNS:CardColumnKey[]=["front","back","kind","status","tags","markers","updated"];
+
+ type CardRow = {
   id: string;
   kind: string;
   content: {
@@ -39,9 +42,24 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [bulkEditorOpen, setBulkEditorOpen] = useState(false);
   const [viewName, setViewName] = useState("");
   const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string;tag:string;marker:string;markedOnly:boolean;suspendedOnly:boolean;sortPrimary:string;sortSecondary:string}>>([]);
+  const [tableView,setTableView]=useState(false);
+  const [columns,setColumns]=useState<CardColumnKey[]>(DEFAULT_COLUMNS);
+  const [columnEditorOpen,setColumnEditorOpen]=useState(false);
   const { t } = useI18n();
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  useEffect(()=>{
+   try{
+    const saved=localStorage.getItem("shyraq:card-columns:"+deckId);
+    if(saved){
+     const parsed=JSON.parse(saved);
+     if(Array.isArray(parsed))setColumns(parsed.filter((value):value is CardColumnKey=>DEFAULT_COLUMNS.includes(value)).concat(DEFAULT_COLUMNS.filter(value=>!parsed.includes(value))));
+    }
+   }catch{}
+  },[deckId]);
+  function persistColumns(next:CardColumnKey[]){setColumns(next);localStorage.setItem("shyraq:card-columns:"+deckId,JSON.stringify(next));}
+  const columnLabel=(key:CardColumnKey)=>({front:"Front",back:"Back",kind:"Kind",status:"Status",tags:"Tags",markers:"Markers",updated:"Updated"}[key]);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -191,6 +209,23 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
           <button type="button" onClick={saveView} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Save view</button>
           {savedViews.map(view=><button key={view.name} type="button" onClick={()=>applyView(view)} className="rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold">{view.name}</button>)}
         </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
+          <button type="button" onClick={()=>setTableView(false)} aria-pressed={!tableView} className={"rounded-lg border px-3 py-2 text-xs font-semibold "+(!tableView?"border-slate-950 bg-slate-950 text-white":"border-slate-200 bg-white")}>Editor view</button>
+          <button type="button" onClick={()=>setTableView(true)} aria-pressed={tableView} className={"rounded-lg border px-3 py-2 text-xs font-semibold "+(tableView?"border-slate-950 bg-slate-950 text-white":"border-slate-200 bg-white")}>Table view</button>
+          <button type="button" onClick={()=>setColumnEditorOpen(value=>!value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Columns</button>
+          {tableView?<span className="text-xs text-slate-400">Your column layout is saved on this device.</span>:null}
+        </div>
+        {columnEditorOpen&&<div className="mt-2 rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Visible columns & order</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+           {columns.map((key,index)=><div key={key} className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+            <label className="flex items-center gap-2 px-2 py-1 text-xs"><input type="checkbox" checked onChange={()=>{if(columns.length>1)persistColumns(columns.filter(value=>value!==key));}} className="h-3.5 w-3.5"/>{columnLabel(key)}</label>
+            <button type="button" disabled={index===0} onClick={()=>{const next=[...columns];[next[index-1],next[index]]=[next[index],next[index-1]];persistColumns(next);}} aria-label={"Move "+columnLabel(key)+" left"} className="rounded px-1.5 py-1 text-xs disabled:opacity-30">←</button>
+            <button type="button" disabled={index===columns.length-1} onClick={()=>{const next=[...columns];[next[index+1],next[index]]=[next[index],next[index+1]];persistColumns(next);}} aria-label={"Move "+columnLabel(key)+" right"} className="rounded px-1.5 py-1 text-xs disabled:opacity-30">→</button>
+           </div>)}
+           {DEFAULT_COLUMNS.filter(key=>!columns.includes(key)).map(key=><button key={key} type="button" onClick={()=>persistColumns([...columns,key])} className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs font-semibold">+ {columnLabel(key)}</button>)}
+          </div>
+        </div>}
         {canEdit&&<div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
           <label className="flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
             <input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} className="h-4 w-4 rounded border-slate-300" />
@@ -255,6 +290,34 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
         <div className="p-12 text-center">
           <p className="font-semibold">No matching cards</p>
           <p className="mt-2 text-sm text-slate-500">Change the search or filters.</p>
+        </div>
+      ) : tableView ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm" role="grid">
+            <thead><tr className="border-b border-slate-100 bg-slate-50 text-left text-xs text-slate-500">
+              <th className="w-10 px-4 py-3" scope="col"></th>
+              {columns.map(column=><th key={column} className="whitespace-nowrap px-4 py-3 font-semibold" scope="col">{columnLabel(column)}</th>)}
+              <th className="px-4 py-3" scope="col">Actions</th>
+            </tr></thead>
+            <tbody>
+              {filtered.map((card,index)=>{
+               const cell=(column:CardColumnKey)=>{
+                if(column==="front")return card.content?.front||"—";
+                if(column==="back")return card.content?.back||"—";
+                if(column==="kind")return card.kind||"basic";
+                if(column==="status")return card.content?.status||"—";
+                if(column==="tags")return Array.isArray(card.content?.tags)?card.content.tags.join(", "):"—";
+                if(column==="markers")return Array.isArray(card.content?.markers)?card.content.markers.join(", "):"—";
+                return card.updated_at?new Date(card.updated_at).toLocaleDateString():"—";
+               };
+               return <tr key={card.id} data-card-index={index} tabIndex={0} className="border-b border-slate-100 align-top focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-500">
+                <td className="px-4 py-3"><input type="checkbox" checked={selected.includes(card.id)} onChange={()=>toggle(card.id)} aria-label={"Select card "+(index+1)} className="h-4 w-4"/></td>
+                {columns.map(column=><td key={column} className="max-w-[20rem] px-4 py-3"><div className="line-clamp-3 break-words">{cell(column)}</div></td>)}
+                <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link><Link href={"/decks/"+deckId+"/cards/"+card.id+"/history"} className="text-xs font-semibold text-slate-500">History</Link></div></td>
+               </tr>;
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div>
