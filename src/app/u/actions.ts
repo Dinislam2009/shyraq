@@ -4,7 +4,7 @@ import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
 
 async function targetByUsername(supabase:any,username:string){
- const {data}=await supabase.from("profiles").select("id,username,display_name").eq("username",username.toLowerCase()).maybeSingle();
+ const {data}=await supabase.from("public_profiles").select("id,username,display_name").eq("username",username.toLowerCase()).maybeSingle();
  return data;
 }
 export async function setCreatorRelation(targetUsername:string,relation:"mute"|"block",enabled:boolean){
