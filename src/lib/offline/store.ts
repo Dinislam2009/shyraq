@@ -157,7 +157,7 @@ export async function deleteCachedMedia(path:string){
 }
 
 export async function getOfflineStorageUsage(){
- const [reviews,reviewCache,decks,cards,cardTemplates,mutations,media]=await Promise.all([
+ const [reviews,reviewCache,decks,cards,cardTemplates,tags,collections,mutations,media]=await Promise.all([
   offlineStore.reviews.count(),offlineStore.reviewCache.count(),offlineStore.decks.count(),
   offlineStore.cards.count(),offlineStore.cardTemplates.count(),offlineStore.tags.count(),offlineStore.collections.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
  ]);
