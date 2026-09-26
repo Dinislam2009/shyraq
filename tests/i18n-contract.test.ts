@@ -66,3 +66,12 @@ test("review runner labels have translations in the shared catalog",()=>{
   assert.ok(extendedTranslations[key as keyof typeof extendedTranslations],key+" must exist in the extended catalog");
  }
 });
+
+test("global translator protects editable and user-generated content",()=>{
+ const source=readFileSync(new URL("../src/components/global-translator.tsx",import.meta.url),"utf8");
+ assert.match(source,/contenteditable="true"/);
+ assert.match(source,/shyraq-anki-template/);
+ assert.match(source,/data-shyraq-i18n-ignore/);
+ assert.doesNotMatch(source,/rootElement\.textContent\s*=\s*translationLookup/);
+ assert.match(source,/\(\\d\+\)/);
+});
