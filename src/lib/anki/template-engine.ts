@@ -36,7 +36,7 @@ function renderCloze(value:string,clozeIndex:number|undefined,revealAll:boolean)
 
 function renderConditionals(source:string,fields:Record<string,string>){
  let output=source;
- const pattern=/\{\{([#^])\s*([^}]+?)\s*\}\}((?:(?!\{\{[#^/]).)*)\{\{\/\s*\2\s*\}\}/gs;
+ const pattern=/\{\{([#^])\s*([^}]+?)\s*\}\}([\s\S]*?)\{\{\/\s*\2\s*\}\}/g;
  let changed=true;
  while(changed){
   const before=output;
