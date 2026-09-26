@@ -181,6 +181,17 @@ create table if not exists public.public_deck_follows (
  user_id uuid not null references auth.users(id) on delete cascade, deck_id uuid not null references public.decks(id) on delete cascade,
  created_at timestamptz not null default now(), primary key(user_id,deck_id)
 );
+
+create table if not exists public.creator_relations (
+ user_id uuid not null references auth.users(id) on delete cascade,
+ creator_id uuid not null references auth.users(id) on delete cascade,
+ relation text not null check(relation in ('mute','block')),
+ created_at timestamptz not null default now(),
+ primary key(user_id,creator_id,relation),
+ check(user_id<>creator_id)
+);
+create index if not exists creator_relations_user_idx on public.creator_relations(user_id,relation,created_at desc);
+create index if not exists creator_relations_creator_idx on public.creator_relations(creator_id,relation,created_at desc);
 create table if not exists public.deck_copies (
  user_id uuid not null references auth.users(id) on delete cascade,
  source_deck_id uuid not null references public.decks(id) on delete cascade,
@@ -609,6 +620,7 @@ alter table public.error_logs enable row level security;
 alter table public.deck_reports enable row level security;
 alter table public.moderation_actions enable row level security;
 alter table public.public_deck_follows enable row level security;
+alter table public.creator_relations enable row level security;
 alter table public.deck_copies enable row level security;
 alter table public.deck_copy_update_history enable row level security;
 alter table public.backup_versions enable row level security;
@@ -802,6 +814,18 @@ drop policy if exists backup_versions_self on public.backup_versions;
 create policy backup_versions_self on public.backup_versions for all to authenticated
 using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
+
+drop policy if exists creator_relations_self_select on public.creator_relations;
+create policy creator_relations_self_select on public.creator_relations for select to authenticated
+using(user_id=(select auth.uid()));
+
+drop policy if exists creator_relations_self_insert on public.creator_relations;
+create policy creator_relations_self_insert on public.creator_relations for insert to authenticated
+with check(user_id=(select auth.uid()) and creator_id<>(select auth.uid()));
+
+drop policy if exists creator_relations_self_delete on public.creator_relations;
+create policy creator_relations_self_delete on public.creator_relations for delete to authenticated
+using(user_id=(select auth.uid()));
 
 drop policy if exists follows_self on public.public_deck_follows;
 create policy follows_self on public.public_deck_follows for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
