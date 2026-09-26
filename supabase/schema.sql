@@ -582,6 +582,7 @@ begin
  payload:=case when tg_op='DELETE' then to_jsonb(old) else to_jsonb(new) end;
  eid:=nullif(payload->>'id','')::uuid;
  if tg_table_name='review_states' or tg_table_name='card_tags' then eid:=nullif(payload->>'card_id','')::uuid; end if;
+ if tg_table_name='collection_cards' then eid:=nullif(payload->>'collection_id','')::uuid; end if;
  if payload ? 'user_id' then uid:=nullif(payload->>'user_id','')::uuid;
  elsif payload ? 'owner_id' then uid:=nullif(payload->>'owner_id','')::uuid;
  end if;
@@ -592,6 +593,9 @@ begin
  elsif tg_table_name='review_states' then
    select c.deck_id into deck_id_value from public.cards c where c.id=eid;
  end if;
+ if workspace_id_value is null and tg_table_name='collection_cards' and eid is not null then
+   select c.workspace_id into workspace_id_value from public.collections c where c.id=eid;
+ end if;
  if workspace_id_value is null and deck_id_value is not null then
    select d.workspace_id into workspace_id_value from public.decks d where d.id=deck_id_value;
  end if;
@@ -600,7 +604,7 @@ begin
  end if;
  operation_name:=case when tg_op='DELETE' then 'delete' else 'upsert' end;
 
- if eid is not null and workspace_id_value is not null and tg_table_name in ('decks','cards','card_templates','tags','collections') then
+ if eid is not null and workspace_id_value is not null and tg_table_name in ('decks','cards','card_templates','tags','collections','collection_cards') then
    insert into public.sync_changes(event_key,user_id,entity_type,entity_id,operation,payload)
    select gen_random_uuid(),wm.user_id,tg_table_name,eid,operation_name,payload
    from public.workspace_members wm
@@ -614,7 +618,7 @@ end $;
 revoke all on function private.record_sync_change() from public,anon,authenticated;
 
 do $$ declare t text; begin
- foreach t in array array['decks','card_templates','cards','tags','collections','review_states','review_events','media'] loop
+ foreach t in array array['decks','card_templates','cards','tags','collections','collection_cards','review_states','review_events','media'] loop
   execute format('drop trigger if exists %I_sync on public.%I',t,t);
   execute format('create trigger %I_sync after insert or update or delete on public.%I for each row execute function private.record_sync_change()',t,t);
  end loop;
