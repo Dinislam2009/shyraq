@@ -11,6 +11,18 @@ async function requireWritableWorkspace(supabase:any,userId:string,workspaceId:s
  if(!["owner","admin","editor"].includes(role))throw new Error("You do not have permission to edit this workspace.");
  return member;
 }
+async function requireDeckEditor(supabase:any,userId:string,deckId:string){
+ const {data:deck}=await supabase.from("decks").select("id,workspace_id").eq("id",deckId).maybeSingle();
+ if(!deck)throw new Error("Deck not found.");
+ const [{data:member},{data:override}]=await Promise.all([
+  supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",userId).maybeSingle(),
+  supabase.from("deck_members").select("role").eq("deck_id",deckId).eq("user_id",userId).maybeSingle()
+ ]);
+ const workspaceRole=String(member?.role||"");
+ const deckRole=String(override?.role||"");
+ if(!["owner","admin","editor"].includes(workspaceRole)&&deckRole!=="editor")throw new Error("You do not have permission to edit this deck.");
+ return deck;
+}
 
 export async function createDeck(formData:FormData):Promise<void>{
  const supabase=await createClient();
@@ -37,7 +49,7 @@ export async function updateDeck(id:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const name=String(formData.get("name")||"").trim().slice(0,120);if(!name)fail("/decks/"+id,"Deck name is required.");
  const {data:existing}=await supabase.from("decks").select("id,workspace_id,settings").eq("id",id).maybeSingle();if(!existing)fail("/decks/"+id,"Deck not found.");
- try{await requireWritableWorkspace(supabase,user.id,existing.workspace_id);}catch(error){fail("/decks/"+id,error instanceof Error?error.message:"Workspace access denied.");}
+ try{await requireDeckEditor(supabase,user.id,id);}catch(error){fail("/decks/"+id,error instanceof Error?error.message:"Workspace access denied.");}
  const metadata={category:String(formData.get("category")||"").trim().slice(0,60),subject:String(formData.get("subject")||"").trim().slice(0,80),language:String(formData.get("language")||"").trim().slice(0,20),difficulty:String(formData.get("difficulty")||"").trim().slice(0,30)};
  const settings={...(existing.settings||{}),...metadata};
  const visibility=["private","workspace","public"].includes(String(formData.get("visibility"))) ? String(formData.get("visibility")) : "private";
