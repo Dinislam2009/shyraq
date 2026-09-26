@@ -39,7 +39,7 @@ test("offline mirror includes card templates",()=>{
 
 test("offline storage usage counts templates independently",()=>{
  const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
- assert.match(store,/offlineStore\.cardTemplates\.count\(\),offlineStore\.tags\.count\(\),offlineStore\.collections\.count\(\),offlineStore\.collectionCards\.count\(\),reviewStates,mutations/);
+ assert.match(store,/cardTemplates,tags,collections,collectionCards,reviewStates,mutations,media/);
 });
 
 
