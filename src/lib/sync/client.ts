@@ -1,6 +1,6 @@
 "use client";
 import {
- cacheMirror,cacheMediaBlob,getCachedReviewSession,getCachedReviewPreferences,getDeviceId,getOfflineStorageUsage,
+ cacheMirror,cacheMediaBlob,pruneOfflineMediaCache,getCachedReviewSession,getCachedReviewPreferences,getDeviceId,getOfflineStorageUsage,
  getPendingMutations,offlineStore,queueMutation,removeMirroredEntity,setSyncMeta,cacheReviewPreferences,upsertOfflineReviewState,getOfflineReviewQueue
 } from "@/lib/offline/store";
 import type {OfflineReview,OfflineCardTemplate,OfflineReviewState} from "@/lib/offline/store";
@@ -236,6 +236,7 @@ export async function cacheMediaAsset(userId:string,path:string,url:string,name:
  if(!response.ok)throw new Error("Media download failed.");
  const blob=await response.blob();
  await cacheMediaBlob(userId,path,blob,name);
+ await pruneOfflineMediaCache(userId);
  return blob.size;
 }
 
