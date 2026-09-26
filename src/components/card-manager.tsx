@@ -47,6 +47,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [viewName, setViewName] = useState("");
   const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string;tag:string;marker:string;markedOnly:boolean;suspendedOnly:boolean;sortPrimary:string;sortSecondary:string}>>([]);
   const [tableView,setTableView]=useState(false);
+ const [tableScrollTop,setTableScrollTop]=useState(0);
   const [columns,setColumns]=useState<CardColumnKey[]>(DEFAULT_COLUMNS);
   const [columnEditorOpen,setColumnEditorOpen]=useState(false);
   const { t, formatDate } = useI18n();
@@ -178,6 +179,15 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
     }
   }
 
+  const TABLE_ROW_HEIGHT=88;
+  const TABLE_VIEWPORT_HEIGHT=640;
+  const shouldVirtualizeTable=tableView&&filtered.length>150;
+  const virtualStart=shouldVirtualizeTable?Math.max(0,Math.floor(tableScrollTop/TABLE_ROW_HEIGHT)-6):0;
+  const virtualCount=shouldVirtualizeTable?Math.ceil(TABLE_VIEWPORT_HEIGHT/TABLE_ROW_HEIGHT)+12:filtered.length;
+  const visibleTableRows=shouldVirtualizeTable?filtered.slice(virtualStart,virtualStart+virtualCount):filtered;
+  const virtualTopHeight=virtualStart*TABLE_ROW_HEIGHT;
+  const virtualBottomHeight=shouldVirtualizeTable?Math.max(0,(filtered.length-(virtualStart+visibleTableRows.length))*TABLE_ROW_HEIGHT):0;
+
   const kinds = [...new Set(cards.map(card => card.kind))];
 
   return (
@@ -305,7 +315,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
           <p className="mt-2 text-sm text-slate-500">Change the search or filters.</p>
         </div>
       ) : tableView ? (
-        <div className="overflow-x-auto">
+        <div className="max-h-[70vh] overflow-auto" onScroll={event=>setTableScrollTop(event.currentTarget.scrollTop)}>
           <table className="min-w-full text-sm" role="grid">
             <thead><tr className="border-b border-slate-100 bg-slate-50 text-left text-xs text-slate-500">
               <th className="w-10 px-4 py-3" scope="col"></th>
@@ -313,7 +323,8 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
               <th className="px-4 py-3" scope="col">Actions</th>
             </tr></thead>
             <tbody>
-              {filtered.map((card,index)=>{
+              {shouldVirtualizeTable&&<tr aria-hidden="true"><td colSpan={columns.length+2} style={{height:virtualTopHeight}} /></tr>}
+              {visibleTableRows.map((card,index)=>{
                const cell=(column:CardColumnKey)=>{
                 if(column==="front")return card.content?.front||"—";
                 if(column==="back")return card.content?.back||"—";
@@ -329,6 +340,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                 <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link><Link href={"/decks/"+deckId+"/cards/"+card.id+"/history"} className="text-xs font-semibold text-slate-500">History</Link></div></td>
                </tr>;
               })}
+              {shouldVirtualizeTable&&<tr aria-hidden="true"><td colSpan={columns.length+2} style={{height:virtualBottomHeight}} /></tr>}
             </tbody>
           </table>
         </div>
