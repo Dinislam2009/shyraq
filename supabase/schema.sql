@@ -889,7 +889,7 @@ drop policy if exists copies_self on public.deck_copies;
 create policy copies_self on public.deck_copies for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
 drop policy if exists invitations_admin_read on public.workspace_invitations;
-create policy invitations_admin_read on public.workspace_invitations for select to authenticated using((select private.is_workspace_member(workspace_id,'admin')) or email=lower((select auth.jwt()->>'email')));
+create policy invitations_admin_read on public.workspace_invitations for select to authenticated using((select private.is_workspace_member(workspace_id,'admin')) or email=lower(((select auth.jwt())->>'email')));
 drop policy if exists invitations_admin_write on public.workspace_invitations;
 create policy invitations_admin_write on public.workspace_invitations for insert to authenticated with check(invited_by=(select auth.uid()) and (select private.is_workspace_member(workspace_id,'admin')));
 drop policy if exists invitations_admin_update on public.workspace_invitations;
