@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { unzipSync } from "fflate";
 import { importCards } from "@/app/import/actions";
 import { ImportJobProgress } from "@/components/import-job-progress";
@@ -105,7 +105,7 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
     return true;
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     const filename = file?.name.toLowerCase() || "";
     const standard = !!file && !filename.endsWith(".zip") && !filename.endsWith(".apkg") && backupDecks.length === 0;
     if (!standard) return;
