@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag, bulkEditCards } from "@/app/decks/[id]/cards/actions";
+import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag, bulkEditCards, reorderCards } from "@/app/decks/[id]/cards/actions";
 import { toggleFavorite } from "@/app/collections/actions";
 import { useI18n } from "@/components/i18n-provider";
 
@@ -25,6 +25,7 @@ const DEFAULT_COLUMNS:CardColumnKey[]=["front","back","kind","status","tags","ma
   is_suspended?: boolean;
   is_marked?: boolean;
   updated_at?: string;
+  sort_order?: number;
 };
 
 export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { deckId: string; cards: CardRow[]; favoriteIds: string[]; canEdit?: boolean }) {
@@ -37,6 +38,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [suspendedOnly, setSuspendedOnly] = useState(false);
   const [sortPrimary, setSortPrimary] = useState("updated_desc");
   const [sortSecondary, setSortSecondary] = useState("none");
+  const [draggedCard,setDraggedCard]=useState<string|null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [bulkEditorOpen, setBulkEditorOpen] = useState(false);
@@ -101,7 +103,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       if(sort==="kind")return String(card.kind||"").toLowerCase();
       if(sort==="status")return String(card.content?.status||"").toLowerCase();
       if(sort==="created")return String(card.updated_at||"");
-      return String(card.updated_at||"");
+      return sort==="manual"?String(card.sort_order??0).padStart(12,"0"):String(card.updated_at||"");
     };
     const direction=(sort:string)=>sort==="name"||sort==="kind"||sort==="status"?1:-1;
     result.sort((a:any,b:any)=>{
@@ -201,7 +203,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
             <input value={markerFilter} onChange={event=>setMarkerFilter(event.target.value)} placeholder="Marker = exact" className="h-9 w-32 rounded-lg border border-slate-200 bg-white px-2 text-xs"/>
             <label className="flex items-center gap-2 rounded-lg bg-white px-2 py-2 text-xs"><input type="checkbox" checked={markedOnly} onChange={event=>setMarkedOnly(event.target.checked)} className="h-4 w-4"/>Marked</label>
             <label className="flex items-center gap-2 rounded-lg bg-white px-2 py-2 text-xs"><input type="checkbox" checked={suspendedOnly} onChange={event=>setSuspendedOnly(event.target.checked)} className="h-4 w-4"/>Suspended</label>
-            <select value={sortPrimary} onChange={event=>setSortPrimary(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs" aria-label="Primary sort"><option value="updated_desc">Updated ↓</option><option value="name">Name A–Z</option><option value="kind">Kind A–Z</option><option value="status">Status A–Z</option></select><select value={sortSecondary} onChange={event=>setSortSecondary(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs" aria-label="Secondary sort"><option value="none">No secondary sort</option><option value="name">Then name</option><option value="kind">Then kind</option><option value="status">Then status</option></select><button type="button" onClick={()=>{setQuery("");setKind("all");setStatus("all");setTagFilter("");setMarkerFilter("");setMarkedOnly(false);setSuspendedOnly(false);setSortPrimary("updated_desc");setSortSecondary("none");}} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Reset</button>
+            <select value={sortPrimary} onChange={event=>setSortPrimary(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs" aria-label="Primary sort"><option value="manual">Manual order</option><option value="updated_desc">Updated ↓</option><option value="name">Name A–Z</option><option value="kind">Kind A–Z</option><option value="status">Status A–Z</option></select><select value={sortSecondary} onChange={event=>setSortSecondary(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs" aria-label="Secondary sort"><option value="none">No secondary sort</option><option value="name">Then name</option><option value="kind">Then kind</option><option value="status">Then status</option></select><button type="button" onClick={()=>{setQuery("");setKind("all");setStatus("all");setTagFilter("");setMarkerFilter("");setMarkedOnly(false);setSuspendedOnly(false);setSortPrimary("updated_desc");setSortSecondary("none");}} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Reset</button>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
@@ -314,7 +316,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                 if(column==="markers")return Array.isArray(card.content?.markers)?card.content.markers.join(", "):"—";
                 return card.updated_at?new Date(card.updated_at).toLocaleDateString():"—";
                };
-               return <tr key={card.id} data-card-index={index} tabIndex={0} className="border-b border-slate-100 align-top focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-500">
+               return <tr key={card.id} draggable={canEdit&&sortPrimary==="manual"} onDragStart={()=>setDraggedCard(card.id)} onDragOver={event=>{if(canEdit&&sortPrimary==="manual")event.preventDefault();}} onDrop={()=>{if(draggedCard&&sortPrimary==="manual"){const order=filtered.map(item=>item.id);const from=order.indexOf(draggedCard);const to=order.indexOf(card.id);if(from>=0&&to>=0&&from!==to){const [moved]=order.splice(from,1);order.splice(to,0,moved);void reorderCards(deckId,order);}setDraggedCard(null);}}} data-card-index={index} tabIndex={0} className="border-b border-slate-100 align-top focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-500">
                 <td className="px-4 py-3"><input type="checkbox" checked={selected.includes(card.id)} onChange={()=>toggle(card.id)} aria-label={"Select card "+(index+1)} className="h-4 w-4"/></td>
                 {columns.map(column=><td key={column} className="max-w-[20rem] px-4 py-3"><div className="line-clamp-3 break-words">{cell(column)}</div></td>)}
                 <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link><Link href={"/decks/"+deckId+"/cards/"+card.id+"/history"} className="text-xs font-semibold text-slate-500">History</Link></div></td>
@@ -326,7 +328,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       ) : (
         <div>
           {filtered.map((card, index) => (
-            <div key={card.id} data-card-index={index} tabIndex={0} style={{contentVisibility:"auto",containIntrinsicSize:"520px"}} className={"p-6 outline-none focus-visible:ring-2 focus-visible:ring-slate-500 " + (index ? "border-t border-black/[0.05]" : "")}>
+            <div key={card.id} draggable={canEdit&&sortPrimary==="manual"} onDragStart={()=>setDraggedCard(card.id)} onDragOver={event=>{if(canEdit&&sortPrimary==="manual")event.preventDefault();}} onDrop={()=>{if(draggedCard&&sortPrimary==="manual"){const order=filtered.map(item=>item.id);const from=order.indexOf(draggedCard);const to=order.indexOf(card.id);if(from>=0&&to>=0&&from!==to){const [moved]=order.splice(from,1);order.splice(to,0,moved);void reorderCards(deckId,order);}setDraggedCard(null);}}} data-card-index={index} tabIndex={0} style={{contentVisibility:"auto",containIntrinsicSize:"520px"}} className={"p-6 outline-none focus-visible:ring-2 focus-visible:ring-slate-500 " + (index ? "border-t border-black/[0.05]" : "")}>
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   {canEdit&&<input type="checkbox" checked={selected.includes(card.id)} onChange={() => toggle(card.id)} className="mt-1 h-4 w-4 rounded border-slate-300" />}
