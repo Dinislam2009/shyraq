@@ -305,3 +305,20 @@ Review state IDs pagination арқылы толық оқылып, fixed 5000 cap
 - large dataset contract test;
 - CI;
 - statistics/dashboard smoke test.
+
+## 13. HIGH — Bulk card duplicate detection previously had a 50,000-row cap
+
+**Status:** OPEN — FIX IN PROGRESS  
+**Priority:** HIGH  
+**Detected:** 2026-09-26
+
+### Мәселе
+`createBulkCards()` бұрын owner карталарын `limit(50000)` арқылы оқып, duplicate detection-ді толық емес дерекпен орындауы мүмкін еді.
+
+### Қажет әрекет
+Existing cards read pagination арқылы толық оқылуы керек.
+
+### Қайта тексеру
+- contract test;
+- CI;
+- large-deck duplicate import smoke test.
