@@ -558,7 +558,7 @@ Target principle:
 - [x] Media reuse across cards
 - [x] Media deletion/orphan cleanup
 - [x] Media compression
-- [ ] Image optimization
+- [x] Image optimization
 - [x] Audio/video metadata display
 - [x] Offline media cache
 
@@ -960,9 +960,9 @@ Legacy tables from the old project must remain isolated from the Shyraq applicat
 - [ ] Image optimization
 - [ ] Large-deck virtualization
 - [ ] Large-card-list virtualization
-- [ ] Large Anki import optimization
+- [x] Large Anki import optimization
 - [x] Large media backup optimization
-- [ ] Cold-start optimization
+- [x] Cold-start optimization
 - [x] Offline cache optimization
 
 Target:
@@ -1212,10 +1212,10 @@ Before calling Shyraq production-ready:
 - [ ] Kazakh UI complete
 - [ ] Russian UI complete
 - [ ] English UI complete
-- [ ] Light mode
-- [ ] Dark mode
-- [ ] Responsive layout
-- [ ] Keyboard navigation
+- [x] Light mode
+- [x] Dark mode
+- [x] Responsive layout
+- [x] Keyboard navigation
 - [ ] Accessibility audit
 
 ### Quality
