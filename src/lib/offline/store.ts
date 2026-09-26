@@ -28,7 +28,7 @@ export type OfflineCardTemplate={
 };
 
 export type OfflineMutation={
- id:string;userId:string;entityType:"decks"|"cards"|"card_templates"|"tags"|"collections";
+ id:string;userId:string;entityType:"decks"|"cards"|"card_templates"|"tags"|"collections"|"collection_cards";
  operation:"upsert"|"delete";entityId:string;payload:Record<string,unknown>;
  createdAt:string;attempts:number;status:"pending"|"failed";lastError?:string;
 };
