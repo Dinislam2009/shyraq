@@ -1,6 +1,6 @@
 export type SupportedLocale = "kk" | "ru" | "en";
 
-export const extendedTranslations: Record<string, Record<"kk" | "ru" | "en", string>> = {
+export const extendedTranslations = {
   "Add card": { kk: "Карта қосу", ru: "Добавить карточку", en: "Add card" },
   "Edit card": { kk: "Картаны өңдеу", ru: "Редактировать карточку", en: "Edit card" },
   "Full editor with formatting, media, templates and live preview.": { kk: "Пішімдеу, медиа, шаблондар және тікелей алдын ала қарауы бар толық редактор.", ru: "Полный редактор с форматированием, медиа, шаблонами и предпросмотром.", en: "Full editor with formatting, media, templates and live preview." },
