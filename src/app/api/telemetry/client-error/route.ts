@@ -26,7 +26,8 @@ export async function POST(request:Request){
   const metadata=body.metadata&&typeof body.metadata==="object"?body.metadata:{};
   const supabase=await createClient();
   const {data:{user}}=await supabase.auth.getUser();
-  const {error}=await supabase.from("error_logs").insert({user_id:user?.id??null,source,level,message,digest:digest||null,route:routePath||null,metadata});
+  if(!user)return NextResponse.json({ok:true});
+  const {error}=await supabase.from("error_logs").insert({user_id:user.id,source,level,message,digest:digest||null,route:routePath||null,metadata});
   if(error)return NextResponse.json({ok:false},{status:503});
   return NextResponse.json({ok:true});
  }catch{return NextResponse.json({ok:false},{status:400});}
