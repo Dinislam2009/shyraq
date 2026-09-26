@@ -18,6 +18,7 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
 
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
+ const {data:currentProfile}=user?await supabase.from("profiles").select("display_name,username").eq("id",user.id).maybeSingle():{data:null};
 
  const permission=await getEffectiveDeckRole(id);
  const canEdit=permission.deckRole==="editor";
@@ -89,7 +90,7 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
     <div className="mt-6 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
      <div>
       <div className="mb-4 flex items-center gap-3">{deck.settings?.coverUrl?<img src={String(deck.settings.coverUrl)} alt="" className="h-16 w-28 rounded-xl object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold">S</div>}
-       {user&&<CollaborationPresence deckId={id} userId={user.id}/>}
+       {user&&<CollaborationPresence deckId={id} userId={user.id} displayName={String(currentProfile?.display_name||currentProfile?.username||"Member")} role={String(permission.deckRole||"viewer")}/>}
       </div>
       <h1 className="text-3xl font-semibold tracking-tight">{deck.name}</h1>
       <p className="mt-2 text-sm text-slate-500">{deck.description||"No description"}</p>
