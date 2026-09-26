@@ -1,6 +1,8 @@
 import Link from "next/link";
 import {AppShell} from "@/components/app-shell";
 import {createClient} from "@/lib/supabase/server";
+import {getRequestLocale} from "@/lib/i18n-server";
+import {formatDate,formatDateTime} from "@/lib/i18n-format";
 import {createBackupVersion,deleteBackupVersion,restoreBackupVersion,updateBackupSchedule} from "@/app/export/actions";
 import {summarizeBackupPayload} from "@/lib/backup/summary";
 import {createHash} from "node:crypto";
@@ -8,6 +10,7 @@ import {createHash} from "node:crypto";
 export default async function ExportPage({searchParams}:{searchParams?:Promise<{error?:string;backup?:string;restored?:string;preview?:string}>}){
  const params=searchParams?await searchParams:{};
  const supabase=await createClient();
+ const locale=await getRequestLocale();
  const {data:{user}}=await supabase.auth.getUser();
  const {data:versions}=user?await supabase.from("backup_versions").select("id,storage_path,size_bytes,checksum,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30):{data:[]};
  const {data:schedule}=user?await supabase.from("backup_schedules").select("frequency,enabled,next_run_at,last_run_at,last_error").eq("user_id",user.id).maybeSingle():{data:null};
@@ -66,7 +69,7 @@ export default async function ExportPage({searchParams}:{searchParams?:Promise<{
   </div>
   <section className="mt-8 rounded-2xl border border-black/[0.06] bg-white">
    <div className="border-b border-black/[0.06] p-5"><h2 className="font-semibold">Backup history</h2><p className="mt-1 text-sm text-slate-400">Private snapshots are versioned and checksum-protected.</p></div>
-   {(versions??[]).length?<div className="divide-y divide-slate-100">{(versions??[]).map((version:any)=><div key={version.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold">{new Date(version.created_at).toLocaleString()}</p><p className="mt-1 text-xs text-slate-400">{Math.round(Number(version.size_bytes||0)/1024)} KB · SHA-256 {String(version.checksum||"").slice(0,16)}…</p></div><div className="flex flex-wrap gap-2"><a href={"/api/backup/versions/"+version.id} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold">Download</a><Link href={"/export?preview="+version.id} className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white">Preview & restore</Link><form action={deleteBackupVersion.bind(null,version.id)}><button className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-700">Delete</button></form></div></div>)}</div>:<div className="p-8 text-center text-sm text-slate-400">No stored backup versions yet.</div>}
+   {(versions??[]).length?<div className="divide-y divide-slate-100">{(versions??[]).map((version:any)=><div key={version.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold">{formatDateTime(version.created_at,locale)}</p><p className="mt-1 text-xs text-slate-400">{Math.round(Number(version.size_bytes||0)/1024)} KB · SHA-256 {String(version.checksum||"").slice(0,16)}…</p></div><div className="flex flex-wrap gap-2"><a href={"/api/backup/versions/"+version.id} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold">Download</a><Link href={"/export?preview="+version.id} className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white">Preview & restore</Link><form action={deleteBackupVersion.bind(null,version.id)}><button className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-700">Delete</button></form></div></div>)}</div>:<div className="p-8 text-center text-sm text-slate-400">No stored backup versions yet.</div>}
   </section>
   <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">Media files remain private in Storage. ZIP backups include media up to the endpoint safety limit; JSON snapshots preserve database data and integrity metadata.</div>
   <div className="mt-6 flex flex-wrap gap-2"><Link href="/import" className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Import JSON / CSV</Link><Link href="/import/anki" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold">Import Anki .apkg</Link></div>
