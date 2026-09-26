@@ -6,7 +6,7 @@ export async function GET(request:NextRequest){
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return new Response("Unauthorized",{status:401});
  const params=request.nextUrl.searchParams;
- let query=supabase.from("review_events").select("id,event_key,card_id,reviewed_at,rating,elapsed_ms,device_id,client_sequence,metadata,previous_state,next_state,cards!inner(deck_id)").eq("user_id",user.id).order("reviewed_at",{ascending:true}).limit(10000);
+ let query=supabase.from("review_events").select("id,event_key,card_id,reviewed_at,rating,elapsed_ms,device_id,client_sequence,metadata,previous_state,next_state,cards!inner(deck_id)").eq("user_id",user.id).order("reviewed_at",{ascending:true}).order("id",{ascending:true});
  if(["again","hard","good","easy"].includes(String(params.get("rating")||"")))query=query.eq("rating",String(params.get("rating")));
  if(params.get("deck"))query=query.eq("cards.deck_id",String(params.get("deck")));
  if(params.get("card"))query=query.eq("card_id",String(params.get("card")));
@@ -14,7 +14,13 @@ export async function GET(request:NextRequest){
  const from=params.get("from"),to=params.get("to");
  if(from&&/^\d{4}-\d{2}-\d{2}$/.test(from))query=query.gte("reviewed_at",new Date(from).toISOString());
  if(to&&/^\d{4}-\d{2}-\d{2}$/.test(to))query=query.lt("reviewed_at",new Date(new Date(to).getTime()+86400000).toISOString());
- const {data,error}=await query;
- if(error)return NextResponse.json({error:error.message},{status:500});
- return new Response(JSON.stringify({format:"shyraq-review-history-v1",exportedAt:new Date().toISOString(),userId:user.id,eventCount:(data??[]).length,events:data??[]},null,2),{headers:{"Content-Type":"application/json; charset=utf-8","Content-Disposition":'attachment; filename="shyraq-review-history.json"'}});
+ const events:any[]=[];
+ for(let from=0;;from+=1000){
+  const {data,error}=await query.range(from,from+999);
+  if(error)return NextResponse.json({error:error.message},{status:500});
+  const batch=data??[];
+  events.push(...batch);
+  if(batch.length<1000)break;
+ }
+ return new Response(JSON.stringify({format:"shyraq-review-history-v1",exportedAt:new Date().toISOString(),userId:user.id,eventCount:events.length,events},null,2),{headers:{"Content-Type":"application/json; charset=utf-8","Content-Disposition":'attachment; filename="shyraq-review-history.json"'}});
 }
