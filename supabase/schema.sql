@@ -121,7 +121,18 @@ create table if not exists public.review_events (
  elapsed_ms integer, previous_state jsonb not null default '{}'::jsonb, next_state jsonb not null default '{}'::jsonb,
  metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), unique(device_id,client_sequence)
 );
-alter table public.sync_conflicts add constraint sync_conflicts_event_key_fkey foreign key(event_key) references public.review_events(event_key) on delete cascade;
+do $
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname='sync_conflicts_event_key_fkey'
+      and conrelid='public.sync_conflicts'::regclass
+  ) then
+    alter table public.sync_conflicts
+      add constraint sync_conflicts_event_key_fkey
+      foreign key(event_key) references public.review_events(event_key) on delete cascade;
+  end if;
+end $;
 
 create table if not exists public.media (
  id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
