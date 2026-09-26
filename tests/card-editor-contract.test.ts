@@ -154,3 +154,12 @@ test("CardEditor block editor exposes safe visual editing mode",()=>{
  assert.match(block,/document\.execCommand\("bold"\)/);
  assert.match(block,/aria-multiline/);
 });
+
+
+test("offline media cache has an automatic size cap",()=>{
+ const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
+ const sync=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
+ assert.match(store,/pruneOfflineMediaCache/);
+ assert.match(store,/150\*1024\*1024/);
+ assert.match(sync,/await pruneOfflineMediaCache\(userId\)/);
+});
