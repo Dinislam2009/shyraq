@@ -24,15 +24,17 @@ export type ParsedAnki={
 function decode(value:Uint8Array){return new TextDecoder().decode(value);}
 
 function convertAnkiTemplate(source:string){
- return String(source||"")
+ let output=String(source||"")
   .replace(/\{\{\s*FrontSide\s*\}\}/gi,"{{front}}")
   .replace(/\{\{\s*BackSide\s*\}\}/gi,"{{back}}")
   .replace(/\{\{\s*Front\s*\}\}/gi,"{{front}}")
-  .replace(/\{\{\s*Back\s*\}\}/gi,"{{back}}")
-  .replace(/\{\{\s*cloze\s*:\s*([^}]+)\}\}/gi,"{{$1}}")
-  .replace(/\{\{\s*text\s*:\s*([^}]+)\}\}/gi,"{{$1}}")
-  .replace(/\{\{\s*hint\s*:\s*([^}]+)\}\}/gi,"{{$1}}")
-  .replace(/\{\{\s*type\s*:\s*([^}]+)\}\}/gi,"{{$1}}");
+  .replace(/\{\{\s*Back\s*\}\}/gi,"{{back}}");
+ for(let pass=0;pass<6;pass++){
+  const next=output.replace(/\{\{\s*(?:cloze|text|hint|type|field)\s*:\s*([^}]+)\}\}/gi,"{{$1}}");
+  if(next===output)break;
+  output=next;
+ }
+ return output;
 }
 
 function normalizeHtml(value:string){
