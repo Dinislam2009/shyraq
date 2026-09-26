@@ -1,7 +1,12 @@
 import {cookies} from "next/headers";
-import type {Locale} from "@/lib/i18n";
+import {dictionaries,type Locale,type TranslationKey} from "@/lib/i18n";
 
 export async function getRequestLocale():Promise<Locale>{
  const value=(await cookies()).get("shyraq-locale")?.value;
  return value==="kk"||value==="ru"||value==="en"?value:"en";
+}
+
+export async function getServerI18n(){
+ const locale=await getRequestLocale();
+ return {locale,t:(key:TranslationKey)=>dictionaries[locale][key]??dictionaries.en[key]};
 }
