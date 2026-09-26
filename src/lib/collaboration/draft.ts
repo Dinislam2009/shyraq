@@ -43,7 +43,7 @@ export function useCardDraftChannel(deckId:string,cardId:string|undefined,userId
  },[]);
 
  const dismissRemote=useCallback(()=>setRemoteDraft(null),[]);
- return {remoteDraft,publish,dismissRemote,connected:Boolean(channelRef.current)};
+ return {remoteDraft,publish,dismissRemote};
 }
 
 
