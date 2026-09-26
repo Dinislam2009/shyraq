@@ -392,7 +392,7 @@ Offline functionality is a core requirement, not an optional enhancement.
 - [x] Device ID
 - [x] Pending event status
 - [x] Full local mirror of decks/cards across personal and shared workspaces
-- [ ] Full cold-start offline application
+- [x] Full cold-start offline application
 - [x] Offline card creation
 - [x] Offline card editing
 - [x] Offline deck management
@@ -732,8 +732,8 @@ Collaboration is planned after the public sharing foundation.
 
 ## Full collaboration target
 
-- [ ] Realtime card editing
-- [ ] Realtime deck editing
+- [x] Realtime card editing
+- [x] Realtime deck editing
 - [x] Presence indicators
 - [x] Active editor indicators
 - [x] Cursor/selection presence where practical
