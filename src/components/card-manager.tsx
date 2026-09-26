@@ -357,17 +357,9 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
 
                 <div className="flex flex-wrap items-center gap-3">
                   {canEdit ? <><Link href={"/decks/"+deckId+"/cards/"+card.id+"/edit"} className="text-xs font-semibold text-slate-500">Edit</Link><Link href={"/decks/"+deckId+"/cards/"+card.id+"/history"} className="text-xs font-semibold text-slate-500">History</Link></> : null}
-                  <form action={toggleFavorite.bind(null, card.id, deckId)}>
-                    <button className={"text-xs font-semibold " + (favoriteSet.has(card.id) ? "text-amber-600" : "text-slate-400")}>
-                      {favoriteSet.has(card.id) ? "★ Favorite" : "☆ Favorite"}
-                    </button>
-                  </form>
-                  {canEdit ? <form action={setCardFlag.bind(null, deckId, card.id, "is_marked", !card.is_marked)}>
-                    <button className="text-xs font-semibold text-slate-500">{card.is_marked ? "Unmark" : "Mark"}</button>
-                  </form> : null}
-                  {canEdit ? <form action={setCardFlag.bind(null, deckId, card.id, "is_suspended", !card.is_suspended)}>
-                    <button className="text-xs font-semibold text-slate-500">{card.is_suspended ? "Unsuspend" : "Suspend"}</button>
-                  </form> : null}
+                  <OptimisticToggleForm action={toggleFavorite.bind(null, card.id, deckId)} initialActive={favoriteSet.has(card.id)} activeClassName="text-amber-600" inactiveClassName="text-slate-400">{(active,pending)=>pending?"Saving…":active?"★ Favorite":"☆ Favorite"}</OptimisticToggleForm>
+                  {canEdit ? <OptimisticToggleForm action={setCardFlag.bind(null, deckId, card.id, "is_marked", !card.is_marked)} initialActive={Boolean(card.is_marked)}>{(active,pending)=>pending?"Saving…":active?"Unmark":"Mark"}</OptimisticToggleForm> : null}
+                  {canEdit ? <OptimisticToggleForm action={setCardFlag.bind(null, deckId, card.id, "is_suspended", !card.is_suspended)} initialActive={Boolean(card.is_suspended)}>{(active,pending)=>pending?"Saving…":active?"Unsuspend":"Suspend"}</OptimisticToggleForm> : null}
                   {canEdit ? <form action={deleteCard.bind(null, deckId, card.id)}>
                     <button className="text-xs font-medium text-slate-400 hover:text-red-600">Delete</button>
                   </form> : null}
