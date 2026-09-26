@@ -24,17 +24,17 @@ for(const file of files){
  const source=stripComments(await readFile(file,"utf8"));
  const rel=relative(process.cwd(),file);
 
- for(const match of source.matchAll(//g)){
+ for(const match of source.matchAll(/<img\b([\s\S]*?)>/g)){
   const attrs=match[1];
   if(!/\balt\s*=/.test(attrs))failures.push(rel+": img without alt");
  }
- for(const match of source.matchAll(/([\s\S]*?)/g)){
-  const attrs=match[1],body=match[2];
-  if(!/\baria-label\s*=|\btitle\s*=/.test(attrs)&&!body.replace(/\{[\s\S]*?\}/g,"").trim()){
-   failures.push(rel+": button without accessible name");
-  }
+ for(const match of source.matchAll(/<button\b([\s\S]*?)>([\s\S]*?)<\/button>/g)){
+  const attrs=match[1];
+  const body=match[2];
+  const visibleBody=body.replace(/\{[\s\S]*?\}/g,"").replace(/<[^>]+>/g,"").trim();
+  if(!/\baria-label\s*=|\btitle\s*=/.test(attrs)&&!visibleBody)failures.push(rel+": button without accessible name");
  }
- for(const match of source.matchAll(/]*)>/g)){
+ for(const match of source.matchAll(/<input\b([^>]*)>/g)){
   const attrs=match[1];
   if(/type\s*=\s*["'](?:hidden|checkbox|radio)["']/.test(attrs))continue;
   if(!/\baria-label\s*=|\bplaceholder\s*=|\bid\s*=/.test(attrs))failures.push(rel+": input without label/placeholder/id");
