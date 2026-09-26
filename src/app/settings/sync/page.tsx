@@ -36,7 +36,7 @@ function State({title,state,at}:{title:string;state:any;at:string|null}){return 
 async function HealthCard(){
  const supabase=await createClient();
  const started=Date.now();
- const {error}=await supabase.from("profiles").select("id",{head:true,count:"exact"});
+ const {error}=await supabase.from("public_profiles").select("id",{head:true,count:"exact"});
  const ok=!error;
  return <section className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-5"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold">Service health</p><p className="mt-1 text-sm text-slate-500">Live application database check.</p></div><span className={"rounded-full px-3 py-1 text-xs font-semibold "+(ok?"bg-emerald-50 text-emerald-700":"bg-red-50 text-red-700")}>{ok?"Healthy":"Degraded"}</span></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-xs text-slate-400">Database</p><p className="mt-1 font-semibold">{ok?"Connected":"Unavailable"}</p></div><div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-xs text-slate-400">Latency</p><p className="mt-1 font-semibold">{Date.now()-started} ms</p></div></div></section>;
 }
