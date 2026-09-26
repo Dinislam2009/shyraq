@@ -16,6 +16,6 @@ test("edit page restores card metadata into CardEditor",()=>{
 test("CardEditor exposes persistent marker and status fields",()=>{
  assert.match(editor,/name="markers"/);
  assert.match(editor,/name="status"/);
- assert.match(cardActions,/const markers=String(formData.get("markers")/);
- assert.match(cardActions,/const status=String(formData.get("status")/);
+ assert.ok(cardActions.includes('const markers=String(formData.get("markers")'));
+ assert.ok(cardActions.includes('const status=String(formData.get("status")'));
 });
