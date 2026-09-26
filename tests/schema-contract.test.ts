@@ -18,7 +18,8 @@ test("schema contains application-level tables used by server actions",()=>{
   "decks","cards","card_templates","collections","comments","comment_mentions",
   "activity_feed","deck_versions","deck_members","collection_members",
   "workspace_audit_logs","moderators","notification_preferences",
-  "saved_searches","saved_filters","notifications","review_devices"
+  "saved_searches","saved_filters","notifications","review_devices",
+  "backup_versions","moderation_actions","deck_copy_update_history"
  ]) tableBlock(table);
 });
 
@@ -87,4 +88,14 @@ test("public collections and their links have public read RLS",()=>{
 test("comment mention notifications surface RPC failures",()=>{
  assert.match(collaborationActions,/const \{error:notificationError\}=await supabase\.rpc\("create_notification"/);
  assert.match(collaborationActions,/if\(notificationError\)[\s\S]*Mention notification failed/);
+});
+
+
+test("secondary feature tables have owner-scoped RLS contracts",()=>{
+ assert.match(schema,/alter table public\.backup_versions enable row level security/);
+ assert.match(schema,/create policy backup_versions_self[\s\S]*user_id=\(select auth\.uid\(\)\)/);
+ assert.match(schema,/alter table public\.deck_copy_update_history enable row level security/);
+ assert.match(schema,/create policy deck_copy_update_history_self[\s\S]*user_id=\(select auth\.uid\(\)\)/);
+ assert.match(schema,/alter table public\.moderation_actions enable row level security/);
+ assert.match(schema,/create policy moderation_actions_insert[\s\S]*moderator_id=\(select auth\.uid\(\)\)/);
 });
