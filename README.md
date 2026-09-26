@@ -894,7 +894,7 @@ No paid notification tiers.
 - [x] Reduced motion support
 - [x] High-contrast support
 - [x] Proper semantic headings
-- [ ] ARIA audit
+- [x] ARIA audit
 - [x] Color-independent state indicators
 - [x] Accessible media controls
 
