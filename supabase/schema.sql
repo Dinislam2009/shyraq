@@ -1361,7 +1361,7 @@ declare
   table_name text;
   policy_name text;
 begin
-  foreach table_name in array[
+  foreach table_name in array ARRAY[
     '_prisma_migrations','card_states','flashcard_decks','flashcard_reviews','flashcards','focus_sessions','projects','habits','habit_completions','tasks','users','sync_operations'
   ] loop
     if to_regclass(format('public.%I', table_name)) is null then
