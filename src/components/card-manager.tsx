@@ -139,7 +139,6 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
     setQuery(view.query);setKind(view.kind);setStatus(view.status);setTagFilter(view.tag||"");setMarkerFilter(view.marker||"");setMarkedOnly(Boolean(view.markedOnly));setSuspendedOnly(Boolean(view.suspendedOnly));setSortPrimary(view.sortPrimary||"updated_desc");setSortSecondary(view.sortSecondary||"none");
   }
 
-  const selectedVisible = filtered.filter(card => selected.includes(card.id));
   const allVisibleSelected = filtered.length > 0 && filtered.every(card => selected.includes(card.id));
 
   function emitEditorPresence(cardId:string,field:string,element:HTMLTextAreaElement){
