@@ -19,13 +19,15 @@ export type OfflineCard={
  createdAt:string;updatedAt:string;
 };
 
+export type OfflineTag={id:string;userId:string;workspaceId:string;name:string};
+export type OfflineCollection={id:string;userId:string;workspaceId:string;ownerId:string;name:string;kind:string;description:string;rule:unknown;sortMode:string;isPublic:boolean;isFeatured:boolean;createdAt:string};
 export type OfflineCardTemplate={
  id:string;userId:string;deckId:string;name:string;frontTemplate:string;backTemplate:string;
  css:string;fieldSchema:unknown;createdAt:string;updatedAt:string;
 };
 
 export type OfflineMutation={
- id:string;userId:string;entityType:"decks"|"cards"|"card_templates";
+ id:string;userId:string;entityType:"decks"|"cards"|"card_templates"|"tags"|"collections";
  operation:"upsert"|"delete";entityId:string;payload:Record<string,unknown>;
  createdAt:string;attempts:number;status:"pending"|"failed";lastError?:string;
 };
@@ -58,6 +60,8 @@ class OfflineStore extends Dexie{
  decks!:Table<OfflineDeck,string>;
  cards!:Table<OfflineCard,string>;
  cardTemplates!:Table<OfflineCardTemplate,string>;
+ tags!:Table<OfflineTag,string>;
+ collections!:Table<OfflineCollection,string>;
  mutations!:Table<OfflineMutation,string>;
  mediaCache!:Table<OfflineMediaCache,string>;
  syncMeta!:Table<OfflineSyncMeta,string>;
@@ -80,6 +84,8 @@ class OfflineStore extends Dexie{
    decks:"id,userId,workspaceId,updatedAt",
    cards:"id,userId,deckId,updatedAt,sortOrder",
    cardTemplates:"id,userId,deckId,updatedAt",
+   tags:"id,userId,workspaceId,name",
+   collections:"id,userId,workspaceId,createdAt",
    mutations:"id,userId,entityType,operation,status,createdAt",
    mediaCache:"path,userId,savedAt",
    syncMeta:"key,userId,cursor,lastSyncAt"
@@ -117,6 +123,8 @@ export async function removeMirroredEntity(entityType:string,entityId:string){
  if(entityType==="decks")await offlineStore.decks.delete(entityId);
  if(entityType==="cards")await offlineStore.cards.delete(entityId);
  if(entityType==="card_templates")await offlineStore.cardTemplates.delete(entityId);
+ if(entityType==="tags")await offlineStore.tags.delete(entityId);
+ if(entityType==="collections")await offlineStore.collections.delete(entityId);
 }
 
 export async function getSyncMeta(userId:string){
@@ -151,10 +159,10 @@ export async function deleteCachedMedia(path:string){
 export async function getOfflineStorageUsage(){
  const [reviews,reviewCache,decks,cards,cardTemplates,mutations,media]=await Promise.all([
   offlineStore.reviews.count(),offlineStore.reviewCache.count(),offlineStore.decks.count(),
-  offlineStore.cards.count(),offlineStore.cardTemplates.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
+  offlineStore.cards.count(),offlineStore.cardTemplates.count(),offlineStore.tags.count(),offlineStore.collections.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
  ]);
  return {
-  reviews,reviewCache,decks,cards,cardTemplates,mutations,mediaFiles:media.length,
+  reviews,reviewCache,decks,cards,cardTemplates,tags,collections,mutations,mediaFiles:media.length,
   mediaBytes:media.reduce((sum,item)=>sum+item.byteSize,0)
  };
 }
