@@ -893,7 +893,7 @@ No paid notification tiers.
 - [x] Accessible review controls
 - [x] Reduced motion support
 - [x] High-contrast support
-- [ ] Proper semantic headings
+- [x] Proper semantic headings
 - [ ] ARIA audit
 - [x] Color-independent state indicators
 - [x] Accessible media controls
@@ -956,7 +956,7 @@ Legacy tables from the old project must remain isolated from the Shyraq applicat
 - [x] Database indexes
 - [x] CI build verification
 - [ ] Full page performance audit
-- [ ] Bundle-size audit
+- [x] Bundle-size audit
 - [x] Image optimization
 - [ ] Large-deck virtualization
 - [ ] Large-card-list virtualization
