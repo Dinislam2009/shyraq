@@ -26,6 +26,10 @@ export type OfflineCardTemplate={
  id:string;userId:string;deckId:string;name:string;frontTemplate:string;backTemplate:string;
  css:string;fieldSchema:unknown;createdAt:string;updatedAt:string;
 };
+export type OfflineReviewState={
+ id:string;userId:string;cardId:string;queue:string;stateData:Record<string,unknown>;
+ dueAt:string|null;lastReviewedAt:string|null;reps:number;lapses:number;stability:number|null;difficulty:number|null;scheduledDays:number;
+};
 
 export type OfflineMutation={
  id:string;userId:string;entityType:"decks"|"cards"|"card_templates"|"tags"|"collections"|"collection_cards";
@@ -67,6 +71,7 @@ class OfflineStore extends Dexie{
  mutations!:Table<OfflineMutation,string>;
  mediaCache!:Table<OfflineMediaCache,string>;
  syncMeta!:Table<OfflineSyncMeta,string>;
+ reviewStates!:Table<OfflineReviewState,string>;
  constructor(){
   super("shyraq-offline");
   this.version(1).stores({reviews:"id,userId,cardId,deviceId,sequence,status,reviewedAt"});
@@ -104,7 +109,21 @@ class OfflineStore extends Dexie{
    mutations:"id,userId,entityType,operation,status,createdAt",
    mediaCache:"path,userId,savedAt",
    syncMeta:"key,userId,cursor,lastSyncAt"
+  });  this.version(6).stores({
+   reviews:"id,userId,cardId,deviceId,sequence,status,reviewedAt",
+   reviewCache:"key,userId,savedAt",
+   decks:"id,userId,workspaceId,updatedAt",
+   cards:"id,userId,deckId,updatedAt,sortOrder",
+   cardTemplates:"id,userId,deckId,updatedAt",
+   tags:"id,userId,workspaceId,name",
+   collections:"id,userId,workspaceId,createdAt",
+   collectionCards:"id,collectionId,cardId,createdAt",
+   reviewStates:"id,userId,cardId,dueAt,lastReviewedAt",
+   mutations:"id,userId,entityType,operation,status,createdAt",
+   mediaCache:"path,userId,savedAt",
+   syncMeta:"key,userId,cursor,lastSyncAt"
   });
+
  }
 }
 
@@ -121,6 +140,17 @@ export async function getCachedReviewSession(userId?:string){
  return cached;
 }
 
+export async function cacheReviewPreferences(userId:string,preferences:unknown){
+ await offlineStore.reviewCache.put({key:"preferences",userId,queue:[],preferences,savedAt:new Date().toISOString()});
+}
+
+export async function getCachedReviewPreferences(userId?:string){
+ const cached=await offlineStore.reviewCache.get("preferences");
+ if(!cached)return null;
+ if(userId&&cached.userId!==userId)return null;
+ return cached.preferences;
+}
+
 export async function cacheMirror(
  userId:string,
  decks:OfflineDeck[],
@@ -134,6 +164,7 @@ export async function cacheMirror(
   if(tags.length)await offlineStore.tags.bulkPut(tags);
   if(collections.length)await offlineStore.collections.bulkPut(collections);
   if(collectionCards.length)await offlineStore.collectionCards.bulkPut(collectionCards);
+  if(reviewStates.length)await offlineStore.reviewStates.bulkPut(reviewStates);
  });
 }
 
@@ -144,6 +175,7 @@ export async function removeMirroredEntity(entityType:string,entityId:string){
  if(entityType==="tags")await offlineStore.tags.delete(entityId);
  if(entityType==="collections")await offlineStore.collections.delete(entityId);
  if(entityType==="collection_cards")await offlineStore.collectionCards.delete(entityId);
+ if(entityType==="review_states")await offlineStore.reviewStates.delete(entityId);
 }
 
 export async function getSyncMeta(userId:string){
@@ -178,14 +210,40 @@ export async function deleteCachedMedia(path:string){
 export async function getOfflineStorageUsage(){
  const [reviews,reviewCache,decks,cards,cardTemplates,tags,collections,collectionCards,mutations,media]=await Promise.all([
   offlineStore.reviews.count(),offlineStore.reviewCache.count(),offlineStore.decks.count(),
-  offlineStore.cards.count(),offlineStore.cardTemplates.count(),offlineStore.tags.count(),offlineStore.collections.count(),offlineStore.collectionCards.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
+  offlineStore.cards.count(),offlineStore.cardTemplates.count(),offlineStore.tags.count(),offlineStore.collections.count(),offlineStore.collectionCards.count(),offlineStore.reviewStates.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
  ]);
  return {
-  reviews,reviewCache,decks,cards,cardTemplates,tags,collections,collectionCards,mutations,mediaFiles:media.length,
+  reviews,reviewCache,decks,cards,cardTemplates,tags,collections,collectionCards,reviewStates,mutations,mediaFiles:media.length,
   mediaBytes:media.reduce((sum,item)=>sum+item.byteSize,0)
  };
 }
 
 export async function getOfflineMedia(path:string){
  return offlineStore.mediaCache.get(path);
+}
+
+export async function upsertOfflineReviewState(state:OfflineReviewState){
+ await offlineStore.reviewStates.put(state);
+}
+
+export async function getOfflineReviewQueue(userId:string,deckId:string|undefined,limit=20){
+ const cards=await offlineStore.cards.where("userId").equals(userId).toArray();
+ const selected=deckId?cards.filter(card=>card.deckId===deckId):cards;
+ const active=selected.filter(card=>!card.isSuspended);
+ const cardIds=active.map(card=>card.id);
+ const states=cardIds.length?await offlineStore.reviewStates.where("userId").equals(userId).filter(state=>cardIds.includes(state.cardId)).toArray():[];
+ const stateByCard=new Map(states.map(state=>[state.cardId,state]));
+ const templates=await offlineStore.cardTemplates.where("userId").equals(userId).toArray();
+ const templatesByDeck=new Map<string,OfflineCardTemplate[]>();
+ for(const template of templates){const list=templatesByDeck.get(template.deckId)||[];list.push(template);templatesByDeck.set(template.deckId,list);}
+ const now=Date.now();
+ const rows=active.map(card=>{const state=stateByCard.get(card.id);const due=state?.dueAt?Date.parse(state.dueAt):0;return {card,state,due};})
+  .filter(item=>!item.state||!item.due||item.due<=now)
+  .sort((a,b)=>(a.state?1:0)-(b.state?1:0)||(a.due||0)-(b.due||0)||a.card.sortOrder-b.card.sortOrder)
+  .slice(0,Math.max(1,Math.min(100,limit)));
+ return rows.map(item=>({
+  card:{id:item.card.id,content:item.card.content,kind:item.card.kind,template_id:item.card.templateId,card_templates:templatesByDeck.get(item.card.deckId)||[]},
+  stateData:item.state?.stateData||null,
+  isNew:!item.state
+ }));
 }
