@@ -12,7 +12,9 @@
       }
      },
      template_id:templateIdsByKey.get(deck.id+":"+String(card.modelId)+":"+String(card.ord))||templateIdsByKey.get(deck.id+":"+String(card.modelId)+":0")||null,
-     sort_order:index
+     sort_order:index,
+     is_suspended:card.queue===-1,
+     is_marked:card.flags>0
     };
    });
 
