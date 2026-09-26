@@ -131,7 +131,7 @@ test("backup restore preserves extended review preferences",()=>{
 
 test("shared offline sync fans out deck/card/template changes to workspace members",()=>{
  assert.match(schema,/workspace_id_value uuid/);
- assert.match(schema,/tg_table_name in \('decks','cards','card_templates'\)/);
+ assert.match(schema,/tg_table_name in \('decks','cards','card_templates','tags','collections','collection_cards'\)/);
  assert.match(schema,/from public\.workspace_members wm/);
  assert.match(schema,/wm\.workspace_id=workspace_id_value/);
  const syncRoute=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
