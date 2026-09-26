@@ -59,9 +59,9 @@ export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[
    <Metric label="Local mirror" value={overview.decks+" decks · "+overview.cards+" cards · "+overview.cardTemplates+" templates"} detail={overview.mutations+" pending changes"}/>
    <Metric label="Last sync" value={meta.lastSyncAt?new Date(meta.lastSyncAt).toLocaleTimeString():"Never"} detail={"Cursor "+meta.cursor}/>
   </div>
-  <div className="rounded-2xl border border-black/[0.06] bg-white p-5">
-   <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">Sync health</p><p className="mt-1 text-sm text-slate-400">{meta.lastError||progress.message||"No sync errors recorded."}</p></div><button onClick={()=>void runSync()} disabled={!online||busy} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{busy?"Syncing…":"Sync now"}</button></div>
-   {progress.phase!=="idle"&&progress.phase!=="done"?<div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full bg-slate-950 transition-all" style={{width:(progress.total?Math.min(100,progress.completed/progress.total*100):8)+"%"}}/></div>:null}
+  <div className="rounded-2xl border border-black/[0.06] bg-white p-5" aria-live="polite">
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">Sync health</p><p role="status" className="mt-1 text-sm text-slate-400">{meta.lastError||progress.message||"No sync errors recorded."}</p></div><button onClick={()=>void runSync()} disabled={!online||busy} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{busy?"Syncing…":"Sync now"}</button></div>
+   {progress.phase!=="idle"&&progress.phase!=="done"?<div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.total?Math.round(Math.min(100,progress.completed/progress.total*100)):8} aria-label="Sync progress"><div className="h-full bg-slate-950 transition-all" style={{width:(progress.total?Math.min(100,progress.completed/progress.total*100):8)+"%"}}/></div>:null}
    <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3"><Info label="Uploaded" value={String(meta.lastAccepted)}/><Info label="Conflicts" value={String(meta.lastConflicts)}/><Info label="Pending mutations" value={String(overview.mutations)}/></div>
   </div>
   <div className="rounded-2xl border border-black/[0.06] bg-white p-5">
