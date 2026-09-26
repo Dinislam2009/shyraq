@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { SearchIcon } from "@/components/icons";
 import { reorderDecks } from "@/app/decks/actions";
+import { useI18n } from "@/components/i18n-provider";
 
 type SavedFilter={name:string;query:string;sort:string};
 
 export function DeckLibrary({ decks }: { decks: any[] }) {
+  const { t } = useI18n();
   const [query,setQuery]=useState("");
   const [sort,setSort]=useState("custom");
   const [dragged,setDragged]=useState<string|null>(null);
@@ -60,22 +62,22 @@ export function DeckLibrary({ decks }: { decks: any[] }) {
     <div className="my-7 flex flex-col gap-3 lg:flex-row lg:items-center">
       <div className="flex h-11 max-w-md flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-slate-400">
         <SearchIcon size={17}/>
-        <input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search your decks..." className="min-w-0 flex-1 bg-transparent text-sm outline-none" aria-label="Search decks"/>
+        <input value={query} onChange={event=>setQuery(event.target.value)} placeholder={t("Search your decks...")} className="min-w-0 flex-1 bg-transparent text-sm outline-none" aria-label={t("Search decks")}/>
       </div>
       <select value={sort} onChange={event=>setSort(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm" aria-label="Sort decks">
-        <option value="custom">Custom order</option><option value="name">Name A–Z</option><option value="cards">Most cards</option><option value="recent">Recently updated</option>
+        <option value="custom">{t("Custom order")}</option><option value="name">{t("Name A–Z")}</option><option value="cards">{t("Most cards")}</option><option value="recent">{t("Recently updated")}</option>
       </select>
     </div>
     <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2">
-      <input value={filterName} onChange={event=>setFilterName(event.target.value)} placeholder="Saved filter name" className="h-9 w-40 rounded-lg border border-slate-200 bg-white px-2 text-xs"/>
-      <button type="button" onClick={saveFilter} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Save filter</button>
+      <input value={filterName} onChange={event=>setFilterName(event.target.value)} placeholder={t("Saved filter name")} className="h-9 w-40 rounded-lg border border-slate-200 bg-white px-2 text-xs"/>
+      <button type="button" onClick={saveFilter} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">{t("Save filter")}</button>
       {savedFilters.map(filter=><button key={filter.name} type="button" onClick={()=>applyFilter(filter)} className="rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold">{filter.name}</button>)}
-      {sort==="custom"?<span className="ml-auto text-[11px] text-slate-400">{isPending?"Saving order…":"Drag a deck onto another to reorder"}</span>:null}
+      {sort==="custom"?<span className="ml-auto text-[11px] text-slate-400">{isPending?t("Saving order…"):t("Drag a deck onto another to reorder")}</span>:null}
     </div>
     {filtered.length===0 ? (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-        <div className="font-semibold">{decks.length ? "No matching decks" : "Your deck library is empty"}</div>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{decks.length ? "Try a different search." : "Create a deck to start building your knowledge base."}</p>
+        <div className="font-semibold">{decks.length ? t("No matching decks") : t("Your deck library is empty")}</div>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{decks.length ? t("Try a different search.") : t("Create a deck to start building your knowledge base.")}</p>
       </div>
     ) : (
       <div className="max-h-[70vh] overflow-auto rounded-2xl border border-black/[0.06] bg-white" onScroll={event=>setScrollTop(event.currentTarget.scrollTop)}>
@@ -92,9 +94,9 @@ export function DeckLibrary({ decks }: { decks: any[] }) {
             {deck.settings?.coverUrl?<img src={String(deck.settings.coverUrl)} alt="" className="h-11 w-16 shrink-0 rounded-xl object-cover"/>:<div className={"flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold "+(sort==="custom"?"cursor-grab":"")}>{index+1}</div>}
             <Link href={"/decks/"+deck.id} className="min-w-0 flex-1">
               <h2 className="font-semibold">{deck.name}</h2>
-              <p className="mt-1 truncate text-xs text-slate-400">{deck.description||"No description"}</p>
+              <p className="mt-1 truncate text-xs text-slate-400">{deck.description||t("No description")}</p>
             </Link>
-            <div className="w-20 text-right"><p className="text-sm font-semibold">{deck.cards?.[0]?.count??0}</p><p className="text-xs text-slate-400">cards</p></div>
+            <div className="w-20 text-right"><p className="text-sm font-semibold">{deck.cards?.[0]?.count??0}</p><p className="text-xs text-slate-400">{t("cards")}</p></div>
           </div>
         ))}
         {shouldVirtualize&&<div aria-hidden="true" style={{height:virtualBottomHeight}}/>}
