@@ -20,6 +20,9 @@ export async function POST(request:Request){
  const locale=String(body.locale||"");
  if(!allowed.has(locale))return NextResponse.json({error:"Unsupported locale"},{status:400});
  const {error}=await supabase.from("profiles").update({locale}).eq("id",user.id);
- if(error)return NextResponse.json({error:error.message},{status:500});
- return NextResponse.json({locale});
+ if(error){
+  console.warn("Locale preference persistence failed:",error.message);
+  return NextResponse.json({locale,persisted:false},{status:200});
+ }
+ return NextResponse.json({locale,persisted:true});
 }
