@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {AppShell} from "@/components/app-shell";
 import {createClient} from "@/lib/supabase/server";
-import {createBackupVersion,deleteBackupVersion,restoreBackupVersion} from "@/app/export/actions";
+import {createBackupVersion,deleteBackupVersion,restoreBackupVersion,updateBackupSchedule} from "@/app/export/actions";
 import {summarizeBackupPayload} from "@/lib/backup/summary";
 import {createHash} from "node:crypto";
 
@@ -10,6 +10,7 @@ export default async function ExportPage({searchParams}:{searchParams?:Promise<{
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  const {data:versions}=user?await supabase.from("backup_versions").select("id,storage_path,size_bytes,checksum,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30):{data:[]};
+ const {data:schedule}=user?await supabase.from("backup_schedules").select("frequency,enabled,next_run_at,last_run_at,last_error").eq("user_id",user.id).maybeSingle():{data:null};
 
  let preview:null|{id:string;checksumVerified:boolean;summary:ReturnType<typeof summarizeBackupPayload>;conflictNames:string[]}=null;
  let previewError="";
@@ -61,7 +62,7 @@ export default async function ExportPage({searchParams}:{searchParams?:Promise<{
    <a href="/api/export/backup" className="rounded-2xl border border-black/[0.06] bg-white p-6 hover:bg-slate-50"><h2 className="font-semibold">Complete backup ZIP</h2><p className="mt-2 text-sm text-slate-500">Full JSON backup plus private media binaries.</p></a>
    <a href="/api/export/json" className="rounded-2xl border border-black/[0.06] bg-white p-6 hover:bg-slate-50"><h2 className="font-semibold">Backup JSON</h2><p className="mt-2 text-sm text-slate-500">Database data including review state and portability metadata.</p></a>
    <a href="/api/export/csv" className="rounded-2xl border border-black/[0.06] bg-white p-6 hover:bg-slate-50"><h2 className="font-semibold">Cards CSV</h2><p className="mt-2 text-sm text-slate-500">Front/back format for spreadsheets and simple migrations.</p></a>
-   <form action={createBackupVersion} className="rounded-2xl border border-black/[0.06] bg-white p-6"><h2 className="font-semibold">Create backup version</h2><p className="mt-2 text-sm text-slate-500">Store an integrity-checked JSON snapshot in your private Storage.</p><button className="mt-5 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Create snapshot</button></form>
+   <form action={createBackupVersion} className="rounded-2xl border border-black/[0.06] bg-white p-6"><h2 className="font-semibold">Create backup version</h2><p className="mt-2 text-sm text-slate-500">Store an integrity-checked JSON snapshot in your private Storage.</p><button className="mt-5 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Create snapshot</button></form><form action={updateBackupSchedule} className="rounded-2xl border border-black/[0.06] bg-white p-6"><h2 className="font-semibold">Automatic backups</h2><p className="mt-2 text-sm text-slate-500">Run a private JSON snapshot automatically. The deployed cron uses the server-only Supabase service key.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><select name="frequency" defaultValue={schedule?.frequency||"weekly"} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select><label className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm"><input name="enabled" type="checkbox" defaultChecked={schedule?.enabled===true} className="h-4 w-4"/>Enable schedule</label></div><p className="mt-3 text-xs text-slate-400">{schedule?.enabled&&schedule?.next_run_at?"Next run: "+new Date(schedule.next_run_at).toLocaleString():"Automatic backup is disabled."}{schedule?.last_error?" · Last error: "+schedule.last_error:""}</p><button className="mt-4 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Save schedule</button></form>
   </div>
   <section className="mt-8 rounded-2xl border border-black/[0.06] bg-white">
    <div className="border-b border-black/[0.06] p-5"><h2 className="font-semibold">Backup history</h2><p className="mt-1 text-sm text-slate-400">Private snapshots are versioned and checksum-protected.</p></div>
