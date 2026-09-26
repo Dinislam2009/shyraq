@@ -135,3 +135,12 @@ test("offline mirror keeps review states for cold-start review",()=>{
  assert.match(sync,/data\.reviewStates\?\?\[\]/);
  assert.match(route,/from\("review_states"\)/);
 });
+
+
+test("shared workspace bootstrap includes media, review state and preferences",()=>{
+ const route=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
+ assert.match(route,/from\("media"\).*in\("workspace_id",workspaceIds\)/);
+ assert.match(route,/from\("review_states"\)/);
+ assert.match(route,/from\("review_preferences"\)/);
+ assert.match(route,/reviewPreferences:reviewPreferences\?\?null/);
+});
