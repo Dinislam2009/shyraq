@@ -279,4 +279,3 @@ export async function bootstrapOfflineMirror(){
  return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[],tags:data.tags??[],collections:data.collections??[],collectionCards:data.collectionCards??[],reviewStates:data.reviewStates??[]};
 }
 
-export {getOfflineReviewQueue,getCachedReviewPreferences,getCachedReviewSession};
