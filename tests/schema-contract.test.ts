@@ -15,7 +15,7 @@ test("schema contains application-level tables used by server actions",()=>{
   "decks","cards","card_templates","collections","comments","comment_mentions",
   "activity_feed","deck_versions","deck_members","collection_members",
   "workspace_audit_logs","moderators","notification_preferences",
-  "saved_searches","saved_filters"
+  "saved_searches","saved_filters","notifications","review_devices"
  ]) tableBlock(table);
 });
 
@@ -37,6 +37,8 @@ test("schema has supported notification events and idempotent policy syntax",()=
  assert.doesNotMatch(schema,/drop policy if not exists/i);
 });
 
-test("Realtime publication setup is idempotent",()=>{
+test("Realtime and cross-table foreign keys are idempotent",()=>{
  assert.match(schema,/pg_publication_tables/);
+ assert.match(schema,/sync_conflicts_event_key_fkey/);
+ assert.match(schema,/pg_constraint/);
 });
