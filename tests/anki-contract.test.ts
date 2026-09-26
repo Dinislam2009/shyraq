@@ -41,11 +41,11 @@ test("Anki cloze hint and type filters are normalized consistently",()=>{
 });
 
 
-test("nested Anki template filters are normalized through repeated passes",()=>{
+test("Anki template conversion only normalizes field aliases and preserves filters",()=>{
  const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
  assert.match(parser,/pass<6/);
  assert.ok(parser.includes("field\\s*:\\s*([^}]+)"));
- assert.ok(parser.includes("text|cloze|hint|type"));
+ assert.ok(parser.includes("uses Anki filters; Shyraq preserves common text/cloze/hint/type filter semantics."));
 });
 
 
@@ -72,6 +72,6 @@ test("Anki import preserves raw template fields and card special metadata",()=>{
 
 test("Anki template conversion preserves renderer filter semantics",()=>{
  const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
- assert.doesNotMatch(parser,/cloze\\|text\\|hint\\|type\\)\\s*\\:\\/s*\\(\?:/);
+ assert.doesNotMatch(parser,/convertAnkiTemplate[\s\S]*cloze\|text\|hint\|type/);
  assert.match(parser,/uses Anki filters; Shyraq preserves common text\\/cloze\\/hint\\/type filter semantics/);
 });
