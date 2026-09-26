@@ -45,16 +45,20 @@ export function GlobalTranslator() {
     };
 
     const translateRoot = (root: ParentNode) => {
-      if (typeof Element !== "undefined" && (root as unknown) instanceof Element) { const rootElement = root as Element;
-        const key = rootElement.getAttribute("data-shyraq-i18n");
-        if (key && translationLookup[key]) rootElement.textContent = translationLookup[key][locale];
-      }
       const selector = "[data-shyraq-i18n],input[placeholder],textarea[placeholder]";
       root.querySelectorAll?.(selector).forEach(node => {
         const element = node as HTMLElement & HTMLInputElement;
+        if (element.hasAttribute("data-shyraq-i18n-ignore")) return;
         if (element.hasAttribute("data-shyraq-i18n")) {
           const key = element.getAttribute("data-shyraq-i18n");
-          if (key && translationLookup[key]) element.textContent = translationLookup[key][locale];
+          if (key && translationLookup[key]) {
+            const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+            const textNodes: Node[] = [];
+            let textNode: Node | null;
+            while ((textNode = walker.nextNode())) textNodes.push(textNode);
+            const lastText = textNodes.at(-1);
+            if (lastText) lastText.textContent = translationLookup[key][locale];
+          }
         }
         if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
           const raw = element.getAttribute("data-shyraq-placeholder") || element.getAttribute("placeholder") || "";
