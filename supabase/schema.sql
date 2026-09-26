@@ -614,7 +614,8 @@ drop policy if exists card_tags_member on public.card_tags;
 create policy card_tags_member on public.card_tags for all to authenticated using(exists(select 1 from public.cards c join public.decks d on d.id=c.deck_id where c.id=card_id and private.is_workspace_member(d.workspace_id,'editor'))) with check(exists(select 1 from public.cards c join public.decks d on d.id=c.deck_id where c.id=card_id and private.is_workspace_member(d.workspace_id,'editor')));
 
 drop policy if exists collections_read on public.collections;
-create policy collections_read on public.collections for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+create policy collections_read on public.collections for select to authenticated
+using(is_public or private.is_workspace_member(workspace_id,'viewer'));
 drop policy if exists collections_write on public.collections;
 create policy collections_write on public.collections for insert to authenticated with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
 drop policy if exists collections_update on public.collections;
@@ -624,7 +625,45 @@ create policy collections_delete on public.collections for delete to authenticat
 drop policy if exists collections_feature_moderator_update on public.collections;
 create policy collections_feature_moderator_update on public.collections for update to authenticated using(public.is_platform_moderator()) with check(public.is_platform_moderator());
 drop policy if exists collection_cards_member on public.collection_cards;
-create policy collection_cards_member on public.collection_cards for all to authenticated using(exists(select 1 from public.collections c where c.id=collection_id and private.is_workspace_member(c.workspace_id,'editor'))) with check(exists(select 1 from public.collections c where c.id=collection_id and private.is_workspace_member(c.workspace_id,'editor')));
+create policy collection_cards_select on public.collection_cards for select to authenticated
+using (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_id
+      and (c.is_public or private.is_workspace_member(c.workspace_id,'viewer'))
+  )
+);
+create policy collection_cards_write on public.collection_cards for insert to authenticated
+with check (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_id
+      and private.is_workspace_member(c.workspace_id,'editor')
+  )
+);
+create policy collection_cards_update on public.collection_cards for update to authenticated
+using (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_id
+      and private.is_workspace_member(c.workspace_id,'editor')
+  )
+)
+with check (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_id
+      and private.is_workspace_member(c.workspace_id,'editor')
+  )
+);
+create policy collection_cards_delete on public.collection_cards for delete to authenticated
+using (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_id
+      and private.is_workspace_member(c.workspace_id,'editor')
+  )
+);
 
 drop policy if exists review_preferences_self on public.review_preferences;
 create policy review_preferences_self on public.review_preferences for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
