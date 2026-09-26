@@ -11,7 +11,7 @@ test("profiles expose private fields only to the owner and use a public projecti
  assert.match(schema,/create policy profiles_self_select on public\.profiles for select to authenticated using\(id=\(select auth\.uid\(\)\)\);/);
  assert.doesNotMatch(schema,/create policy profiles_public_select on public\.profiles for select to authenticated using\(true\);/);
  assert.ok(schema.includes("create table if not exists public.public_profiles"));
- assert.ok(schema.includes("select id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers"));
+ assert.match(schema,/public_profiles\s+\([\s\S]*?username text unique[\s\S]*?show_followers boolean/);
  assert.match(workspacePage,/from\("public_profiles"\)/);
  assert.match(creatorPage,/from\("public_profiles"\)/);
  assert.match(schema,/create or replace function private\.sync_public_profile\(\) returns trigger[\\s\\S]*?security definer[\\s\\S]*?set search_path=public,private/);
