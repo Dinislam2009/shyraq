@@ -131,7 +131,7 @@ export async function pullChanges(userId:string){
 export async function hydrateOfflineMirror(userId:string){
  const response=await fetch("/api/sync?bootstrap=1",{cache:"no-store"});
  if(!response.ok)throw new Error("Offline mirror bootstrap failed.");
- const data=(await response.json()) as {decks:Record<string,unknown>[];cards:Record<string,unknown>[];media?:Record<string,unknown>[]};
+ const data=(await response.json()) as {decks:Record<string,unknown>[];cards:Record<string,unknown>[];templates?:Record<string,unknown>[];media?:Record<string,unknown>[]};
  await cacheMirror(
   userId,
   (data.decks??[]).map(item=>mapDeck(item,userId)),
@@ -230,7 +230,7 @@ export async function bootstrapOfflineMirror(){
  const userId=String(data.user_id||"");
  if(!userId)throw new Error("No authenticated user.");
  if(typeof window!=="undefined")localStorage.setItem("shyraq:last-user-id",userId);
- await cacheMirror(userId,(data.decks??[]).map(item=>mapDeck(item,userId)),(data.cards??[]).map(item=>mapCard(item,userId)));
+ await cacheMirror(userId,(data.decks??[]).map(item=>mapDeck(item,userId)),(data.cards??[]).map(item=>mapCard(item,userId)),(data.templates??[]).map(item=>mapTemplate(item,userId)));
  await setSyncMeta(userId,{lastSyncAt:new Date().toISOString(),lastError:null});
- return {userId,decks:data.decks??[],cards:data.cards??[]};
+ return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[]};
 }
