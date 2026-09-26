@@ -125,12 +125,15 @@ export async function cacheMirror(
  userId:string,
  decks:OfflineDeck[],
  cards:OfflineCard[],
- templates:OfflineCardTemplate[]=[]
+ templates:OfflineCardTemplate[]=[],tags:OfflineTag[]=[],collections:OfflineCollection[]=[],collectionCards:OfflineCollectionCard[]=[]
 ){
- await offlineStore.transaction("rw",[offlineStore.decks,offlineStore.cards,offlineStore.cardTemplates],async()=>{
+ await offlineStore.transaction("rw",[offlineStore.decks,offlineStore.cards,offlineStore.cardTemplates,offlineStore.tags,offlineStore.collections,offlineStore.collectionCards],async()=>{
   if(decks.length)await offlineStore.decks.bulkPut(decks);
   if(cards.length)await offlineStore.cards.bulkPut(cards);
   if(templates.length)await offlineStore.cardTemplates.bulkPut(templates);
+  if(tags.length)await offlineStore.tags.bulkPut(tags);
+  if(collections.length)await offlineStore.collections.bulkPut(collections);
+  if(collectionCards.length)await offlineStore.collectionCards.bulkPut(collectionCards);
  });
 }
 
@@ -140,6 +143,7 @@ export async function removeMirroredEntity(entityType:string,entityId:string){
  if(entityType==="card_templates")await offlineStore.cardTemplates.delete(entityId);
  if(entityType==="tags")await offlineStore.tags.delete(entityId);
  if(entityType==="collections")await offlineStore.collections.delete(entityId);
+ if(entityType==="collection_cards")await offlineStore.collectionCards.delete(entityId);
 }
 
 export async function getSyncMeta(userId:string){
