@@ -212,21 +212,6 @@ export async function restoreBackup(supabase:any,userId:string,workspaceId:strin
   throw error;
  }
 
-ated_at:copy.last_synced_source_updated_at??null,
-   update_policy:copy.update_policy==="accept_all"?"accept_all":"ask"
-  },{onConflict:"user_id,source_deck_id,copied_deck_id"});
-  if(error)throw new Error(error.message);
- }
-
- const follows=Array.isArray(payload.publicDeckFollows)?payload.publicDeckFollows:[];
- for(const follow of follows){
-  const deckId=deckMap.get(String(follow.deck_id)); if(!deckId)continue;
-  const {error}=await supabase.from("public_deck_follows").upsert({user_id:userId,deck_id:deckId},{onConflict:"user_id,deck_id"});
-  if(error)throw new Error(error.message);
- }
-
- return {restoredCards,restoredMedia,conflicts};
-}
 
 async function importStandardRows(supabase:any,userId:string,workspaceId:string,rows:ImportRow[],mode:"create"|"skip"|"replace"){
  const issues=validateImportRows(rows);
