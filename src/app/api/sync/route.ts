@@ -285,7 +285,10 @@ export async function POST(request:NextRequest){
   }else if(entityType==="collections"){
    const {data:existingCollection}=await supabase.from("collections").select("id,workspace_id,owner_id").eq("id",entityId).maybeSingle();
    const workspaceId=String(existingCollection?.workspace_id||payload.workspace_id||payload.workspaceId||"");
-   if(!workspaceId||!(await canEditWorkspace(supabase,user.id,workspaceId)))throw new Error("Workspace edit permission required.");
+   const canEdit=existingCollection
+    ? await canEditCollection(supabase,user.id,String(existingCollection.id))
+    : Boolean(workspaceId)&&await canEditWorkspace(supabase,user.id,workspaceId);
+   if(!workspaceId||!canEdit)throw new Error("Collection edit permission required.");
    if(operation==="delete"){
     const {error}=await supabase.from("collections").delete().eq("id",entityId);
     if(error)throw new Error(error.message);
