@@ -144,3 +144,13 @@ test("shared workspace bootstrap includes media, review state and preferences",(
  assert.match(route,/from\("review_preferences"\)/);
  assert.match(route,/reviewPreferences:reviewPreferences\?\?null/);
 });
+
+
+test("CardEditor block editor exposes safe visual editing mode",()=>{
+ const block=readFileSync(new URL("../src/components/block-editor.tsx",import.meta.url),"utf8");
+ assert.match(block,/Visual/);
+ assert.match(block,/contentEditable/);
+ assert.match(block,/htmlToMarkdown/);
+ assert.match(block,/document\.execCommand\("bold"\)/);
+ assert.match(block,/aria-multiline/);
+});
