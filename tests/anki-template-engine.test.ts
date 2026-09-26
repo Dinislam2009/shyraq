@@ -28,3 +28,9 @@ test("supports inverse conditional blocks",()=>{
  assert.equal(renderAnkiTemplate("{{^missing}}fallback{{/missing}}",{missing:""}),"fallback");
  assert.equal(renderAnkiTemplate("{{^missing}}fallback{{/missing}}",{missing:"value"}),"");
 });
+
+
+test("supports Anki special fields",()=>{
+ const rendered=renderAnkiTemplate("{{Deck}}|{{Subdeck}}|{{Tags}}|{{Type}}|{{Card}}|{{CardFlag}}|{{CardSuspended}}",{front:"Q"},{specialFields:{Deck:"Biology::Cells",Subdeck:"Cells",Tags:"mitosis exam",Type:"Basic",Card:"Back",CardFlag:"2",CardSuspended:"1"}});
+ assert.equal(rendered,"Biology::Cells|Cells|mitosis exam|Basic|Back|2|1");
+});
