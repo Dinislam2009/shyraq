@@ -41,6 +41,9 @@ export async function GET(request:NextRequest){
   const {data:members}=await supabase.from("workspace_members").select("workspace_id").eq("user_id",user.id);
   const workspaceIds=(members??[]).map(row=>row.workspace_id).filter(Boolean);
   if(!workspaceIds.length)return NextResponse.json({decks:[],cards:[],media:[]});
+  const [{data:decks,error:deckError}]=await Promise.all([
+   supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).limit(5000)
+  ]);
   const deckIds=(decks??[]).map(deck=>deck.id);
   const [{data:cards,error:cardError},{data:templates,error:templateError},{data:media}]=await Promise.all([
    deckIds.length
