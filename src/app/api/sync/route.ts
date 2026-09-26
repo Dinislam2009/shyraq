@@ -82,10 +82,10 @@ export async function GET(request:NextRequest){
   try{
    const [cards,templates,tags,collections,media]=await Promise.all([
     deckIds.length
-     ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).range(from,to))
+     ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).order("id",{ascending:true}).range(from,to))
      : Promise.resolve([]),
     deckIds.length
-     ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("card_templates").select("id,deck_id,name,front_template,back_template,css,field_schema,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).range(from,to))
+     ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("card_templates").select("id,deck_id,name,front_template,back_template,css,field_schema,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).order("id",{ascending:true}).range(from,to))
      : Promise.resolve([]),
     workspaceIds.length
      ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("tags").select("id,workspace_id,name").in("workspace_id",workspaceIds).order("name",{ascending:true}).order("id",{ascending:true}).range(from,to))
