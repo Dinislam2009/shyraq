@@ -54,7 +54,6 @@ test("all SECURITY DEFINER functions pin search_path and deny public/anonymous e
 });
 
 test("API routes keep an explicit authentication gate unless intentionally public",()=>{
- const apiRoot=new URL("../src/app/api",import.meta.url);
  const publicRoutes=new Set(["auth/login/route.ts","auth/signup/route.ts","auth/oauth/[provider]/route.ts","health/route.ts","telemetry/client-error/route.ts"]);
  const secretProtectedRoutes=new Set(["cron/backups/route.ts"]);
  const walk=(prefix=""):string[]=>{
