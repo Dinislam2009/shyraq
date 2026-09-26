@@ -19,6 +19,11 @@ export type OfflineCard={
  createdAt:string;updatedAt:string;
 };
 
+export type OfflineCardTemplate={
+ id:string;userId:string;deckId:string;name:string;frontTemplate:string;backTemplate:string;
+ css:string;fieldSchema:unknown;createdAt:string;updatedAt:string;
+};
+
 export type OfflineMutation={
  id:string;userId:string;entityType:"decks"|"cards"|"card_templates";
  operation:"upsert"|"delete";entityId:string;payload:Record<string,unknown>;
@@ -98,9 +103,10 @@ export async function getCachedReviewSession(userId?:string){
 export async function cacheMirror(
  userId:string,
  decks:OfflineDeck[],
- cards:OfflineCard[]
+ cards:OfflineCard[],
+ templates:OfflineCardTemplate[]=[]
 ){
- await offlineStore.transaction("rw",[offlineStore.decks,offlineStore.cards],async()=>{
+ await offlineStore.transaction("rw",[offlineStore.decks,offlineStore.cards,offlineStore.cardTemplates],async()=>{
   if(decks.length)await offlineStore.decks.bulkPut(decks);
   if(cards.length)await offlineStore.cards.bulkPut(cards);
   if(templates.length)await offlineStore.cardTemplates.bulkPut(templates);
@@ -143,7 +149,7 @@ export async function deleteCachedMedia(path:string){
 }
 
 export async function getOfflineStorageUsage(){
- const [reviews,reviewCache,decks,cards,mutations,media]=await Promise.all([
+ const [reviews,reviewCache,decks,cards,cardTemplates,mutations,media]=await Promise.all([
   offlineStore.reviews.count(),offlineStore.reviewCache.count(),offlineStore.decks.count(),
   offlineStore.cards.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
  ]);
