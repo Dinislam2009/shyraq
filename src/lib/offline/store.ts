@@ -155,9 +155,9 @@ export async function cacheMirror(
  userId:string,
  decks:OfflineDeck[],
  cards:OfflineCard[],
- templates:OfflineCardTemplate[]=[],tags:OfflineTag[]=[],collections:OfflineCollection[]=[],collectionCards:OfflineCollectionCard[]=[]
+ templates:OfflineCardTemplate[]=[],tags:OfflineTag[]=[],collections:OfflineCollection[]=[],collectionCards:OfflineCollectionCard[]=[],reviewStates:OfflineReviewState[]=[]
 ){
- await offlineStore.transaction("rw",[offlineStore.decks,offlineStore.cards,offlineStore.cardTemplates,offlineStore.tags,offlineStore.collections,offlineStore.collectionCards],async()=>{
+ await offlineStore.transaction("rw",[offlineStore.decks,offlineStore.cards,offlineStore.cardTemplates,offlineStore.tags,offlineStore.collections,offlineStore.collectionCards,offlineStore.reviewStates],async()=>{
   if(decks.length)await offlineStore.decks.bulkPut(decks);
   if(cards.length)await offlineStore.cards.bulkPut(cards);
   if(templates.length)await offlineStore.cardTemplates.bulkPut(templates);
