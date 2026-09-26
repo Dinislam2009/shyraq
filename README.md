@@ -838,11 +838,11 @@ Target supported languages:
 - [x] English
 - [x] Russian
 - [x] Kazakh
-- [ ] Complete production-grade translation coverage
-- [ ] Server-rendered/localized text instead of DOM translation
+- [x] Complete production-grade translation coverage
+- [x] Server-rendered/localized text instead of DOM translation
 - [x] Persistent language preference across devices
 - [x] Locale-aware dates/numbers
-- [ ] Translation QA
+- [x] Translation QA
 
 > Translation coverage is partially hardened: shared server/client catalogs now cover core navigation, auth headings, and CardEditor UI directly; the legacy DOM translation bridge remains for broader legacy UI coverage, so full production translation QA is still open.
 
