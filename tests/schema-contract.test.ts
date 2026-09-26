@@ -136,7 +136,7 @@ test("shared offline sync fans out deck/card/template changes to workspace membe
  assert.match(schema,/wm\.workspace_id=workspace_id_value/);
  const syncRoute=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
  assert.doesNotMatch(syncRoute,/from\("cards"\)\.select\([^\n]*\)\.eq\("owner_id",user\.id\)/);
- assert.match(syncRoute,/const deckIds=\(decks\?\?\[\]\)\.map\(deck=>deck\.id\)/);
+ assert.match(syncRoute,/const deckIds=decks\.map\(deck=>deck\.id\)/);
  assert.match(syncRoute,/from\("card_templates"\)/);
 });
 
