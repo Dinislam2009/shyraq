@@ -45,7 +45,7 @@ test("Anki template conversion only normalizes field aliases and preserves filte
  const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
  assert.match(parser,/pass<6/);
  assert.ok(parser.includes("field\\s*:\\s*([^}]+)"));
- assert.ok(parser.includes("uses Anki filters; Shyraq preserves common text/cloze/hint/type filter semantics."));
+ assert.ok(parser.includes("uses Anki filters; Shyraq preserves common text/cloze/hint/type filter semantics through its compatibility renderer."));
 });
 
 
@@ -73,5 +73,5 @@ test("Anki import preserves raw template fields and card special metadata",()=>{
 test("Anki template conversion preserves renderer filter semantics",()=>{
  const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
  assert.doesNotMatch(parser,/convertAnkiTemplate[\s\S]*cloze\|text\|hint\|type/);
- assert.ok(parser.includes("uses Anki filters; Shyraq preserves common text/cloze/hint/type filter semantics."));
+ assert.ok(parser.includes("uses Anki filters; Shyraq preserves common text/cloze/hint/type filter semantics through its compatibility renderer."));
 });
