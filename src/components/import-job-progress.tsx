@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback,useEffect,useState} from "react";
+import {useCallback,useEffect,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
 
 type Job={id:string;total_rows:number;processed_rows:number;created_rows:number;replaced_rows:number;skipped_rows:number;status:"queued"|"processing"|"completed"|"failed"|"cancelled";error?:string|null;source_name?:string};
@@ -12,6 +12,7 @@ export function ImportJobProgress(){
  const [job,setJob]=useState<Job|null>(null);
  const [error,setError]=useState("");
  const [busy,setBusy]=useState(false);
+ const busyRef=useRef(false);
 
  const clear=useCallback(()=>{
   if(typeof window!=="undefined")localStorage.removeItem(STORAGE_KEY);
@@ -36,7 +37,8 @@ export function ImportJobProgress(){
  },[clear,router]);
 
  const pump=useCallback(async(id:string)=>{
-  if(busy)return;
+  if(busyRef.current)return;
+  busyRef.current=true;
   setBusy(true);
   setError("");
   try{
@@ -57,8 +59,8 @@ export function ImportJobProgress(){
     await new Promise(resolve=>setTimeout(resolve,350));
    }
   }catch(err){setError(err instanceof Error?err.message:"Import job failed.");}
-  finally{setBusy(false);}
- },[busy,clear,router]);
+  finally{busyRef.current=false;setBusy(false);}
+ },[clear,router]);
 
  useEffect(()=>{
   let cancelled=false;
@@ -66,8 +68,7 @@ export function ImportJobProgress(){
   if(!saved)return;
   void (async()=>{
    try{
-    const active=await step(saved);
-    if(active&&!cancelled)void pump(saved);
+    if(!cancelled)void pump(saved);
    }catch(err){if(!cancelled)setError(err instanceof Error?err.message:"Unable to resume import.");}
   })();
   return()=>{cancelled=true;};
