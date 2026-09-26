@@ -207,6 +207,17 @@ export async function deleteCachedMedia(path:string){
  await offlineStore.mediaCache.delete(path);
 }
 
+export async function pruneOfflineMediaCache(userId:string,maxBytes=150*1024*1024){
+ const items=await offlineStore.mediaCache.where("userId").equals(userId).sortBy("savedAt");
+ let total=items.reduce((sum,item)=>sum+item.byteSize,0);
+ for(const item of items){
+  if(total<=maxBytes)break;
+  await offlineStore.mediaCache.delete(item.path);
+  total-=item.byteSize;
+ }
+ return {remainingBytes:Math.max(0,total),removedBytes:Math.max(0,items.reduce((sum,item)=>sum+item.byteSize,0)-total)};
+}
+
 export async function getOfflineStorageUsage(){
  const [reviews,reviewCache,decks,cards,cardTemplates,tags,collections,collectionCards,reviewStates,mutations,media]=await Promise.all([
   offlineStore.reviews.count(),offlineStore.reviewCache.count(),offlineStore.decks.count(),
