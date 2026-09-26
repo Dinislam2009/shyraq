@@ -42,7 +42,6 @@ test("all SECURITY DEFINER functions pin search_path and deny public/anonymous e
   "public.create_notification",
   "private.is_workspace_member",
   "private.is_workspace_owner",
-  "private.touch_deck_updated_at",
   "private.record_sync_change",
   "private.prevent_workspace_owner_role_change"
  ];
