@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag, bulkEditCards, reorderCards } from "@/app/decks/[id]/cards/actions";
@@ -31,6 +31,7 @@ const DEFAULT_COLUMNS:CardColumnKey[]=["front","back","kind","status","tags","ma
 
 export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { deckId: string; cards: CardRow[]; favoriteIds: string[]; canEdit?: boolean }) {
   const [query, setQuery] = useState("");
+  const deferredQuery=useDeferredValue(query);
   const [kind, setKind] = useState("all");
   const [status, setStatus] = useState("all");
   const [tagFilter, setTagFilter] = useState("");
@@ -76,7 +77,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   }, [deckId, router]);
 
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = deferredQuery.trim().toLowerCase();
     const result=cards.filter(card => {
       const matchesQuery = !needle || [
         card.content?.front,
@@ -115,7 +116,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       return secondary*direction(sortSecondary);
     });
     return result;
-  }, [cards, kind, query, status, tagFilter, markerFilter, markedOnly, suspendedOnly, sortPrimary, sortSecondary]);
+  }, [cards, kind, deferredQuery, status, tagFilter, markerFilter, markedOnly, suspendedOnly, sortPrimary, sortSecondary]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
