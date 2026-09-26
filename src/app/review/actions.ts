@@ -5,9 +5,9 @@ import {scheduleReview,createSchedulerCard,type SchedulerEngine} from "@/lib/sch
 
 const ratingNames=["again","hard","good","easy"] as const;
 function revive(value:any){return value?{...value,due:value.due?new Date(value.due):new Date(),last_review:value.last_review?new Date(value.last_review):undefined}:createSchedulerCard("fsrs");}
-export async function submitReview(cardId:string,rating:keyof typeof ratingMap,elapsedMs:number){
+export async function submitReview(cardId:string,rating:(typeof ratingNames)[number],elapsedMs:number){
  const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)return {error:"Authentication required."};
- const {data:existing}=await supabase.from("review_states").select("*,").eq("user_id",user.id).eq("card_id",cardId).maybeSingle();
+ const {data:existing}=await supabase.from("review_states").select("*").eq("user_id",user.id).eq("card_id",cardId).maybeSingle();
  const {data:prefs}=await supabase.from("review_preferences").select("desired_retention,maximum_interval,enable_fuzz,enable_short_term,learning_steps,relearning_steps,session_defaults").eq("user_id",user.id).maybeSingle();
  const sessionDefaults=prefs?.session_defaults&&typeof prefs.session_defaults==="object"&&!Array.isArray(prefs.session_defaults)?prefs.session_defaults as Record<string,unknown>:{};
  const engine:String=sessionDefaults.schedulerEngine==="sm2"?"sm2":"fsrs";
@@ -16,11 +16,11 @@ export async function submitReview(cardId:string,rating:keyof typeof ratingMap,e
  const next=result.card; const eventKey=crypto.randomUUID();
  const {error:eventError}=await supabase.from("review_events").insert({event_key:eventKey,user_id:user.id,card_id:cardId,device_id:crypto.randomUUID(),reviewed_at:new Date().toISOString(),rating,elapsed_ms:elapsedMs,previous_state:previous,next_state:next,metadata:{scheduler:result.scheduler}});
  if(eventError)return {error:eventError.message};
- const {error:stateError}=await supabase.from("review_states").upsert({user_id:user.id,card_id:cardId,queue:next.state===0?"learning":next.state===1?"learning":next.state===2?"review":"relearning",state_data:next,due_at:next.due.toISOString(),last_reviewed_at:new Date().toISOString(),reps:next.reps,lapses:next.lapses,stability:next.stability,difficulty:next.difficulty,scheduled_days:next.scheduled_days});
+ const {error:stateError}=await supabase.from("review_states").upsert({user_id:user.id,card_id:cardId,queue:Number(next.state||2)===2?"review":"learning",state_data:next,due_at:next.due.toISOString(),last_reviewed_at:new Date().toISOString(),reps:next.reps,lapses:next.lapses,stability:next.stability,difficulty:next.difficulty,scheduled_days:next.scheduled_days});
  if(stateError)return {error:stateError.message};
  revalidatePath("/review"); revalidatePath("/dashboard"); revalidatePath("/statistics"); return {ok:true};
 }
-export async function undoReview(cardId:string,previousState:any,hadPreviousState:boolean,originalRating:keyof typeof ratingMap){
+export async function undoReview(cardId:string,previousState:any,hadPreviousState:boolean,originalRating:(typeof ratingNames)[number]){
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return {error:"Authentication required."};
