@@ -177,3 +177,22 @@ test("featured collection curation is exposed to platform moderators",()=>{
  assert.match(platformPage,/toggleFeaturedCollection\.bind/);
  assert.match(platformPage,/Featured public collections/);
 });
+
+
+test("resumable import jobs have owner-scoped persistence and progress endpoints",()=>{
+ assert.match(schema,/create table if not exists public\.import_jobs/);
+ assert.match(schema,/status text not null default 'queued'/);
+ assert.match(schema,/processed_rows integer not null default 0/);
+ assert.match(schema,/create policy import_jobs_self[\s\S]*user_id=\(select auth\.uid\(\)\)/);
+ const start=readFileSync(new URL("../src/app/api/import/jobs/route.ts",import.meta.url),"utf8");
+ const progress=readFileSync(new URL("../src/app/api/import/jobs/[id]/route.ts",import.meta.url),"utf8");
+ const ui=readFileSync(new URL("../src/components/import-preview.tsx",import.meta.url),"utf8");
+ const panel=readFileSync(new URL("../src/components/import-job-progress.tsx",import.meta.url),"utf8");
+ assert.match(start,/storage\.from\("user-media"\)\.upload/);
+ assert.match(start,/insert\(\{id:jobId/);
+ assert.match(progress,/CHUNK_SIZE=500/);
+ assert.match(progress,/processed_rows:processed/);
+ assert.match(ui,/\/api\/import\/jobs/);
+ assert.match(ui,/shyraq:import-job/);
+ assert.match(panel,/Resume import/);
+});
