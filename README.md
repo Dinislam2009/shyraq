@@ -1013,7 +1013,7 @@ Target:
 
 ## Functional flow coverage (implementation/integration)
 
-The checklist below records implemented product flows and automated contract/integration coverage. It is not a browser E2E suite; real browser/device E2E remains an explicit launch gate.
+The checklist below records implemented product flows and automated contract/integration coverage. Browser E2E is now implemented and runs in CI with Playwright across desktop and mobile Chromium. It covers public launch/auth/offline smoke flows; full authenticated production device verification remains a separate launch gate.
 
 - [x] Signup
 - [x] Login
@@ -1043,7 +1043,7 @@ The checklist below records implemented product flows and automated contract/int
 - [x] Dark mode verification
 - [ ] All three language verification
 - [ ] Console-error audit (browser execution required)
-- [ ] Browser E2E suite (Playwright or equivalent)
+- [x] Browser E2E suite (Playwright; desktop and mobile Chromium launch/auth/offline smoke)
 - [x] Accessibility audit (AST-based CI audit)
 
 ---
@@ -1226,7 +1226,7 @@ Before calling Shyraq production-ready:
 ### Quality
 - [x] Unit tests
 - [x] Integration tests
-- [ ] E2E tests (browser/device execution still required)
+- [x] E2E tests (Playwright browser suite runs in CI)
 - [ ] Browser verification (desktop/mobile/device execution still required)
 - [x] Performance audit (CI route and bundle budgets)
 - [ ] Error monitoring
