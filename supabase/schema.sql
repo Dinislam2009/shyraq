@@ -15,7 +15,6 @@ create table if not exists public.profiles (
  username text unique, display_name text, avatar_url text, bio text,
  timezone text not null default 'Asia/Almaty', locale text not null default 'en',
  show_activity boolean not null default true, show_followers boolean not null default true,
- selected_workspace_id uuid references public.workspaces(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table if not exists public.workspaces (
@@ -24,6 +23,7 @@ create table if not exists public.workspaces (
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
  unique(owner_id,slug)
 );
+alter table public.profiles add column if not exists selected_workspace_id uuid references public.workspaces(id) on delete set null;
 create table if not exists public.workspace_members (
  workspace_id uuid not null references public.workspaces(id) on delete cascade,
  user_id uuid not null references auth.users(id) on delete cascade,
@@ -320,6 +320,13 @@ create table if not exists public.moderators (
  created_at timestamptz not null default now(),
  updated_at timestamptz not null default now()
 );
+
+create or replace function public.is_platform_moderator()
+returns boolean language sql security definer set search_path=public,private as $
+ select exists(select 1 from public.moderators m where m.user_id=(select auth.uid()) and m.enabled);
+$;
+revoke all on function public.is_platform_moderator() from public,anon;
+grant execute on function public.is_platform_moderator() to authenticated;
 
 create table if not exists public.notification_preferences (
  user_id uuid primary key references auth.users(id) on delete cascade,
@@ -626,7 +633,7 @@ create policy workspace_audit_logs_insert on public.workspace_audit_logs for ins
 drop policy if exists moderators_self_read on public.moderators;
 create policy moderators_self_read on public.moderators for select to authenticated using(user_id=(select auth.uid()));
 drop policy if exists moderators_admin_write on public.moderators;
-create policy moderators_admin_write on public.moderators for all to authenticated using(exists(select 1 from public.moderators m where m.user_id=(select auth.uid()) and m.role='admin' and m.enabled)) with check(exists(select 1 from public.moderators m where m.user_id=(select auth.uid()) and m.role='admin' and m.enabled));
+create policy moderators_admin_write on public.moderators for all to authenticated using(public.is_platform_moderator()) with check(public.is_platform_moderator());
 
 drop policy if exists notification_preferences_self on public.notification_preferences;
 create policy notification_preferences_self on public.notification_preferences for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
