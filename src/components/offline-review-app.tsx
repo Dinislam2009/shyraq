@@ -39,7 +39,7 @@ export function OfflineReviewApp(){
  useEffect(()=>{void load();},[load]);
 
  const current=queue[index];
- const content=(current?.card.content||{}) as {front?:string;back?:string;tags?:string[];fields?:Record<string,string>;anki?:{rawFields?:Record<string,string>;deckName?:string;modelName?:string;flags?:number}};
+ const content=(current?.card.content||{}) as {front?:string;back?:string;tags?:string[];fields?:Record<string,string>;clozeIndex?:number;anki?:{rawFields?:Record<string,string>;deckName?:string;modelName?:string;flags?:number}};
  const template=Array.isArray(current?.card.card_templates)?current?.card.card_templates.find(item=>item.id===current.card.template_id)||current.card.card_templates[0]:current?.card.card_templates;
  const rendered=useMemo(()=>{
   if(!template)return {front:content.front||"",back:content.back||"",css:"",templated:false};
