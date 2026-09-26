@@ -2,6 +2,7 @@
 import {useEffect,useState} from "react";
 import {cacheMediaAsset,clearFailedMutations,getOfflineOverview,getSyncProgress as readProgress,listenToSyncProgress,syncAll} from "@/lib/sync/client";
 import {deleteCachedMedia,getOfflineMedia,getSyncMeta} from "@/lib/offline/store";
+import {useI18n} from "@/components/i18n-provider";
 
 type Device={id:string;name:string;last_seen_at:string;created_at:string};
 type MediaItem={storage_path:string;mime_type:string;byte_size:number|null;signed_url:string|null};
@@ -15,6 +16,7 @@ export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[
  const [media,setMedia]=useState<MediaItem[]>([]);
  const [cachedPaths,setCachedPaths]=useState<Set<string>>(new Set());
  const [mediaBusy,setMediaBusy]=useState("");
+ const {formatDate,formatDateTime,formatNumber}=useI18n();
 
  const refresh=async()=>{
   const [nextOverview,nextMeta]=await Promise.all([getOfflineOverview(),getSyncMeta(userId)]);
@@ -56,8 +58,8 @@ export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[
  return <div className="mt-8 space-y-5">
   <div className="grid gap-4 sm:grid-cols-3">
    <Metric label="Connection" value={online?"Online":"Offline"} detail={online?"Automatic sync enabled":"Changes stay local until reconnect"}/>
-   <Metric label="Local mirror" value={overview.decks+" decks · "+overview.cards+" cards · "+overview.cardTemplates+" templates"} detail={overview.mutations+" pending changes"}/>
-   <Metric label="Last sync" value={meta.lastSyncAt?new Date(meta.lastSyncAt).toLocaleTimeString():"Never"} detail={"Cursor "+meta.cursor}/>
+   <Metric label="Local mirror" value={formatNumber(overview.decks)+" decks · "+formatNumber(overview.cards)+" cards · "+formatNumber(overview.cardTemplates)+" templates"} detail={overview.mutations+" pending changes"}/>
+   <Metric label="Last sync" value={meta.lastSyncAt?formatDate(meta.lastSyncAt,{hour:"2-digit",minute:"2-digit"}):"Never"} detail={"Cursor "+meta.cursor}/>
   </div>
   <div className="rounded-2xl border border-black/[0.06] bg-white p-5" aria-live="polite">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">Sync health</p><p role="status" className="mt-1 text-sm text-slate-400">{meta.lastError||progress.message||"No sync errors recorded."}</p></div><button onClick={()=>void runSync()} disabled={!online||busy} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{busy?"Syncing…":"Sync now"}</button></div>
@@ -75,7 +77,7 @@ export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[
   </div>
   <div className="rounded-2xl border border-black/[0.06] bg-white p-5">
    <div className="flex items-center justify-between gap-3"><div><p className="font-semibold">Devices</p><p className="mt-1 text-sm text-slate-400">Recent devices that have synced review activity.</p></div><a href="/api/sync/diagnostics" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Export diagnostics</a></div>
-   <div className="mt-4 divide-y divide-slate-100">{devices.length?devices.map(device=><div key={device.id} className="flex items-center justify-between py-3"><div><p className="text-sm font-medium">{device.name||"Web browser"}</p><p className="text-xs text-slate-400">{device.id.slice(0,8)}…</p></div><p className="text-xs text-slate-400">{new Date(device.last_seen_at).toLocaleString()}</p></div>):<p className="py-3 text-sm text-slate-400">No sync devices recorded yet.</p>}</div>
+   <div className="mt-4 divide-y divide-slate-100">{devices.length?devices.map(device=><div key={device.id} className="flex items-center justify-between py-3"><div><p className="text-sm font-medium">{device.name||"Web browser"}</p><p className="text-xs text-slate-400">{device.id.slice(0,8)}…</p></div><p className="text-xs text-slate-400">{formatDateTime(device.last_seen_at)}</p></div>):<p className="py-3 text-sm text-slate-400">No sync devices recorded yet.</p>}</div>
   </div>
  </div>;
 }
