@@ -64,7 +64,7 @@ export async function syncReviews(){
 
 function mapReviewState(item:Record<string,unknown>,userId:string):OfflineReviewState{
  return {
-  id:String(item.id??(userId+":"+String(item.card_id??item.cardId))),
+  id:userId+":"+String(item.card_id??item.cardId??""),
   userId,
   cardId:String(item.card_id??item.cardId??""),
   queue:String(item.queue??"review"),
