@@ -40,6 +40,9 @@ jobs:
           fi
           echo "Static secret/environment audit passed."
 
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Lint
         run: npm run lint
 
