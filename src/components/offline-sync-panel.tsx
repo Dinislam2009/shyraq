@@ -8,7 +8,7 @@ type MediaItem={storage_path:string;mime_type:string;byte_size:number|null;signe
 
 export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[]}){
  const [online,setOnline]=useState(typeof navigator==="undefined"?true:navigator.onLine);
- const [overview,setOverview]=useState({reviews:0,reviewCache:0,decks:0,cards:0,cardTemplates:0,mutations:0,mediaFiles:0,mediaBytes:0});
+ const [overview,setOverview]=useState({reviews:0,reviewCache:0,decks:0,cards:0,cardTemplates:0,tags:0,collections:0,mutations:0,mediaFiles:0,mediaBytes:0});
  const [meta,setMeta]=useState({cursor:0,lastSyncAt:null as string|null,lastError:null as string|null,lastAccepted:0,lastConflicts:0});
  const [progress,setProgress]=useState(readProgress());
  const [busy,setBusy]=useState(false);
@@ -66,7 +66,7 @@ export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[
   </div>
   <div className="rounded-2xl border border-black/[0.06] bg-white p-5">
    <div className="flex items-center justify-between gap-3"><div><p className="font-semibold">Offline storage</p><p className="mt-1 text-sm text-slate-400">{overview.mediaFiles} cached media files · {formatBytes(overview.mediaBytes)}</p></div><button onClick={()=>void clearFailed()} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Clear failed queue</button></div>
-   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5"><Info label="Reviews" value={String(overview.reviews)}/><Info label="Cards" value={String(overview.cards)}/><Info label="Templates" value={String(overview.cardTemplates)}/><Info label="Decks" value={String(overview.decks)}/><Info label="Mutations" value={String(overview.mutations)}/><Info label="Media" value={String(overview.mediaFiles)}/></div>
+   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-7"><Info label="Reviews" value={String(overview.reviews)}/><Info label="Cards" value={String(overview.cards)}/><Info label="Templates" value={String(overview.cardTemplates)}/><Info label="Tags" value={String(overview.tags)}/><Info label="Collections" value={String(overview.collections)}/><Info label="Decks" value={String(overview.decks)}/><Info label="Mutations" value={String(overview.mutations)}/><Info label="Media" value={String(overview.mediaFiles)}/></div>
    <StorageMeter/>
   </div>
   <div className="rounded-2xl border border-black/[0.06] bg-white p-5">
