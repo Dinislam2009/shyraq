@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 "use server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -234,7 +235,8 @@ export async function restoreBackup(supabase:any,userId:string,workspaceId:strin
 async function importStandardRows(supabase:any,userId:string,workspaceId:string,rows:ImportRow[],mode:"create"|"skip"|"replace"){
  const issues=validateImportRows(rows);
  if(issues.length)throw new Error("Validation failed: "+issues.slice(0,8).map(issue=>"row "+issue.row+" "+issue.message).join("; "));
- const {data:existing,error:existingError}=await supabase.from("cards").select("id,deck_id,kind,content,is_suspended,is_marked").eq("owner_id",userId).limit(50000);
+ const fingerprints=rows.map(row=>createHash("md5").update(duplicateKey(row)).digest("hex"));
+ const {data:existing,error:existingError}=fingerprints.length?await supabase.from("cards").select("id,deck_id,kind,content,is_suspended,is_marked,duplicate_fingerprint").eq("owner_id",userId).in("duplicate_fingerprint",fingerprints):{data:[],error:null};
  if(existingError)throw new Error(existingError.message);
  const byKey=new Map<string,any>((existing??[]).map((card:any)=>[duplicateKey({front:String(card.content?.front||""),back:String(card.content?.back||"")}),card]));
  const deckName="Imported "+new Date().toLocaleDateString("en-GB");
