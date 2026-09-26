@@ -37,6 +37,8 @@ export function CardEditor({
     front?: string;
     back?: string;
     tags?: string[];
+    markers?: string[];
+    status?: string;
     options?: string[];
     answer?: number;
     imageUrl?: string;
@@ -56,6 +58,8 @@ export function CardEditor({
   const [front, setFront] = useState(initial?.front || "");
   const [back, setBack] = useState(initial?.back || "");
   const [tags, setTags] = useState((initial?.tags || []).join(", "));
+  const [markers, setMarkers] = useState((initial?.markers || []).join(", "));
+  const [status, setStatus] = useState(initial?.status || "");
   const [options, setOptions] = useState((initial?.options || []).join(", "));
   const [answer, setAnswer] = useState(String(initial?.answer ?? 0));
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
@@ -134,8 +138,8 @@ export function CardEditor({
       <input type="hidden" name="review_preferences" value={JSON.stringify(reviewPreferences)} />
       {offlineError?<div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{offlineError}</div>:null}
       <input type="hidden" name="media_items" value={JSON.stringify(mediaItems.map(item => ({ path: item.path, mimeType: item.mimeType, name: item.name })))} />
-      <div className="grid gap-4 sm:grid-cols-4">
-        <label className="block text-sm font-medium">
+      <div className="grid gap-4 sm:grid-cols-6">
+        <label className="block text-sm font-medium sm:col-span-1">
           Template
           <select name="template_id" value={templateId} onChange={event => setTemplateId(event.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
             <option value="">Default</option>
@@ -143,7 +147,7 @@ export function CardEditor({
           </select>
         </label>
 
-        <label className="block text-sm font-medium">
+        <label className="block text-sm font-medium sm:col-span-1">
           Card type
           <select name="kind" value={kind} onChange={event => setKind(event.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
             <option value="basic">Basic</option>
@@ -158,6 +162,16 @@ export function CardEditor({
         <label className="block text-sm font-medium sm:col-span-2">
           Tags
           <input name="tags" value={tags} onChange={event => setTags(event.target.value)} placeholder="math, algebra, exam" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
+        </label>
+
+        <label className="block text-sm font-medium sm:col-span-1">
+          Markers
+          <input name="markers" value={markers} onChange={event => setMarkers(event.target.value)} placeholder="important, exam" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
+        </label>
+
+        <label className="block text-sm font-medium sm:col-span-1">
+          Status
+          <input name="status" value={status} onChange={event => setStatus(event.target.value.slice(0,60))} placeholder="draft" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
         </label>
       </div>
 
