@@ -11,17 +11,28 @@ export function OfflineDeckForm({action,userId,existingId,existing,redirectTo,ch
  const formRef=useRef<HTMLFormElement>(null);
  const draftTimer=useRef<number|undefined>(undefined);
  const {remoteDraft,publish,dismiss}=useFormDraftChannel(existingId||"",userId,Boolean(existingId));
+ const [pendingRemoteDraft,setPendingRemoteDraft]=useState<Record<string,string|boolean>|null>(null);
 
  useEffect(()=>{
-  if(!remoteDraft||!formRef.current)return;
-  for(const [name,value] of Object.entries(remoteDraft)){
+  if(remoteDraft)setPendingRemoteDraft(remoteDraft);
+ },[remoteDraft]);
+
+ const applyRemoteDraft=()=>{
+  if(!pendingRemoteDraft||!formRef.current)return;
+  for(const [name,value] of Object.entries(pendingRemoteDraft)){
    const field=formRef.current.elements.namedItem(name);
    if(!field)continue;
    if(field instanceof HTMLInputElement&&field.type==="checkbox")field.checked=Boolean(value);
    else if("value" in field)(field as unknown as HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement).value=String(value??"");
   }
+  setPendingRemoteDraft(null);
   dismiss();
- },[dismiss,remoteDraft]);
+ };
+
+ const ignoreRemoteDraft=()=>{
+  setPendingRemoteDraft(null);
+  dismiss();
+ };
 
  const publishDraft=()=>{
   if(!existingId||!formRef.current)return;
@@ -60,5 +71,5 @@ export function OfflineDeckForm({action,userId,existingId,existing,redirectTo,ch
   }});
   router.push((redirectTo||"/decks/"+deckId)+"?offline_saved=1");
   router.refresh();
- }}>{error?<div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{error}</div>:null}{existingId?<div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Live draft collaboration is enabled for this deck.</div>:null}{children}</form>;
+ }}>{error?<div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{error}</div>:null}{pendingRemoteDraft?<div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900"><div><p className="font-semibold">A newer remote deck draft is available</p><p className="mt-1 text-xs text-blue-800">Review it before applying it to your current local form.</p></div><div className="flex gap-2"><button type="button" onClick={ignoreRemoteDraft} className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold">Ignore</button><button type="button" onClick={applyRemoteDraft} className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white">Apply remote draft</button></div></div>:null}{existingId?<div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Live draft collaboration is enabled for this deck.</div>:null}{children}</form>;
 }
