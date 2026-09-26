@@ -41,17 +41,22 @@ export async function GET(request:NextRequest){
   const {data:members}=await supabase.from("workspace_members").select("workspace_id").eq("user_id",user.id);
   const workspaceIds=(members??[]).map(row=>row.workspace_id).filter(Boolean);
   if(!workspaceIds.length)return NextResponse.json({decks:[],cards:[],media:[]});
-  const [{data:decks,error:deckError},{data:cards,error:cardError},{data:media}]=await Promise.all([
-   supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).limit(5000),
-   supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").eq("owner_id",user.id).order("updated_at",{ascending:false}).limit(20000),
+  const deckIds=(decks??[]).map(deck=>deck.id);
+  const [{data:cards,error:cardError},{data:templates,error:templateError},{data:media}]=await Promise.all([
+   deckIds.length
+    ? supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).limit(20000)
+    : Promise.resolve({data:[],error:null}),
+   deckIds.length
+    ? supabase.from("card_templates").select("id,deck_id,name,front_template,back_template,css,field_schema,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).limit(5000)
+    : Promise.resolve({data:[],error:null}),
    supabase.from("media").select("storage_path,mime_type,byte_size,created_at").eq("owner_id",user.id).order("created_at",{ascending:false}).limit(200)
   ]);
-  if(deckError||cardError)return NextResponse.json({error:deckError?.message||cardError?.message||"Bootstrap failed."},{status:500});
+  if(deckError||cardError||templateError)return NextResponse.json({error:deckError?.message||cardError?.message||templateError?.message||"Bootstrap failed."},{status:500});
   const mediaWithUrls=await Promise.all((media??[]).map(async item=>{
    const {data}=await supabase.storage.from("user-media").createSignedUrl(item.storage_path,900);
    return {...item,signed_url:data?.signedUrl||null};
   }));
-  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],media:mediaWithUrls});
+  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],templates:templates??[],media:mediaWithUrls});
  }
  const {data,error}=await supabase.from("sync_changes").select("cursor,event_key,entity_type,entity_id,operation,payload,occurred_at").eq("user_id",user.id).gt("cursor",since).order("cursor",{ascending:true}).limit(500);
  if(error)return NextResponse.json({error:error.message},{status:500});
