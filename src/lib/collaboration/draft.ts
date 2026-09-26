@@ -45,3 +45,41 @@ export function useCardDraftChannel(deckId:string,cardId:string|undefined,userId
  const dismissRemote=useCallback(()=>setRemoteDraft(null),[]);
  return {remoteDraft,publish,dismissRemote,connected:Boolean(channelRef.current)};
 }
+
+
+type FormDraftMessage={source:string;values:Record<string,string|boolean>};
+
+export function useFormDraftChannel(channelKey:string,userId:string|undefined,enabled:boolean){
+ const [remoteDraft,setRemoteDraft]=useState<Record<string,string|boolean>|null>(null);
+ const sourceRef=useRef<string>("");
+ const channelRef=useRef<any>(null);
+
+ useEffect(()=>{
+  if(!enabled||!userId||!channelKey)return;
+  sourceRef.current=crypto.randomUUID();
+  const supabase=createClient();
+  const channel=supabase.channel("shyraq-form-draft-"+channelKey);
+  channel.on("broadcast",{event:"form-draft"},payload=>{
+   const message=payload.payload as FormDraftMessage;
+   if(!message||message.source===sourceRef.current||!message.values)return;
+   setRemoteDraft(message.values);
+  }).subscribe();
+  channelRef.current=channel;
+  return()=>{
+   channelRef.current=null;
+   void supabase.removeChannel(channel);
+  };
+ },[channelKey,enabled,userId]);
+
+ const publish=useCallback((values:Record<string,string|boolean>)=>{
+  if(!channelRef.current)return;
+  void channelRef.current.send({
+   type:"broadcast",
+   event:"form-draft",
+   payload:{source:sourceRef.current,values}
+  });
+ },[]);
+
+ const dismiss=useCallback(()=>setRemoteDraft(null),[]);
+ return {remoteDraft,publish,dismiss};
+}
