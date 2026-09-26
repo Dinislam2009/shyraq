@@ -151,7 +151,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Invite cancellation/revocation UI
 - [x] Workspace activity/audit log
 - [x] Workspace-level settings
-- [ ] Workspace member search/filter
+- [x] Workspace member search/filter
 - [x] Fine-grained per-deck permissions UI
 
 ## Workspace switching
@@ -202,7 +202,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Favorites
 - [x] Marked cards
 - [x] Suspended cards
-- [ ] Nested/tag hierarchy
+- [x] Nested/tag hierarchy
 - [x] Saved filters
 - [x] Smart collections
 - [x] Custom deck sorting
@@ -592,7 +592,7 @@ Target principle:
 - [x] Tag display
 - [x] Tag manager
 - [x] Rename tag globally
-- [ ] Merge tags
+- [x] Merge tags
 - [x] Delete tags
 - [x] Tag hierarchy
 - [x] Tag usage statistics
