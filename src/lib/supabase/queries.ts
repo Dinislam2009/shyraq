@@ -44,7 +44,7 @@ export async function getSelectedWorkspace(){
   }
  }
 
- const {data:personal,error:personalError}=await supabase.from("workspaces").select("*").eq("owner_id",user.id).eq("kind","personal").order("created_at").limit(1).maybeSingle();
+ let {data:personal,error:personalError}=await supabase.from("workspaces").select("*").eq("owner_id",user.id).eq("kind","personal").order("created_at").limit(1).maybeSingle();
  if(personalError)return null;
 
  if(!personal){
