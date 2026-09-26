@@ -557,7 +557,7 @@ Target principle:
 - [x] Media search
 - [x] Media reuse across cards
 - [x] Media deletion/orphan cleanup
-- [ ] Media compression
+- [x] Media compression
 - [ ] Image optimization
 - [x] Audio/video metadata display
 - [x] Offline media cache
