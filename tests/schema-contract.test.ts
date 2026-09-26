@@ -166,3 +166,14 @@ test("creator mute and block relations have secure storage and feed filtering",(
  assert.match(following,/from\("creator_relations"\)/);
  assert.match(following,/visibleFollows/);
 });
+
+
+test("featured collection curation is exposed to platform moderators",()=>{
+ const collectionActions=readFileSync(new URL("../src/app/collections/actions.ts",import.meta.url),"utf8");
+ const platformPage=readFileSync(new URL("../src/app/settings/moderation/platform/page.tsx",import.meta.url),"utf8");
+ assert.match(collectionActions,/toggleFeaturedCollection/);
+ assert.match(collectionActions,/is_platform_moderator/);
+ assert.match(platformPage,/featuredCollections/);
+ assert.match(platformPage,/toggleFeaturedCollection\.bind/);
+ assert.match(platformPage,/Featured public collections/);
+});
