@@ -2196,7 +2196,8 @@ export type Database = {
         Relationships: []
       }
     }
-    Views: {
+    Views: {}
+        Tables: {
       public_profiles: {
         Row: {
           id: string
@@ -2208,6 +2209,27 @@ export type Database = {
           show_activity: boolean
           show_followers: boolean
         }
+        Insert: {
+          id: string
+          username?: string | null
+          display_name?: string | null
+          bio?: string | null
+          avatar_url?: string | null
+          created_at: string
+          show_activity?: boolean
+          show_followers?: boolean
+        }
+        Update: {
+          id?: string
+          username?: string | null
+          display_name?: string | null
+          bio?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          show_activity?: boolean
+          show_followers?: boolean
+        }
+        Relationships: []
       }
     }
     Functions: {
