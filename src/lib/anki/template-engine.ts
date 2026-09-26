@@ -5,6 +5,7 @@ export type AnkiTemplateOptions={
  frontSide?:string;
  clozeIndex?:number;
  revealCloze?:boolean;
+ specialFields?:Record<string,string>;
 };
 
 function resolveField(fields:Record<string,string>,key:string){
@@ -54,7 +55,7 @@ export function renderAnkiTemplate(source:string,fields:Record<string,string>,op
  const clozeIndex=options.clozeIndex;
  const revealCloze=options.revealCloze===true;
  const frontSide=options.frontSide??fields.front??"";
- const merged={...fields,frontSide};
+ const merged={...fields,...(options.specialFields||{}),frontSide};
  let output=renderConditionals(String(source||""),merged);
  output=output.replace(/\{\{\s*([^}:]+?)\s*:\s*([^}]+?)\s*\}\}/g,(_,filter:string,key:string)=>{
   const value=resolveField(merged,key);
