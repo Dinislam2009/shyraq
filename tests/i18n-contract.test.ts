@@ -59,3 +59,10 @@ test("client i18n hydration prioritizes the server locale cookie over stale stor
  assert.match(source,/if\(cookieLocale\)return cookieLocale/);
  assert.match(source,/localStorage\.getItem\("shyraq-locale"\)/);
 });
+test("review runner labels have translations in the shared catalog",()=>{
+ const reviewRunner=readFileSync(new URL("../src/components/review-runner.tsx",import.meta.url),"utf8");
+ assert.match(reviewRunner,/Session complete|Pause|Resume|Session paused|Your queue stays local/);
+ for(const key of ["Session complete","Pause","Resume","Session paused","Your queue stays local. Resume when ready.","Correct option"]){
+  assert.ok(extendedTranslations[key as keyof typeof extendedTranslations],key+" must exist in the extended catalog");
+ }
+});
