@@ -8,7 +8,7 @@ type MediaItem={storage_path:string;mime_type:string;byte_size:number|null;signe
 
 export function OfflineSyncPanel({userId,devices}:{userId:string;devices:Device[]}){
  const [online,setOnline]=useState(typeof navigator==="undefined"?true:navigator.onLine);
- const [overview,setOverview]=useState({reviews:0,reviewCache:0,decks:0,cards:0,mutations:0,mediaFiles:0,mediaBytes:0});
+ const [overview,setOverview]=useState({reviews:0,reviewCache:0,decks:0,cards:0,cardTemplates:0,mutations:0,mediaFiles:0,mediaBytes:0});
  const [meta,setMeta]=useState({cursor:0,lastSyncAt:null as string|null,lastError:null as string|null,lastAccepted:0,lastConflicts:0});
  const [progress,setProgress]=useState(readProgress());
  const [busy,setBusy]=useState(false);
