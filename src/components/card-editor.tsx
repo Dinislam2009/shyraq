@@ -198,7 +198,7 @@ export function CardEditor({
         </label>
 
         <label className="block text-sm font-medium sm:col-span-1">
-          {t("status")}
+          {t("Status")}
           <input name="status" value={status} onChange={event => setStatus(event.target.value.slice(0,60))} placeholder={t("statusPlaceholder")} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
         </label>
       </div>
