@@ -74,7 +74,7 @@ export async function GET(request:NextRequest){
   if(!workspaceIds.length)return NextResponse.json({decks:[],cards:[],media:[]});
   let decks:Record<string,unknown>[]=[];
   try{
-   decks=await fetchAll<Record<string,unknown>>((from,to)=>supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).order("id",{ascending:true}).range(from,to);
+   decks=await fetchAll<Record<string,unknown>>((from,to)=>supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).order("id",{ascending:true}).range(from,to));
   }catch(error){
    return NextResponse.json({error:error instanceof Error?error.message:"Bootstrap failed."},{status:500});
   }
