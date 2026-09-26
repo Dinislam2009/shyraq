@@ -34,8 +34,8 @@ function fsrsSchedule(card:FsrsCard,rating:keyof typeof ratingMap,now:Date,prefs
   maximum_interval:prefs.maximumInterval??36500,
   enable_fuzz:prefs.enableFuzz??true,
   enable_short_term:prefs.enableShortTerm??true,
-  learning_steps:prefs.learningSteps??["1m","10m"],
-  relearning_steps:prefs.relearningSteps??["10m"]
+  learning_steps:normalizeSteps(prefs.learningSteps,DEFAULT_LEARNING_STEPS),
+  relearning_steps:normalizeSteps(prefs.relearningSteps,DEFAULT_RELEARNING_STEPS)
  });
  const result=scheduler.next(card,now,ratingMap[rating]);
  return {card:result.card as unknown as Record<string,unknown>,log:result.log as unknown as Record<string,unknown>,scheduler:"fsrs"};
