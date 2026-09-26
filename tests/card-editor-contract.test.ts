@@ -39,7 +39,7 @@ test("offline mirror includes card templates",()=>{
 
 test("offline storage usage counts templates independently",()=>{
  const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
- assert.match(store,/offlineStore\.cardTemplates\.count\(\),offlineStore\.tags\.count\(\),offlineStore\.collections\.count\(\),offlineStore\.mutations\.count\(\)/);
+ assert.match(store,/offlineStore\.cardTemplates\.count\(\),offlineStore\.tags\.count\(\),offlineStore\.collections\.count\(\),offlineStore\.collectionCards\.count\(\),offlineStore\.mutations\.count\(\)/);
 });
 
 
@@ -47,14 +47,15 @@ test("offline bootstrap keeps templates in the local mirror",()=>{
  const sync=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
  assert.ok(sync.includes("templates?:Record<string,unknown>[]"));
  assert.ok(sync.includes("(data.templates??[]).map(item=>mapTemplate(item,userId))"));
- assert.ok(sync.includes("return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[]}"));
+ assert.ok(sync.includes("data.collectionCards??[]"));
+ assert.ok(sync.includes("return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[],tags:data.tags??[],collections:data.collections??[],collectionCards:data.collectionCards??[]}"));
 });
 
 
 test("workspace sync fans out tags and collections",()=>{
  const schema=readFileSync(new URL("../supabase/schema.sql",import.meta.url),"utf8");
  const route=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
- assert.match(schema,/tg_table_name in \('decks','cards','card_templates','tags','collections'\)/);
+ assert.match(schema,/tg_table_name in \('decks','cards','card_templates','tags','collections','collection_cards'\)/);
  assert.match(route,/entityType==="tags"/);
  assert.match(route,/entityType==="collections"/);
  assert.match(route,/tags:\(tags\?\?\[\]\)/);
@@ -68,4 +69,13 @@ test("card toggles use optimistic action feedback",()=>{
  assert.match(manager,/OptimisticToggleForm/);
  assert.match(toggle,/useFormStatus/);
  assert.match(toggle,/onSubmit=\{\(\)=>setActive/);
+});
+
+test("collection-card relations are mirrored with a stable composite key",()=>{
+ const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
+ const sync=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
+ assert.match(store,/collectionCards!:Table<OfflineCollectionCard,string>/);
+ assert.match(store,/collectionCards:"id,collectionId,cardId,createdAt"/);
+ assert.match(sync,/function mapCollectionCard/);
+ assert.match(sync,/collectionId\+":\"\+cardId/);
 });
