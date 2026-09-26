@@ -5,6 +5,7 @@ import {createClient} from "@/lib/supabase/client";
 import {useI18n} from "@/components/i18n-provider";
 
 type PresenceEntry={userId:string;displayName:string;role:"editor"|"viewer"|"reviewer"|"admin"|"owner";joinedAt:number};
+const normalizeRole=(value:unknown):PresenceEntry["role"]=>{const role=String(value||"");return ["editor","viewer","reviewer","admin","owner"].includes(role)?(role as PresenceEntry["role"]):"viewer"};
 
 export function CollaborationPresence({deckId,userId,displayName,role}:{deckId:string;userId:string;displayName:string;role:string}){
  const [members,setMembers]=useState<PresenceEntry[]>([]);
@@ -19,7 +20,7 @@ export function CollaborationPresence({deckId,userId,displayName,role}:{deckId:s
    const next=Object.values(state).flatMap(entries=>entries.map(entry=>({
     userId:String(entry.userId||""),
     displayName:String(entry.displayName||"Member"),
-    role:["editor","viewer","reviewer","admin","owner"].includes(String(entry.role))?String(entry.role) as PresenceEntry["role"]:"viewer",
+    role:normalizeRole(entry.role),
     joinedAt:Number(entry.joinedAt||0)
    })));
    const unique=new Map<string,PresenceEntry>();
