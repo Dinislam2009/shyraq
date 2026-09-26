@@ -105,7 +105,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
       if(sort==="created")return String(card.updated_at||"");
       return sort==="manual"?String(card.sort_order??0).padStart(12,"0"):String(card.updated_at||"");
     };
-    const direction=(sort:string)=>sort==="name"||sort==="kind"||sort==="status"?1:-1;
+    const direction=(sort:string)=>sort==="name"||sort==="kind"||sort==="status"||sort==="manual"?1:-1;
     result.sort((a:any,b:any)=>{
       const primary=key(a,sortPrimary).localeCompare(key(b,sortPrimary),undefined,{numeric:true});
       if(primary!==0)return primary*direction(sortPrimary);
