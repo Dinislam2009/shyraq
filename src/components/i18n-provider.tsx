@@ -32,7 +32,7 @@ export function I18nProvider({children,initialLocale="en"}:{children:ReactNode;i
 
  useEffect(()=>{
   const local=getInitialLocale(initialLocale);
-  const hasLocalPreference=/(?:^|;\\s*)shyraq-locale=/.test(document.cookie)||Boolean(window.localStorage.getItem("shyraq-locale"));
+  const hasLocalPreference=/(?:^|;\s*)shyraq-locale=/.test(document.cookie)||Boolean(window.localStorage.getItem("shyraq-locale"));
   if(local!==initialLocale)setLocaleState(local);
   if(hasLocalPreference)return;
   void fetch("/api/preferences/locale",{cache:"no-store"})
