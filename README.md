@@ -239,7 +239,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Full visual image-occlusion editor
 - [x] Drag/resize occlusion rectangles
 - [x] Multiple occlusion groups
-- [ ] Advanced cloze/image workflows
+- [x] Advanced cloze/image workflows
 
 ## Card editor
 
@@ -292,9 +292,9 @@ Target editor:
 - [x] Bulk suspend/unsuspend
 - [x] Bulk delete
 - [x] Inline editing foundation
-- [ ] Fully customizable columns
-- [ ] Column visibility settings
-- [ ] Column ordering
+- [x] Fully customizable columns
+- [x] Column visibility settings
+- [x] Column ordering
 - [x] Multi-sort
 - [x] Saved table views
 - [x] Advanced filter builder
@@ -330,8 +330,8 @@ The review engine is one of Shyraq's core systems.
 - [x] New-card daily limit
 - [x] Review daily limit
 - [x] Scheduler profiles
-- [ ] Multiple scheduler engines
-- [ ] User-selectable scheduler
+- [x] Multiple scheduler engines
+- [x] User-selectable scheduler
 - [x] Advanced scheduler diagnostics
 - [x] Scheduler migration tools
 
@@ -738,8 +738,8 @@ Collaboration is planned after the public sharing foundation.
 - [x] Active editor indicators
 - [ ] Cursor/selection presence where practical
 - [ ] Optimistic updates
-- [ ] Conflict detection
-- [ ] Conflict resolution UI
+- [x] Conflict detection
+- [x] Conflict resolution UI
 - [x] Version history
 - [x] Restore previous version
 - [x] Comments
@@ -840,7 +840,7 @@ Target supported languages:
 - [x] Kazakh
 - [ ] Complete production-grade translation coverage
 - [ ] Server-rendered/localized text instead of DOM translation
-- [ ] Persistent language preference across devices
+- [x] Persistent language preference across devices
 - [ ] Locale-aware dates/numbers
 - [ ] Translation QA
 
