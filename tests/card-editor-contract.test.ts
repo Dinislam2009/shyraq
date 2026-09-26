@@ -60,3 +60,12 @@ test("workspace sync fans out tags and collections",()=>{
  assert.match(route,/tags:\(tags\?\?\[\]\)/);
  assert.match(route,/collections:\(collections\?\?\[\]\)/);
 });
+
+
+test("card toggles use optimistic action feedback",()=>{
+ const manager=readFileSync(new URL("../src/components/card-manager.tsx",import.meta.url),"utf8");
+ const toggle=readFileSync(new URL("../src/components/optimistic-toggle-form.tsx",import.meta.url),"utf8");
+ assert.match(manager,/OptimisticToggleForm/);
+ assert.match(toggle,/useFormStatus/);
+ assert.match(toggle,/onSubmit=\{\(\)=>setActive/);
+});
