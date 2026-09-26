@@ -6,6 +6,7 @@ const child=spawn(
  ["run","dev","--","--hostname","127.0.0.1","--port","3000"],
  {
   stdio:"inherit",
+  shell:process.platform==="win32",
   env:{
    ...process.env,
    NEXT_PUBLIC_SUPABASE_URL:process.env.NEXT_PUBLIC_SUPABASE_URL||"http://127.0.0.1:54321",
