@@ -2,8 +2,9 @@
 
 import {createContext,useContext,useEffect,useMemo,useState,type ReactNode} from "react";
 import {dictionaries,type Locale,type TranslationKey} from "@/lib/i18n";
+import {formatDate,formatDateTime,formatNumber} from "@/lib/i18n-format";
 
-type I18nContextValue={locale:Locale;setLocale:(locale:Locale)=>void;t:(key:TranslationKey)=>string};
+type I18nContextValue={locale:Locale;setLocale:(locale:Locale)=>void;t:(key:TranslationKey)=>string;formatNumber:(value:number,options?:Intl.NumberFormatOptions)=>string;formatDate:(value:string|number|Date,options?:Intl.DateTimeFormatOptions)=>string;formatDateTime:(value:string|number|Date)=>string};
 const I18nContext=createContext<I18nContextValue|null>(null);
 
 function validLocale(value:unknown):Locale|null{
@@ -47,6 +48,9 @@ export function I18nProvider({children,initialLocale="en"}:{children:ReactNode;i
   locale,
   setLocale:(next:Locale)=>setLocaleState(next),
   t:(key:TranslationKey)=>dictionaries[locale][key]??dictionaries.en[key],
+  formatNumber:(value:number,options?:Intl.NumberFormatOptions)=>formatNumber(value,locale,options),
+  formatDate:(value:string|number|Date,options?:Intl.DateTimeFormatOptions)=>formatDate(value,locale,options),
+  formatDateTime:(value:string|number|Date)=>formatDateTime(value,locale),
  }),[locale]);
 
  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
