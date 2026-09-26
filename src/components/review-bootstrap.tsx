@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { cacheReviewSession, getCachedReviewSession } from "@/lib/offline/store";
-import { syncReviews } from "@/lib/sync/client";
+import { cacheReviewSession, getCachedReviewSession, getCachedReviewPreferences } from "@/lib/offline/store";
+import { syncReviews, getOfflineReviewQueue } from "@/lib/sync/client";
 import { ReviewRunner } from "@/components/review-runner";
 
 const defaults={desired_retention:0.9,maximum_interval:36500,learning_steps:["1m","10m"],relearning_steps:["10m"],enable_fuzz:true,enable_short_term:true};
@@ -11,8 +11,10 @@ const defaults={desired_retention:0.9,maximum_interval:36500,learning_steps:["1m
 export function ReviewBootstrap({
  userId,
  initialQueue,
- initialPreferences
-}:{userId:string|null;initialQueue:any[];initialPreferences:any}){
+ initialPreferences,
+ deckId,
+ limit=20
+}:{userId:string|null;initialQueue:any[];initialPreferences:any;deckId?:string;limit?:number}){
  const [resolvedUserId,setResolvedUserId]=useState(userId);
  const [queue,setQueue]=useState<any[]>(initialQueue);
  const [preferences,setPreferences]=useState<any>(initialPreferences||defaults);
@@ -42,6 +44,13 @@ export function ReviewBootstrap({
      setQueue(cached.queue);
      setPreferences({...defaults,...(cached.preferences&&typeof cached.preferences==="object"?cached.preferences:{})});
      setReady(true);
+    }else if(browserUserId){
+     const localQueue=await getOfflineReviewQueue(browserUserId,deckId,limit);
+     const cachedPreferences=await getCachedReviewPreferences(browserUserId);
+     setResolvedUserId(browserUserId);
+     setQueue(localQueue);
+     setPreferences({...defaults,...(cachedPreferences&&typeof cachedPreferences==="object"?cachedPreferences:{})});
+     setReady(true);
     }else{
      setResolvedUserId(browserUserId);
      setReady(true);
@@ -56,7 +65,7 @@ export function ReviewBootstrap({
   const onOnline=()=>{void syncReviews().catch(()=>undefined);};
   window.addEventListener("online",onOnline);
   return()=>{active=false;window.removeEventListener("online",onOnline);};
- },[initialQueue,initialPreferences,userId]);
+ },[initialQueue,initialPreferences,userId,deckId,limit]);
 
  if(!ready||!resolvedUserId){
   return <div className="mx-auto max-w-2xl px-5 py-20 text-center"><h1 className="text-2xl font-semibold">Preparing review session</h1><p className="mt-3 text-sm text-slate-500">Loading your local study data…</p></div>;
