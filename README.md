@@ -256,7 +256,7 @@ Target editor:
 - [x] LaTeX
 - [x] Media upload
 - [x] Tags
-- [ ] Full WYSIWYG document editor
+- [x] Full WYSIWYG document editor
 - [x] Slash commands
 - [x] Drag-and-drop blocks
 - [x] Block-level formatting
@@ -1201,11 +1201,11 @@ Before calling Shyraq production-ready:
 - [x] Data deletion verified
 
 ### Security
-- [ ] RLS audit complete
-- [ ] Storage policy audit complete
+- [x] RLS audit complete
+- [x] Storage policy audit complete
 - [ ] Auth security audit complete
 - [ ] Leaked-password protection enabled
-- [ ] Secret audit complete
+- [x] Secret audit complete
 - [ ] Dependency audit complete
 
 ### UX
@@ -1220,7 +1220,7 @@ Before calling Shyraq production-ready:
 
 ### Quality
 - [x] Unit tests
-- [ ] Integration tests
+- [x] Integration tests
 - [ ] E2E tests
 - [ ] Browser verification
 - [ ] Performance audit
