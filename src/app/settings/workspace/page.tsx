@@ -49,7 +49,43 @@ export default async function WorkspacePage({searchParams}:{searchParams:Promise
 
   <div className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-6">
    <div className="flex items-center justify-between"><div><h2 className="font-semibold">{selected.name} members</h2><p className="mt-1 text-xs text-slate-400">Your role: {myMember?.role??"member"}</p></div></div>
-   <form className="mt-4 flex gap-2"><input name="member" defaultValue={memberQuery||""} placeholder="Search by name, username or user id" className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-xs"/><input type="hidden" name="workspace" value={selected.id}/><button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Search</button></form><div className="mt-5 space-y-3">{filteredMembers.map((m:any)=>{const profile=profileMap.get(m.user_id);return <div key={m.user_id} className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-medium">{profile?.display_name||profile?.username||"Member"}</p><p className="mt-1 text-xs text-slate-400">{profile?.username?"@"+profile.username+" · ":""}{m.user_id.slice(0,8)}… · {m.created_at?new Date(m.created_at).toLocaleDateString():""}</p></div><div className="flex items-center gap-2">{m.user_id===selected.owner_id?<span className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Owner</span>:<><form action={updateMemberRole.bind(null,selected.id,m.user_id,"editor")}><button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Editor</button></form><form action={updateMemberRole.bind(null,selected.id,m.user_id,"reviewer")}><button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Reviewer</button></form><form action={updateMemberRole.bind(null,selected.id,m.user_id,"viewer")}><button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Viewer</button></form><form action={removeMember.bind(null,selected.id,m.user_id)}><button className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600">Remove</button></form></>}</div></div>)}</div>
+   <form className="mt-4 flex gap-2">
+    <input name="member" defaultValue={memberQuery||""} placeholder="Search by name, username or user id" className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-xs"/>
+    <input type="hidden" name="workspace" value={selected.id}/>
+    <button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Search</button>
+   </form>
+   <div className="mt-5 space-y-3">
+    {filteredMembers.map((m:any)=>{
+     const profile=profileMap.get(m.user_id);
+     const isOwner=m.user_id===selected.owner_id;
+     return (
+      <div key={m.user_id} className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+       <div>
+        <p className="text-sm font-medium">{profile?.display_name||profile?.username||"Member"}</p>
+        <p className="mt-1 text-xs text-slate-400">{profile?.username?"@"+profile.username+" · ":""}{m.user_id.slice(0,8)}… · {m.created_at?new Date(m.created_at).toLocaleDateString():""}</p>
+       </div>
+       {isOwner ? (
+        <span className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Owner</span>
+       ) : (
+        <div className="flex items-center gap-2">
+         <form action={updateMemberRole.bind(null,selected.id,m.user_id,"editor")}>
+          <button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Editor</button>
+         </form>
+         <form action={updateMemberRole.bind(null,selected.id,m.user_id,"reviewer")}>
+          <button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Reviewer</button>
+         </form>
+         <form action={updateMemberRole.bind(null,selected.id,m.user_id,"viewer")}>
+          <button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Viewer</button>
+         </form>
+         <form action={removeMember.bind(null,selected.id,m.user_id)}>
+          <button className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600">Remove</button>
+         </form>
+        </div>
+       )}
+      </div>
+     );
+    })}
+   </div>
   </div>
    <section className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-6"><h2 className="font-semibold">Workspace audit log</h2><div className="mt-4 space-y-2">{(audit??[]).map((entry:any)=><div key={entry.id} className="rounded-xl bg-slate-50 p-3 text-xs"><span className="font-semibold">{entry.event_type}</span><span className="ml-2 text-slate-400">{new Date(entry.created_at).toLocaleString()}</span></div>)}{!(audit??[]).length?<p className="text-sm text-slate-400">No audit events yet.</p>:null}</div></section>
  </div></AppShell>;
