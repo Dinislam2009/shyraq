@@ -132,7 +132,7 @@ begin
       add constraint sync_conflicts_event_key_fkey
       foreign key(event_key) references public.review_events(event_key) on delete cascade;
   end if;
-end $;
+end $shyraq$;
 
 create table if not exists public.media (
  id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
