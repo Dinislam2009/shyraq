@@ -704,12 +704,13 @@ create policy profiles_self_update on public.profiles for update to authenticate
 create policy profiles_self_delete on public.profiles for delete to authenticated using(id=(select auth.uid()));
 
 -- Public creator identity is exposed through a dedicated view so private account
--- settings stay inaccessible to other authenticated users.
-create or replace view public.public_profiles as
+-- settings stay inaccessible to other callers. The view deliberately projects
+-- only fields intended to be public; private profile columns remain excluded.
+create or replace view public.public_profiles with (security_barrier=true) as
 select id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers
 from public.profiles;
 revoke all on public.public_profiles from anon,authenticated;
-grant select on public.public_profiles to authenticated;
+grant select on public.public_profiles to anon,authenticated;
 
 
 drop policy if exists workspace_member_read on public.workspaces;
@@ -724,7 +725,11 @@ create policy members_read on public.workspace_members for select to authenticat
 drop policy if exists members_admin_write on public.workspace_members;
 create policy members_admin_insert on public.workspace_members for insert to authenticated with check(private.is_workspace_member(workspace_id,'admin') or private.is_workspace_owner(workspace_id));
 create policy members_admin_update on public.workspace_members for update to authenticated using((select private.is_workspace_member(workspace_id,'admin')) or (select private.is_workspace_owner(workspace_id))) with check((select private.is_workspace_member(workspace_id,'admin')) or (select private.is_workspace_owner(workspace_id)));
-create policy members_admin_delete on public.workspace_members for delete to authenticated using(private.is_workspace_member(workspace_id,'admin'));
+create policy members_admin_delete on public.workspace_members for delete to authenticated
+using(
+  private.is_workspace_member(workspace_id,'admin')
+  and exists(select 1 from public.workspaces w where w.id=workspace_id and w.owner_id<>(select auth.uid()))
+);
 
 drop policy if exists decks_read on public.decks;
 create policy decks_read on public.decks for select to authenticated using(visibility='public' or private.is_workspace_member(workspace_id,'viewer'));
@@ -1158,14 +1163,42 @@ set search_path = pg_catalog,public,private
 as $shyraq$
 declare
   workspace_owner uuid;
+  actor uuid := (select auth.uid());
 begin
+  if tg_op='DELETE' then
+    select w.owner_id into workspace_owner from public.workspaces w where w.id=old.workspace_id;
+    if old.role='owner'::workspace_role then
+      raise exception 'workspace owner membership cannot be deleted';
+    end if;
+    if actor is distinct from workspace_owner and old.role='admin'::workspace_role then
+      raise exception 'only the workspace owner may remove an admin';
+    end if;
+    return old;
+  end if;
+
   select w.owner_id into workspace_owner from public.workspaces w where w.id=new.workspace_id;
+
+  if tg_op='UPDATE' and (new.workspace_id is distinct from old.workspace_id or new.user_id is distinct from old.user_id) then
+    raise exception 'workspace membership identity cannot be changed';
+  end if;
+
   if new.role='owner'::workspace_role and new.user_id is distinct from workspace_owner then
     raise exception 'only the workspace owner may have the owner role';
   end if;
-  if tg_op='UPDATE' and old.role='owner'::workspace_role and (new.user_id is distinct from old.user_id or new.role is distinct from old.role) then
+
+  if tg_op='UPDATE' and old.role='owner'::workspace_role and new.role is distinct from old.role then
     raise exception 'workspace owner role cannot be changed';
   end if;
+
+  if actor is distinct from workspace_owner and new.role='admin'::workspace_role and
+     (tg_op='INSERT' or old.role is distinct from new.role) then
+    raise exception 'only the workspace owner may assign admin role';
+  end if;
+
+  if actor is distinct from workspace_owner and tg_op='UPDATE' and old.role='admin'::workspace_role and new.role is distinct from old.role then
+    raise exception 'only the workspace owner may change an admin role';
+  end if;
+
   return new;
 end;
 $shyraq$;
@@ -1173,7 +1206,7 @@ $shyraq$;
 revoke all on function private.prevent_workspace_owner_role_change() from public,anon,authenticated;
 drop trigger if exists workspace_owner_role_immutable on public.workspace_members;
 create trigger workspace_owner_role_immutable
-before insert or update on public.workspace_members
+before insert or update or delete on public.workspace_members
 for each row execute function private.prevent_workspace_owner_role_change();
 
 -- Shyraq collaboration realtime
