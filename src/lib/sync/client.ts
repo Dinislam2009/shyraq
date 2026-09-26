@@ -56,9 +56,9 @@ export async function syncReviews(){
   body:JSON.stringify({events:events.map(e=>({...e,event_key:e.id}))})
  });
  if(!response.ok)throw new Error("Review sync failed.");
- const result=(await response.json()) as {accepted:number;conflicts:string[]};
- const conflictSet=new Set(result.conflicts??[]);
- await offlineStore.reviews.bulkPut(events.map(e=>({...e,status:conflictSet.has(e.id)?"failed" as const:"synced" as const})));
+ const result=(await response.json()) as {accepted:number;conflicts:string[];failedEvents?:string[]};
+ const failedSet=new Set([...(result.conflicts??[]),...(result.failedEvents??[])]);
+ await offlineStore.reviews.bulkPut(events.map(e=>({...e,status:failedSet.has(e.id)?"failed" as const:"synced" as const})));
  return result;
 }
 
