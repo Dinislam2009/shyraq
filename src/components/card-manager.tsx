@@ -48,7 +48,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [tableView,setTableView]=useState(false);
   const [columns,setColumns]=useState<CardColumnKey[]>(DEFAULT_COLUMNS);
   const [columnEditorOpen,setColumnEditorOpen]=useState(false);
-  const { t } = useI18n();
+  const { t, formatDate } = useI18n();
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
   useEffect(()=>{
@@ -320,7 +320,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
                 if(column==="status")return card.content?.status||"—";
                 if(column==="tags")return Array.isArray(card.content?.tags)?card.content.tags.join(", "):"—";
                 if(column==="markers")return Array.isArray(card.content?.markers)?card.content.markers.join(", "):"—";
-                return card.updated_at?new Date(card.updated_at).toLocaleDateString():"—";
+                return card.updated_at?formatDate(card.updated_at):"—";
                };
                return <tr key={card.id} draggable={canEdit&&sortPrimary==="manual"} onDragStart={()=>setDraggedCard(card.id)} onDragOver={event=>{if(canEdit&&sortPrimary==="manual")event.preventDefault();}} onDrop={()=>{if(draggedCard&&sortPrimary==="manual"){const order=filtered.map(item=>item.id);const from=order.indexOf(draggedCard);const to=order.indexOf(card.id);if(from>=0&&to>=0&&from!==to){const [moved]=order.splice(from,1);order.splice(to,0,moved);void reorderCards(deckId,order);}setDraggedCard(null);}}} data-card-index={index} tabIndex={0} className="border-b border-slate-100 align-top focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-500">
                 <td className="px-4 py-3"><input type="checkbox" checked={selected.includes(card.id)} onChange={()=>toggle(card.id)} aria-label={"Select card "+(index+1)} className="h-4 w-4"/></td>
