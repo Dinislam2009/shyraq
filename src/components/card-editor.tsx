@@ -118,7 +118,7 @@ export function CardEditor({
   const templatePreviewBack = selectedTemplate ? renderAnkiTemplate(selectedTemplate.back_template, { ...customValues, front: previewFront, back: previewBack }, { side: "back", frontSide: templatePreviewFront, clozeIndex: Number(initial?.clozeIndex || 1), revealCloze: true }) : previewBack;
 
   function addField() {
-    const name = window.prompt("Field name");
+    const name = window.prompt(t("fieldNamePrompt"));
     if (!name) return;
     const clean = name.trim().replace(/[^a-zA-Z0-9_ -]/g, "").slice(0, 60);
     if (!clean || ["front", "back", "frontside"].includes(clean.toLowerCase())) return;
@@ -140,7 +140,7 @@ export function CardEditor({
  setOfflineError("");
  const formData=new FormData(event.currentTarget);
  const mediaFile=formData.get("media_file");
- if(mediaFile instanceof File&&mediaFile.size>0){setOfflineError("Media upload requires a connection. Your text/card changes can still be saved offline.");return;}
+ if(mediaFile instanceof File&&mediaFile.size>0){setOfflineError(t("offlineMediaConnectionMessage"));return;}
  const parsed=parseCardFormData(formData);
  const id=offlineContext.existing?.id||crypto.randomUUID();
  const now=new Date().toISOString();
@@ -270,7 +270,7 @@ export function CardEditor({
               <CompressedImageInput name="media_file" accept={kind === "image" ? "image/*" : "image/*,audio/*,video/*"} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
               <span className="mt-1 block text-xs text-slate-400">{t("max25Mb")}</span>
             </label>
-            {mediaItems.length > 0 && <p className="mt-3 text-xs text-slate-500">{mediaItems.length} media item(s) linked to this card.</p>}
+            {mediaItems.length > 0 && <p className="mt-3 text-xs text-slate-500">{mediaItems.length} {t("mediaItemsLinked")}</p>}
           </div>
 
           {kind === "image" && (
