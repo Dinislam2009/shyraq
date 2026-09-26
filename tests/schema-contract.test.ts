@@ -19,7 +19,7 @@ test("schema contains application-level tables used by server actions",()=>{
   "activity_feed","deck_versions","deck_members","collection_members",
   "workspace_audit_logs","moderators","notification_preferences",
   "saved_searches","saved_filters","notifications","review_devices",
-  "backup_versions","moderation_actions","deck_copy_update_history"
+  "backup_versions","moderation_actions","deck_copy_update_history","error_logs"
  ]) tableBlock(table);
 });
 
@@ -98,4 +98,10 @@ test("secondary feature tables have owner-scoped RLS contracts",()=>{
  assert.match(schema,/create policy deck_copy_update_history_self[\s\S]*user_id=\(select auth\.uid\(\)\)/);
  assert.match(schema,/alter table public\.moderation_actions enable row level security/);
  assert.match(schema,/create policy moderation_actions_insert[\s\S]*moderator_id=\(select auth\.uid\(\)\)/);
+});
+
+
+test("telemetry error logs accept only the signed-in user",()=>{
+ assert.match(schema,/alter table public\.error_logs enable row level security/);
+ assert.match(schema,/create policy error_logs_insert[\s\S]*user_id=\(select auth\.uid\(\)\)/);
 });
