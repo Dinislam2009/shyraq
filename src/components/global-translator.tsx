@@ -56,8 +56,8 @@ export function GlobalTranslator() {
             const textNodes: Node[] = [];
             let textNode: Node | null;
             while ((textNode = walker.nextNode())) textNodes.push(textNode);
-            const lastText = textNodes.at(-1);
-            if (lastText) lastText.textContent = translationLookup[key][locale];
+            const target = textNodes.find(item => reverse.get(normalize(item.textContent || "")) === key);
+            if (target) target.textContent = translationLookup[key][locale];
           }
         }
         if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
