@@ -14,6 +14,9 @@ function validLocale(value:unknown):Locale|null{
 
 function getInitialLocale(fallback:Locale="en"):Locale{
  if(typeof window==="undefined")return "en";
+ const cookieMatch=document.cookie.match(/(?:^|;\\s*)shyraq-locale=([^;]+)/);
+ const cookieLocale=validLocale(cookieMatch?.[1] ? decodeURIComponent(cookieMatch[1]) : null);
+ if(cookieLocale)return cookieLocale;
  const saved=validLocale(window.localStorage.getItem("shyraq-locale"));
  if(saved)return saved;
  const browser=navigator.language.toLowerCase();
