@@ -98,7 +98,7 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
    templates.push(template);
    templateMeta.set(String(id)+":"+String(ord),template);
    if(/\{\{\s*[#^]/.test(frontRaw+" "+backRaw))warnings.push("Template "+template.name+" uses conditional sections that require compatibility review.");
-   if(/\{\{\s*[^}:]+\s*:\s*(?:text|cloze|hint)/i.test(frontRaw+" "+backRaw))warnings.push("Template "+template.name+" uses Anki filters; common text/cloze/hint filters are normalized.");
+   if(/\{\{\s*[^}:]+\s*:\s*(?:text|cloze|hint)/i.test(frontRaw+" "+backRaw))warnings.push("Template "+template.name+" uses Anki filters; Shyraq preserves common text/cloze/hint/type filter semantics through its compatibility renderer.");
   });
  }
 
