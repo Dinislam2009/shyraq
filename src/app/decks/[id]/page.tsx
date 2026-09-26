@@ -8,9 +8,11 @@ import {getDeck} from "@/lib/supabase/queries";
 import {acceptDeckUpdate,setDeckUpdatePolicy} from "@/app/explore/[id]/actions";
 import {createClient} from "@/lib/supabase/server";
 import {getEffectiveDeckRole} from "@/lib/workspace/deck-permissions";
+import {getServerI18n} from "@/lib/i18n-server";
 
 export default async function DeckPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{error?:string}>}){
  const {id}=await params;
+ const {t}=await getServerI18n();
  const {error}=await searchParams;
  const deck:any=await getDeck(id);
  if(!deck)notFound();
@@ -79,7 +81,7 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
   <AppShell>
    <CollaborationRealtime deckId={id} workspaceId={String(deck.workspace_id)}/>
    <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
-    <Link href="/decks" className="text-sm text-slate-400 hover:text-slate-700">← Back to decks</Link>
+    <Link href="/decks" className="text-sm text-slate-400 hover:text-slate-700">← {t("Back to decks")}</Link>
 
     {error&&(
      <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
@@ -93,18 +95,18 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
        {user&&<CollaborationPresence deckId={id} userId={user.id} displayName={String(currentProfile?.display_name||currentProfile?.username||"Member")} role={String(permission.deckRole||"viewer")}/>}
       </div>
       <h1 className="text-3xl font-semibold tracking-tight">{deck.name}</h1>
-      <p className="mt-2 text-sm text-slate-500">{deck.description||"No description"}</p>
+      <p className="mt-2 text-sm text-slate-500">{deck.description||t("No description")}</p>
      </div>
 
      <div className="flex flex-wrap gap-2">
       {canEdit&&(
        <>
-        <Link href={"/decks/"+id+"/cards/new"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Add card</Link>
-        <Link href={"/decks/"+id+"/cards/bulk"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Bulk create</Link>
-        <Link href={"/decks/"+id+"/templates"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Templates</Link><Link href={"/decks/"+id+"/settings"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Settings</Link><Link href={"/decks/"+id+"/collaboration"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Collaboration</Link>
+        <Link href={"/decks/"+id+"/cards/new"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">{t("Add card")}</Link>
+        <Link href={"/decks/"+id+"/cards/bulk"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">{t("Bulk create")}</Link>
+        <Link href={"/decks/"+id+"/templates"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">{t("Templates")}</Link><Link href={"/decks/"+id+"/settings"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">{t("Settings")}</Link><Link href={"/decks/"+id+"/collaboration"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">{t("Collaboration")}</Link>
        </>
       )}
-      <Link href={"/decks/"+id+"/updates"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">Updates</Link><Link href={"/review?deck="+id} className="inline-flex h-11 items-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white">Study</Link>
+      <Link href={"/decks/"+id+"/updates"} className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold">{t("Updates")}</Link><Link href={"/review?deck="+id} className="inline-flex h-11 items-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white">{t("Study")}</Link>
      </div>
     </div>
 
@@ -112,13 +114,13 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
      <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
        <div>
-        <p className="text-sm font-semibold text-amber-900">Author update available</p>
+        <p className="text-sm font-semibold text-amber-900">{t("Author update available")}</p>
         <p className="mt-1 text-sm text-amber-800">“{sourceUpdate.source.name}” has changed since this copy was last synced.</p>
         {sourceUpdate.update_policy==="accept_all"&&<p className="mt-1 text-xs text-amber-700">Your setting allows author updates, but local changes are still protected.</p>}
        </div>
        <div className="flex gap-2">
         <form action={acceptDeckUpdate.bind(null,id)}>
-         <button className="rounded-xl bg-amber-900 px-4 py-2.5 text-sm font-semibold text-white">Review & accept update</button>
+         <button className="rounded-xl bg-amber-900 px-4 py-2.5 text-sm font-semibold text-white">{t("Review & accept update")}</button>
         </form>
         <form action={setDeckUpdatePolicy.bind(null,id,sourceUpdate.update_policy==="accept_all"?"ask":"accept_all")}>
          <button className="rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-900">
@@ -131,16 +133,16 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
     )}
 
     <div className="mt-8 grid gap-4 sm:grid-cols-3">
-     <Metric label="Cards" value={String(cards.length)}/>
-     <Metric label="Visibility" value={deck.visibility}/>
-     <Metric label="Status" value="Active"/>
+     <Metric label={t("Cards")} value={String(cards.length)}/>
+     <Metric label={t("Visibility")} value={deck.visibility}/>
+     <Metric label={t("Status")} value={t("Active")}/>
     </div>
 
     <div className="mt-8">
      {cards.length===0 ? (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-       <p className="font-semibold">No cards yet</p>
-       {canEdit&&<Link href={"/decks/"+id+"/cards/new"} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Add your first card</Link>}
+       <p className="font-semibold">{t("No cards yet")}</p>
+       {canEdit&&<Link href={"/decks/"+id+"/cards/new"} className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">{t("Add your first card")}</Link>}
       </div>
      ) : (
       <CardManager deckId={id} cards={cards} favoriteIds={favoriteIds} canEdit={canEdit}/>
