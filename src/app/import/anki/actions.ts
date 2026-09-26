@@ -84,7 +84,7 @@ export async function importAnki(formData:FormData):Promise<void>{
    if(deckError||!deck)throw new Error(deckError?.message||"Unable to create imported deck.");
    createdDeckIds.push(deck.id);
 
-   const modelIds=[...new Set(sourceDeck.cards.map(card=>String(card.modelId))];
+   const modelIds=[...new Set(sourceDeck.cards.map(card=>String(card.modelId)))];
    const relevantTemplates=parsed.templates.filter(template=>modelIds.includes(String(template.sourceModelId)));
    for(const sourceTemplate of relevantTemplates){
     const {data:template,error:templateError}=await supabase.from("card_templates").insert(templateRecord(sourceTemplate,deck.id)).select("id").single();
