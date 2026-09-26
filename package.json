@@ -13,7 +13,8 @@
     "test:watch": "node --experimental-strip-types --test --watch tests/*.test.ts",
     "test:api": "node scripts/api-smoke.mjs",
     "audit:bundle": "node scripts/bundle-audit.mjs",
-    "audit:aria": "node scripts/aria-audit.mjs"
+    "audit:aria": "node scripts/aria-audit.mjs",
+    "audit:performance": "node scripts/page-performance-audit.mjs"
   },
   "dependencies": {
     "next": "16.3.6",
