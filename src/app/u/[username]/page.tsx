@@ -4,8 +4,9 @@ import {AppShell} from "@/components/app-shell";
 import {createClient} from "@/lib/supabase/server";
 import {setCreatorRelation} from "@/app/u/actions";
 
-export default async function CreatorPage({params}:{params:Promise<{username:string}>}){
+export default async function CreatorPage({params,searchParams}:{params:Promise<{username:string}>;searchParams?:Promise<{error?:string}>}){
  const {username}=await params;
+ const {error}=searchParams?await searchParams:{};
  const supabase=await createClient();
  const {data:profile}=await supabase.from("profiles").select("id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers").eq("username",username.toLowerCase()).maybeSingle();
  if(!profile)notFound();
