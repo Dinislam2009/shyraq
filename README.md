@@ -75,7 +75,7 @@ Create a stable technical foundation before adding advanced product features.
 - [x] GitHub source control
 - [x] GitHub Actions CI
 - [x] Vercel deployment integration
-- [ ] Generated database types fully synchronized with the current schema (legacy generated models remain; application code does not depend on this file)
+- [x] Generated database types synchronized with the current Supabase schema (legacy generated models remain isolated)
 - [x] Database schema kept in the repository
 - [x] RLS-based database security
 - [x] Private media bucket
