@@ -241,8 +241,8 @@ export async function getOfflineReviewQueue(userId:string,deckId:string|undefine
  const cards=await offlineStore.cards.where("userId").equals(userId).toArray();
  const selected=deckId?cards.filter(card=>card.deckId===deckId):cards;
  const active=selected.filter(card=>!card.isSuspended);
- const cardIds=active.map(card=>card.id);
- const states=cardIds.length?await offlineStore.reviewStates.where("userId").equals(userId).filter(state=>cardIds.includes(state.cardId)).toArray():[];
+ const cardIds=new Set(active.map(card=>card.id));
+ const states=cardIds.size?await offlineStore.reviewStates.where("userId").equals(userId).filter(state=>cardIds.has(state.cardId)).toArray():[];
  const stateByCard=new Map(states.map(state=>[state.cardId,state]));
  const templates=await offlineStore.cardTemplates.where("userId").equals(userId).toArray();
  const templatesByDeck=new Map<string,OfflineCardTemplate[]>();
