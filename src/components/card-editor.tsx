@@ -168,7 +168,7 @@ export function CardEditor({
       <input type="hidden" name="media_items" value={JSON.stringify(mediaItems.map(item => ({ path: item.path, mimeType: item.mimeType, name: item.name })))} />
       <div className="grid gap-4 sm:grid-cols-6">
         <label className="block text-sm font-medium sm:col-span-1">
-          Template
+          {t("cardTemplate")}
           <select name="template_id" value={templateId} onChange={event => setTemplateId(event.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
             <option value="">{t("defaultTemplate")}</option>
             {templates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
@@ -176,7 +176,7 @@ export function CardEditor({
         </label>
 
         <label className="block text-sm font-medium sm:col-span-1">
-          Card type
+          {t("cardType")}
           <select name="kind" value={kind} onChange={event => setKind(event.target.value)} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm">
             <option value="basic">{t("basic")}</option>
             <option value="reverse">{t("reverse")}</option>
@@ -188,17 +188,17 @@ export function CardEditor({
         </label>
 
         <label className="block text-sm font-medium sm:col-span-2">
-          Tags
+          {t("tags")}
           <input name="tags" value={tags} onChange={event => setTags(event.target.value)} placeholder={t("tagsPlaceholder")} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
         </label>
 
         <label className="block text-sm font-medium sm:col-span-1">
-          Markers
+          {t("markers")}
           <input name="markers" value={markers} onChange={event => setMarkers(event.target.value)} placeholder={t("markersPlaceholder")} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
         </label>
 
         <label className="block text-sm font-medium sm:col-span-1">
-          Status
+          {t("status")}
           <input name="status" value={status} onChange={event => setStatus(event.target.value.slice(0,60))} placeholder={t("statusPlaceholder")} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" />
         </label>
       </div>
@@ -206,10 +206,10 @@ export function CardEditor({
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <div className="space-y-3">
           <label className="text-sm font-semibold">{t("Front")}</label>
-          <div ref={frontRef}><BlockEditor value={front} onChange={setFront} placeholder={kind === "cloze" ? "Water freezes at {{c1::0°C}}." : "Question, term, prompt…"} /></div>
+          <div ref={frontRef}><BlockEditor value={front} onChange={setFront} placeholder={kind === "cloze" ? t("clozePlaceholder") : t("questionPromptPlaceholder")} /></div>
         </div>
         <div className="space-y-3">
-          <label className="text-sm font-semibold">{kind === "cloze" ? "Explanation" : "Back"}</label>
+          <label className="text-sm font-semibold">{kind === "cloze" ? t("explanation") : t("Back")}</label>
           <div ref={backRef}><BlockEditor value={back} onChange={setBack} placeholder={t("answerExamplePlaceholder")} /></div>
         </div>
       </div>
@@ -302,7 +302,7 @@ export function CardEditor({
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <p className="text-sm font-semibold">{t("editorControls")}</p>
-          <p className="mt-1 text-xs text-slate-500">Keyboard-first blocks, markdown shortcuts, links, tables, code languages and draggable block ordering are available in both fields.</p>
+          <p className="mt-1 text-xs text-slate-500">{t("editorCapabilitiesHint")}</p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             <button type="button" onClick={() => setActiveField("front")} className={"rounded-xl border px-3 py-3 text-left text-sm " + (activeField === "front" ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200")}>{t("frontEditor")}</button>
             <button type="button" onClick={() => setActiveField("back")} className={"rounded-xl border px-3 py-3 text-left text-sm " + (activeField === "back" ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200")}>{t("backEditor")}</button>
@@ -314,9 +314,9 @@ export function CardEditor({
       <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input name="continue" value="1" type="checkbox" className="h-4 w-4 rounded border-slate-300" />
-          Save and add next card
+          {t("saveAndAddNextCard")}
         </label>
-        <button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">{submitLabel}</button>
+        <button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">{t(submitLabel)}</button>
       </div>
     </form>
   );
