@@ -26,5 +26,5 @@ export default async function ReviewPage({searchParams}:{searchParams:Promise<{d
  preferences={...preferences,session_defaults:{...storedSessionDefaults,batchSize:requestedLimit,shuffle:shuffleSession,autoRevealSeconds:autoReveal}};
  if(shuffleSession)queue=[...queue].sort(()=>Math.random()-0.5);
 
- return <AppShell><ReviewBootstrap userId={user?.id||null} initialQueue={queue} initialPreferences={preferences}/></AppShell>;
+ return <AppShell><ReviewBootstrap userId={user?.id||null} initialQueue={queue} initialPreferences={preferences} deckId={deck} limit={requestedLimit}/></AppShell>;
 }
