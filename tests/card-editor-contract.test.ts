@@ -89,3 +89,14 @@ test("large image uploads use client-side compression",()=>{
  assert.match(input,/1024\*1024/);
  assert.match(input,/DataTransfer/);
 });
+
+
+test("offline service worker is registered and avoids protected-route precache",()=>{
+ const sw=readFileSync(new URL("../public/sw.js",import.meta.url),"utf8");
+ const layout=readFileSync(new URL("../src/app/layout.tsx",import.meta.url),"utf8");
+ const reg=readFileSync(new URL("../src/components/service-worker-registration.tsx",import.meta.url),"utf8");
+ assert.match(sw,/const APP_SHELL=\["\/offline","\/favicon\.ico"\]/);
+ assert.match(sw,/request\.mode==="navigate"/);
+ assert.ok(layout.includes("<ServiceWorkerRegistration/>"));
+ assert.match(reg,/serviceWorker\.register\("\/sw\.js"/);
+});
