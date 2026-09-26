@@ -7,10 +7,10 @@ const editor=readFileSync(new URL("../src/components/card-editor.tsx",import.met
 const cardActions=readFileSync(new URL("../src/app/decks/[id]/cards/actions.ts",import.meta.url),"utf8");
 
 test("edit page restores card metadata into CardEditor",()=>{
- assert.match(editPage,/markers:Array.isArray(card.content?.markers)?card.content.markers:[]/);
- assert.match(editPage,/status:typeof card.content?.status==="string"?card.content.status:""/);
- assert.match(editPage,/fields:card.content?.fields&&typeof card.content.fields==="object"/);
- assert.match(editPage,/reviewPreferences:card.content?.reviewPreferences&&typeof card.content.reviewPreferences==="object"/);
+ assert.ok(editPage.includes('markers:Array.isArray(card.content?.markers)?card.content.markers:[]'));
+ assert.ok(editPage.includes('status:typeof card.content?.status==="string"?card.content.status:""'));
+ assert.ok(editPage.includes('fields:card.content?.fields&&typeof card.content.fields==="object"'));
+ assert.ok(editPage.includes('reviewPreferences:card.content?.reviewPreferences&&typeof card.content.reviewPreferences==="object"'));
 });
 
 test("CardEditor exposes persistent marker and status fields",()=>{
