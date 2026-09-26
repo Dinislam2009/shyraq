@@ -14,6 +14,7 @@ export function DeckLibrary({ decks }: { decks: any[] }) {
   const [savedFilters,setSavedFilters]=useState<SavedFilter[]>([]);
   const [filterName,setFilterName]=useState("");
   const [isPending,startTransition]=useTransition();
+  const [scrollTop,setScrollTop]=useState(0);
   const workspaceId=String(decks[0]?.workspace_id||"");
 
   useEffect(()=>{
@@ -31,6 +32,15 @@ export function DeckLibrary({ decks }: { decks: any[] }) {
     else result.sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
     return result;
   },[decks,query,sort]);
+
+  const DECK_ROW_HEIGHT=84;
+  const DECK_VIEWPORT_HEIGHT=640;
+  const shouldVirtualize=filtered.length>120;
+  const virtualStart=shouldVirtualize?Math.max(0,Math.floor(scrollTop/DECK_ROW_HEIGHT)-6):0;
+  const virtualCount=shouldVirtualize?Math.ceil(DECK_VIEWPORT_HEIGHT/DECK_ROW_HEIGHT)+12:filtered.length;
+  const visibleDecks=shouldVirtualize?filtered.slice(virtualStart,virtualStart+virtualCount):filtered;
+  const virtualTopHeight=virtualStart*DECK_ROW_HEIGHT;
+  const virtualBottomHeight=shouldVirtualize?Math.max(0,(filtered.length-(virtualStart+visibleDecks.length))*DECK_ROW_HEIGHT):0;
 
   function saveFilter(){
     const name=filterName.trim();if(!name)return;
@@ -68,8 +78,9 @@ export function DeckLibrary({ decks }: { decks: any[] }) {
         <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{decks.length ? "Try a different search." : "Create a deck to start building your knowledge base."}</p>
       </div>
     ) : (
-      <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
-        {filtered.map((deck:any,index:number)=>(
+      <div className="max-h-[70vh] overflow-auto rounded-2xl border border-black/[0.06] bg-white" onScroll={event=>setScrollTop(event.currentTarget.scrollTop)}>
+        {shouldVirtualize&&<div aria-hidden="true" style={{height:virtualTopHeight}}/>}
+        {visibleDecks.map((deck:any,index:number)=>(
           <div
             key={deck.id}
             draggable={sort==="custom"}
@@ -86,6 +97,7 @@ export function DeckLibrary({ decks }: { decks: any[] }) {
             <div className="w-20 text-right"><p className="text-sm font-semibold">{deck.cards?.[0]?.count??0}</p><p className="text-xs text-slate-400">cards</p></div>
           </div>
         ))}
+        {shouldVirtualize&&<div aria-hidden="true" style={{height:virtualBottomHeight}}/>}
       </div>
     )}
   </>;
