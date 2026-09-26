@@ -34,6 +34,7 @@ test("schema includes profile/workspace preferences required by settings actions
 
 test("schema has supported notification events and idempotent policy syntax",()=>{
  assert.match(schema,/comment_mention/);
+ assert.match(schema,/create or replace function public\.create_notification/);
  assert.doesNotMatch(schema,/drop policy if not exists/i);
 });
 
