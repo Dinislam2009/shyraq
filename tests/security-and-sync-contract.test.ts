@@ -20,6 +20,11 @@ test("workspace owner role cannot be reassigned through member updates",()=>{
  assert.match(schema,/new\.role='owner'::workspace_role/);
  assert.match(schema,/old\.role='owner'::workspace_role/);
  assert.match(schema,/create trigger workspace_owner_role_immutable/);
+ assert.match(schema,/before insert or update or delete on public\.workspace_members/);
+ assert.match(schema,/workspace membership identity cannot be changed/);
+ assert.match(schema,/only the workspace owner may remove an admin/);
+ assert.match(schema,/only the workspace owner may assign admin role/);
+ assert.match(schema,/and exists\(select 1 from public\.workspaces w where w\.id=workspace_id and w\.owner_id<>\(select auth\.uid\(\)\)\)/);
 });
 
 test("offline bootstrap uses paginated range queries instead of fixed row caps",()=>{
