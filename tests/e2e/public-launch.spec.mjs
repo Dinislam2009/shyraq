@@ -42,4 +42,19 @@ test.describe("public browser launch gate",()=>{
   await expect(email).toHaveAttribute("type","email");
   await expect(password).toHaveAttribute("minlength","6");
  });
+ test("public routes have no uncaught browser errors or horizontal overflow",async({page})=>{
+  const routes=["/login","/signup","/offline","/legal/privacy","/legal/terms","/legal/community","/legal/data-retention"];
+  for(const route of routes){
+   const errors=[];
+   page.on("pageerror",error=>errors.push(error.message));
+   page.on("console",message=>{if(message.type()==="error")errors.push(message.text());});
+   await page.goto(route);
+   await page.waitForLoadState("domcontentloaded");
+   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
+   expect(overflow,false);
+   expect(errors,route).toEqual([]);
+   await page.reload();
+  }
+ });
+
 });
