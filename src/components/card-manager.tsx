@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag } from "@/app/decks/[id]/cards/actions";
+import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag, bulkEditCards } from "@/app/decks/[id]/cards/actions";
 import { toggleFavorite } from "@/app/collections/actions";
 import { useI18n } from "@/components/i18n-provider";
 
@@ -36,6 +36,7 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const [sortSecondary, setSortSecondary] = useState("none");
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [bulkEditorOpen, setBulkEditorOpen] = useState(false);
   const [viewName, setViewName] = useState("");
   const [savedViews, setSavedViews] = useState<Array<{name:string;query:string;kind:string;status:string;tag:string;marker:string;markedOnly:boolean;suspendedOnly:boolean;sortPrimary:string;sortSecondary:string}>>([]);
   const { t } = useI18n();
@@ -202,10 +203,48 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
               <button type="button" disabled={busy} onClick={() => void runBulk("unmark")} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold">Unmark</button>
               <button type="button" disabled={busy} onClick={() => void runBulk("suspend")} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold">Suspend</button>
               <button type="button" disabled={busy} onClick={() => void runBulk("unsuspend")} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold">Unsuspend</button>
+              <button type="button" disabled={busy} onClick={() => setBulkEditorOpen(true)} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold">Edit fields</button>
               <button type="button" disabled={busy} onClick={() => void runBulk("delete")} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">Delete</button>
             </>
           )}
         </div>}
+        {canEdit&&bulkEditorOpen&&selected.length>0&&(
+          <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" role="dialog" aria-modal="true" aria-label="Bulk edit selected cards">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Bulk edit {selected.length} card{selected.length===1?"":"s"}</p>
+                <p className="mt-1 text-xs text-slate-400">Tick a field before changing it. Unticked fields stay untouched.</p>
+              </div>
+              <button type="button" onClick={()=>setBulkEditorOpen(false)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Close</button>
+            </div>
+            <form action={bulkEditCards.bind(null,deckId,selected)} className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="rounded-xl border border-slate-200 p-3">
+                <span className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" name="apply_front" className="h-4 w-4"/>Replace front</span>
+                <textarea name="front" rows={4} className="mt-2 w-full rounded-lg border border-slate-200 p-2 text-xs" placeholder="New front for every selected card"/>
+              </label>
+              <label className="rounded-xl border border-slate-200 p-3">
+                <span className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" name="apply_back" className="h-4 w-4"/>Replace back</span>
+                <textarea name="back" rows={4} className="mt-2 w-full rounded-lg border border-slate-200 p-2 text-xs" placeholder="New back for every selected card"/>
+              </label>
+              <label className="rounded-xl border border-slate-200 p-3">
+                <span className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" name="apply_tags" className="h-4 w-4"/>Replace tags</span>
+                <input name="tags" className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-2 text-xs" placeholder="math, exam, revise"/>
+              </label>
+              <label className="rounded-xl border border-slate-200 p-3">
+                <span className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" name="apply_markers" className="h-4 w-4"/>Replace markers</span>
+                <input name="markers" className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-2 text-xs" placeholder="difficult, important"/>
+              </label>
+              <label className="rounded-xl border border-slate-200 p-3 md:col-span-2">
+                <span className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" name="apply_status" className="h-4 w-4"/>Replace custom status</span>
+                <input name="status" maxLength={60} className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-2 text-xs" placeholder="draft, mastered, review-later"/>
+              </label>
+              <div className="flex justify-end gap-2 md:col-span-2">
+                <button type="button" onClick={()=>setBulkEditorOpen(false)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-semibold">Cancel</button>
+                <button disabled={busy} className="rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white">Apply bulk changes</button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
       {cards.length === 0 ? (
