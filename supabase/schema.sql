@@ -256,6 +256,20 @@ create index if not exists deck_copy_update_history_copy_idx on public.deck_copy
 
 create index if not exists media_owner_id_idx on public.media(owner_id);
 
+create table if not exists public.error_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  source text not null default 'client',
+  level text not null default 'error' check(level in ('error','warn','fatal')),
+  message text not null,
+  digest text,
+  route text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists error_logs_user_idx on public.error_logs(user_id,created_at desc);
+create index if not exists error_logs_created_idx on public.error_logs(created_at desc);
+
 create table if not exists public.backup_versions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -578,6 +592,7 @@ alter table public.review_events enable row level security;
 alter table public.media enable row level security;
 alter table public.sync_cursors enable row level security;
 alter table public.sync_changes enable row level security;
+alter table public.error_logs enable row level security;
 alter table public.deck_reports enable row level security;
 alter table public.moderation_actions enable row level security;
 alter table public.public_deck_follows enable row level security;
@@ -598,6 +613,14 @@ alter table public.moderators enable row level security;
 alter table public.notification_preferences enable row level security;
 alter table public.saved_searches enable row level security;
 alter table public.saved_filters enable row level security;
+
+drop policy if exists error_logs_self_read on public.error_logs;
+create policy error_logs_self_read on public.error_logs for select to authenticated
+using(user_id=(select auth.uid()) or public.is_platform_moderator());
+
+drop policy if exists error_logs_insert on public.error_logs;
+create policy error_logs_insert on public.error_logs for insert to authenticated
+with check(user_id=(select auth.uid()));
 
 drop policy if exists profiles_self on public.profiles;
 drop policy if exists profiles_public_read on public.profiles;
