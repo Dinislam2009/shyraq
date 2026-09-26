@@ -47,14 +47,21 @@ export function ImportJobProgress(){
 
  useEffect(()=>{
   let cancelled=false;
+  const resume=(id:string)=>{
+   if(cancelled)return;
+   void pump(id).catch(err=>setError(err instanceof Error?err.message:"Unable to resume import."));
+  };
   const saved=typeof window!=="undefined"?localStorage.getItem(STORAGE_KEY):null;
-  if(!saved)return;
-  void (async()=>{
-   try{
-    if(!cancelled)void pump(saved);
-   }catch(err){if(!cancelled)setError(err instanceof Error?err.message:"Unable to resume import.");}
-  })();
-  return()=>{cancelled=true;};
+  if(saved)resume(saved);
+  const onJob=(event:Event)=>{
+   const id=(event as CustomEvent<string>).detail;
+   if(typeof id==="string"&&id)resume(id);
+  };
+  window.addEventListener("shyraq:import-job",onJob);
+  return()=>{
+   cancelled=true;
+   window.removeEventListener("shyraq:import-job",onJob);
+  };
  },[pump]);
 
  if(!job&&!error)return null;
