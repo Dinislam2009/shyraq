@@ -7,7 +7,9 @@ import { verifyArchiveChecksums } from "@/lib/backup/integrity";
 import { parseStandardText, validateImportRows, duplicateKey, type ImportRow } from "@/lib/import/standard";
 
 function fail(message:string):never{ redirect("/import?error="+encodeURIComponent(message)); }
-function safeCollectionKind(value:string){return value==="favorites"?"favorites":"custom";}
+function safeCollectionKind(value:string){
+ return value==="favorites"||value==="smart"?value:"custom";
+}
 function safeKind(value:string){
  const allowed=["basic","reverse","cloze","multiple_choice","image","custom"];
  return allowed.includes(value)?value:"basic";
@@ -23,7 +25,7 @@ async function getWorkspace(supabase:any,userId:string){
  return data;
 }
 async function createDeckWithTemplate(supabase:any,userId:string,workspaceId:string,sourceDeck:any,deckMap:Map<string,string>){
- const visibility=["private","public","unlisted"].includes(String(sourceDeck.visibility))?String(sourceDeck.visibility):"private";
+ const visibility=["private","workspace","public"].includes(String(sourceDeck.visibility))?String(sourceDeck.visibility):"private";
  const settings={...(sourceDeck.settings||{}),backup_source_deck_id:sourceDeck.id};
  const {data:deck,error}=await supabase.from("decks").insert({workspace_id:workspaceId,owner_id:userId,name:String(sourceDeck.name||"Imported deck"),description:String(sourceDeck.description||""),visibility,settings}).select("id").single();
  if(error||!deck)throw new Error(error?.message||"Unable to restore deck.");
