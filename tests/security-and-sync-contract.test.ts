@@ -14,7 +14,8 @@ test("profiles expose private fields only to the owner and use a public projecti
  assert.match(schema,/public_profiles\s+\([\s\S]*?username text unique[\s\S]*?show_followers boolean/);
  assert.match(workspacePage,/from\("public_profiles"\)/);
  assert.match(creatorPage,/from\("public_profiles"\)/);
- assert.ok(schema.includes("create or replace function private.sync_public_profile() returns trigger"));\n assert.ok(schema.includes("security definer\nset search_path=public,private"));
+ assert.ok(schema.includes("create or replace function private.sync_public_profile() returns trigger"));
+ assert.ok(schema.includes("security definer\nset search_path=public,private"));
  assert.ok(schema.includes("create trigger sync_public_profile"));
  assert.ok(schema.includes("execute function private.sync_public_profile()"));
  assert.doesNotMatch(schema,/create policy public_profiles_public_(insert|update|delete)/);
