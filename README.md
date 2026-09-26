@@ -841,7 +841,7 @@ Target supported languages:
 - [ ] Complete production-grade translation coverage
 - [ ] Server-rendered/localized text instead of DOM translation
 - [x] Persistent language preference across devices
-- [ ] Locale-aware dates/numbers
+- [x] Locale-aware dates/numbers
 - [ ] Translation QA
 
 ---
@@ -963,7 +963,7 @@ Legacy tables from the old project must remain isolated from the Shyraq applicat
 - [ ] Large Anki import optimization
 - [x] Large media backup optimization
 - [ ] Cold-start optimization
-- [ ] Offline cache optimization
+- [x] Offline cache optimization
 
 Target:
 
