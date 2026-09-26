@@ -19,7 +19,7 @@ export default async function DeckPermissionsPage({params,searchParams}:{params:
   supabase.from("workspace_members").select("user_id,role").eq("workspace_id",deck.workspace_id)
  ]);
  const ids=(members??[]).map((m:any)=>m.user_id);
- const {data:profiles}=ids.length?await supabase.from("profiles").select("id,username,display_name,avatar_url").in("id",ids):{data:[]};
+ const {data:profiles}=ids.length?await supabase.from("public_profiles").select("id,username,display_name,avatar_url").in("id",ids):{data:[]};
  const profileMap=new Map((profiles??[]).map((p:any)=>[p.id,p]));
  const workspaceMap=new Map((workspaceMembers??[]).map((m:any)=>[m.user_id,m.role]));
  return <AppShell><div className="mx-auto max-w-4xl px-5 py-8 sm:px-8">
