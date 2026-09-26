@@ -91,7 +91,7 @@ function escapeHtml(value: string) {
 
 function markdownToVisualHtml(value:string){
  let html=escapeHtml(value);
- html=html.replace(/\[([^\]]+)\]\((https?:\\/\\/[^)]+)\)/g,'<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+ html=html.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" rel="noreferrer">$1</a>');
  html=html.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
  html=html.replace(/__([^_]+)__/g,"<strong>$1</strong>");
  html=html.replace(/\*([^*\n]+)\*/g,"<em>$1</em>");
@@ -172,9 +172,21 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
   }
 
   function inline(blockId: string, before: string, after = before) {
-    const area = document.querySelector<HTMLTextAreaElement>('textarea[data-block="' + blockId + '"]');
     const block = blocks.find(item => item.id === blockId);
-    if (!area || !block) return;
+    if (!block) return;
+    if (visualMode) {
+      const area = visualRefs.current[blockId];
+      if (!area) return;
+      area.focus();
+      if (before === "**") document.execCommand("bold");
+      else if (before === "*") document.execCommand("italic");
+      else if (before === String.fromCharCode(96)) document.execCommand("formatBlock", false, "pre");
+      const markdown = htmlToMarkdown(area.innerHTML);
+      patch(blockId, { text: markdown });
+      return;
+    }
+    const area = document.querySelector<HTMLTextAreaElement>('textarea[data-block="' + blockId + '"]');
+    if (!area) return;
     const start = area.selectionStart;
     const end = area.selectionEnd;
     const selected = block.text.slice(start, end);
@@ -185,6 +197,7 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
       area.setSelectionRange(start + replacement.length, start + replacement.length);
     });
   }
+
 
   const types = useMemo(() => [
     ["paragraph", "Text"], ["heading", "Heading"], ["bullet", "List"],
@@ -236,7 +249,7 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
                       </select>
                     </div>
                   )}
-                  {visualMode && block.type === "paragraph" ? (
+                  {visualMode && block.type !== "code" && block.type !== "table" && block.type !== "divider" ? (
                     <div
                       ref={node => { visualRefs.current[block.id] = node; }}
                       contentEditable
@@ -250,7 +263,7 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
                         patch(block.id,{text:markdown});
                       }}
                       dangerouslySetInnerHTML={{__html:markdownToVisualHtml(block.text)}}
-                      className="min-h-24 w-full rounded-xl border border-transparent bg-slate-50 px-3 py-3 text-sm outline-none focus:border-slate-300 focus:bg-white"
+                      className={"min-h-24 w-full rounded-xl border border-transparent bg-slate-50 px-3 py-3 text-sm outline-none focus:border-slate-300 focus:bg-white " + (block.type === "heading" ? "text-xl font-semibold " : "") + (block.type === "quote" ? "border-l-4 border-l-slate-300 italic " : "")}
                     />
                   ) : <textarea
                     data-block={block.id}
