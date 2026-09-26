@@ -1,6 +1,6 @@
 "use client";
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
-import {createEmptyCard,fsrs,Rating} from "ts-fsrs";
+import {createSchedulerCard,scheduleReview,type SchedulerEngine} from "@/lib/scheduler";
 import {queueReview,syncReviews} from "@/lib/sync/client";
 import {undoReview} from "@/app/review/actions";
 import {getDeviceId,cacheReviewSession} from "@/lib/offline/store";
@@ -9,7 +9,7 @@ import {RichContent} from "@/components/rich-content";
 import {OccludedImage} from "@/components/image-occlusion";
 import {DEFAULT_RATING_ORDER,sanitizePerCardPreferences,sanitizeRatingOrder,sanitizeStyles} from "@/lib/review/config";
 
-type Preferences={desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean;rating_labels?:Record<string,string>;rating_order?:string[];show_keyboard_hints?:boolean;swipe_enabled?:boolean;rating_styles?:Record<string,{background?:string;text?:string}>;accessibility?:{scale?:number;highContrast?:boolean;reducedMotion?:boolean;focusRing?:boolean};session_defaults?:{batchSize?:number;shuffle?:boolean;autoRevealSeconds?:number};};
+type Preferences={scheduler_engine?:SchedulerEngine;desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean;rating_labels?:Record<string,string>;rating_order?:string[];show_keyboard_hints?:boolean;swipe_enabled?:boolean;rating_styles?:Record<string,{background?:string;text?:string}>;accessibility?:{scale?:number;highContrast?:boolean;reducedMotion?:boolean;focusRing?:boolean};session_defaults?:{batchSize?:number;shuffle?:boolean;autoRevealSeconds?:number};};
 type CardContent={front?:string;back?:string;tags?:string[];fields?:Record<string,string>;options?:string[];answer?:number;imageUrl?:string;occlusions?:Array<{x:number;y:number;w:number;h:number}>;mediaUrl?:string;mediaType?:string;mediaItems?:Array<{name:string;path:string;mime_type:string;url?:string}>;reviewPreferences?:Record<string,unknown>};
 function templateOne(template:QueueItem["card"]["card_templates"]){if(Array.isArray(template))return template[0]||null;return template||null;}
 function applyCardTemplate(source:string,fields:Record<string,string>){let output=String(source||"");const resolve=(key:string)=>{const normalized=String(key).trim();if(/^FrontSide$/i.test(normalized))return fields.front||"";return fields[normalized]??fields[normalized.toLowerCase()]??"";};output=output.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key:string,body:string)=>resolve(key)?body:"");output=output.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key:string,body:string)=>resolve(key)?"":body);return output.replace(/\{\{\s*([^}]+?)\s*\}\}/g,(_,key:string)=>resolve(key));}
@@ -61,22 +61,22 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  const answer=useCallback(async(rating:"again"|"hard"|"good"|"easy")=>{
    if(busy||paused||!revealed)return;
    setBusy(true);
-   const scheduler=fsrs({
-     request_retention:preferences.desired_retention,
-     maximum_interval:preferences.maximum_interval,
-     enable_fuzz:preferences.enable_fuzz,
-     enable_short_term:preferences.enable_short_term,
-     learning_steps:preferences.learning_steps as any,
-     relearning_steps:preferences.relearning_steps as any
+   const previous=current.stateData?{...current.stateData}:createSchedulerCard(preferences.scheduler_engine==="sm2"?"sm2":"fsrs");
+   const result=scheduleReview(previous,rating,{
+    engine:preferences.scheduler_engine||"fsrs",
+    desiredRetention:preferences.desired_retention,
+    maximumInterval:preferences.maximum_interval,
+    enableFuzz:preferences.enable_fuzz,
+    enableShortTerm:preferences.enable_short_term,
+    learningSteps:preferences.learning_steps,
+    relearningSteps:preferences.relearning_steps
    });
-   const previous=current.stateData?{...current.stateData,due:new Date(current.stateData.due),last_review:current.stateData.last_review?new Date(current.stateData.last_review):undefined}:createEmptyCard(new Date());
-   const result=scheduler.next(previous,new Date(),({again:Rating.Again,hard:Rating.Hard,good:Rating.Good,easy:Rating.Easy} as const)[rating]);
    const elapsedMs=Math.max(0,Date.now()-startedAt.current);
    await queueReview({
      id:crypto.randomUUID(),userId,cardId:card.id,deviceId:getDeviceId(),sequence:Date.now(),rating,
      elapsedMs,reviewedAt:new Date().toISOString(),previousState:previous as unknown as Record<string,unknown>,
-     nextState:result.card as unknown as Record<string,unknown>,status:"pending",
-     metadata:{event_kind:current.isNew?"new-card":"review"}
+     nextState:result.card as Record<string,unknown>,status:"pending",
+     metadata:{event_kind:current.isNew?"new-card":"review",scheduler:result.scheduler}
    });
    const entry={cardId:card.id,rating,elapsedMs,previousState:previous,nextState:result.card,hadPreviousState:Boolean(current.stateData),queueIndex:index};
    setCompleted(items=>[...items,entry]);
@@ -163,7 +163,7 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
   {templateCss&&<style>{templateCss}</style>}
   <style>{`.shyraq-review-content { transform: scale(${Math.min(1.4,Math.max(0.9,Number(accessibility.scale||1)))}); transform-origin: top center; } .shyraq-focus:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; } ${accessibility.highContrast?" .shyraq-review-surface { border-width: 2px; border-color: currentColor; box-shadow: none; } ":""} ${accessibility.reducedMotion?" * { scroll-behavior: auto !important; transition: none !important; } ":""}`}</style>
   <div className="mb-6 flex items-center justify-between">
-   <div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {index+1}/{queue.length}{showTimer?" · "+elapsedSeconds+"s":""}</p></div>
+   <div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{card.kind}</p><p className="mt-1 text-sm text-slate-500">{current.isNew?"New card":"Scheduled review"} · {(preferences.scheduler_engine||"fsrs").toUpperCase()} · {index+1}/{queue.length}{showTimer?" · "+elapsedSeconds+"s":""}</p></div>
    <div className="flex items-center gap-2">
     <button onClick={()=>setPaused(v=>!v)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">{paused?"Resume":"Pause"} <span className="ml-1 text-[10px] text-slate-400">P</span></button>
     <button disabled={!completed.length||busy} onClick={()=>void undo()} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold disabled:opacity-40">Undo <span className="ml-1 text-[10px] text-slate-400">⌘Z</span></button>
