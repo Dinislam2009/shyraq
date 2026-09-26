@@ -16,3 +16,12 @@ test("deck page subscribes to collaborative realtime updates",()=>{
  assert.ok(realtime.includes('table:"cards",filter:"deck_id=eq."+deckId'));
  assert.ok(realtime.includes('table:"card_templates",filter:"deck_id=eq."+deckId'));
 });
+
+
+test("workspace member search uses profile identity fields",()=>{
+ const page=readFileSync(new URL("../src/app/settings/workspace/page.tsx",import.meta.url),"utf8");
+ assert.ok(page.includes('select("id,username,display_name,avatar_url")'));
+ assert.ok(page.includes("profile?.username,profile?.display_name"));
+ assert.ok(page.includes('placeholder="Search by name, username or user id"'));
+ assert.ok(page.includes("profile?.display_name||profile?.username||\"Member\""));
+});
