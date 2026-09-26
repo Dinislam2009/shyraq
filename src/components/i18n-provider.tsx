@@ -12,21 +12,23 @@ function validLocale(value:unknown):Locale|null{
  return locale==="kk"||locale==="ru"||locale==="en"?locale:null;
 }
 
-function getInitialLocale():Locale{
+function getInitialLocale(fallback:Locale="en"):Locale{
  if(typeof window==="undefined")return "en";
  const saved=validLocale(window.localStorage.getItem("shyraq-locale"));
  if(saved)return saved;
  const browser=navigator.language.toLowerCase();
- if(browser.startsWith("kk"))return "kk";
- if(browser.startsWith("ru"))return "ru";
- return "en";
+ if(fallback==="en"){
+  if(browser.startsWith("kk"))return "kk";
+  if(browser.startsWith("ru"))return "ru";
+ }
+ return fallback;
 }
 
 export function I18nProvider({children,initialLocale="en"}:{children:ReactNode;initialLocale?:Locale}){
  const [locale,setLocaleState]=useState<Locale>(initialLocale);
 
  useEffect(()=>{
-  const local=getInitialLocale();
+  const local=getInitialLocale(initialLocale);
   if(local!==initialLocale)setLocaleState(local);
   void fetch("/api/preferences/locale",{cache:"no-store"})
    .then(async response=>{
