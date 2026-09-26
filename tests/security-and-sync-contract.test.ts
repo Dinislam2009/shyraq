@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,readdirSync} from "node:fs";
 
-const schema=readFileSync(new URL("../supabase/schema.sql",import.meta.url),"utf8");
+const schema=readFileSync(new URL("../supabase/schema.sql",import.meta.url),"utf8").replace(/\r\n/g,"\n");
 const syncRoute=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
 const workspacePage=readFileSync(new URL("../src/app/settings/workspace/page.tsx",import.meta.url),"utf8");
 const creatorPage=readFileSync(new URL("../src/app/u/[username]/page.tsx",import.meta.url),"utf8");
