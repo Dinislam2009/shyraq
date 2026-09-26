@@ -38,9 +38,9 @@ export function OfflineReviewApp(){
 
  const current=queue[index];
  const content=(current?.card.content||{}) as {front?:string;back?:string;tags?:string[];fields?:Record<string,string>};
- const template=Array.isArray(current?.card.card_templates)?current?.card.card_templates.find(item=>item.id===current.template_id)||current?.card.card_templates[0]:current?.card.card_templates;
- const front=useMemo(()=>renderTemplate(template?.front_template||"{{front}}",content.front||"",content.back||"",content.fields||{}),[template,content.front,content.back,content.fields]);
- const back=useMemo(()=>renderTemplate(template?.back_template||"{{back}}",content.front||"",content.back||"",content.fields||{}),[template,content.front,content.back,content.fields]);
+ const template=Array.isArray(current?.card.card_templates)?current?.card.card_templates.find(item=>item.id===current.card.template_id)||current?.card.card_templates[0]:current?.card.card_templates;
+ const front=useMemo(()=>renderTemplate(template?.frontTemplate||"{{front}}",content.front||"",content.back||"",content.fields||{}),[template,content.front,content.back,content.fields]);
+ const back=useMemo(()=>renderTemplate(template?.backTemplate||"{{back}}",content.front||"",content.back||"",content.fields||{}),[template,content.front,content.back,content.fields]);
 
  const answer=useCallback(async(rating:"again"|"hard"|"good"|"easy")=>{
   if(!current||busy||!userId)return;
@@ -71,6 +71,6 @@ export function OfflineReviewApp(){
 }
 
 function renderTemplate(template:string,front:string,back:string,fields:Record<string,string>){
- const values={front,back,...fields};
+ const values:Record<string,string>={front,back,...fields};
  return String(template||"").replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key:string,body:string)=>values[String(key).trim()]?body:"").replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key:string,body:string)=>values[String(key).trim()]?"":body).replace(/\{\{\s*([^}]+?)\s*\}\}/g,(_,key:string)=>values[String(key).trim()]??"");
 }
