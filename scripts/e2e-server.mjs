@@ -1,11 +1,8 @@
 import {spawn} from "node:child_process";
 
 const isWindows=process.platform==="win32";
-const npm=process.env.npm_execpath||"npm";
+const npm="npm";
 const command=isWindows?(process.env.ComSpec||"cmd.exe"):npm;
-isWindows
- ? undefined
- : undefined;
 const args=isWindows
  ? ["/d","/s","/c",npm+" run start -- --hostname 127.0.0.1 --port 3000"]
  : ["run","start","--","--hostname","127.0.0.1","--port","3000"];
