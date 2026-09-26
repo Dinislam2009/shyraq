@@ -61,3 +61,29 @@ export async function restoreBackupVersion(id:string){
   redirect("/export?error="+encodeURIComponent(error instanceof Error?error.message:"Unable to restore backup."));
  }
 }
+
+
+function nextBackupRun(frequency:"daily"|"weekly"|"monthly",from=new Date()){
+ const next=new Date(from);
+ if(frequency==="daily")next.setUTCDate(next.getUTCDate()+1);
+ else if(frequency==="weekly")next.setUTCDate(next.getUTCDate()+7);
+ else next.setUTCMonth(next.getUTCMonth()+1);
+ next.setUTCHours(2,0,0,0);
+ return next.toISOString();
+}
+
+export async function updateBackupSchedule(formData:FormData):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const frequency=(String(formData.get("frequency")||"weekly") as "daily"|"weekly"|"monthly");
+ const safeFrequency: "daily"|"weekly"|"monthly" = frequency==="daily"||frequency==="monthly"?"frequency"==="daily"?"daily":"monthly":"weekly";
+ const enabled=formData.get("enabled")==="on";
+ const nextRun=enabled?nextBackupRun(safeFrequency):null;
+ const {error}=await supabase.from("backup_schedules").upsert({
+  user_id:user.id,frequency:safeFrequency,enabled,next_run_at:nextRun,updated_at:new Date().toISOString()
+ },{onConflict:"user_id"});
+ if(error)redirect("/export?error="+encodeURIComponent(error.message));
+ revalidatePath("/export");
+ redirect("/export?backup=schedule");
+}
