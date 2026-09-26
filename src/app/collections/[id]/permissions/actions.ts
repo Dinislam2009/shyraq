@@ -16,7 +16,7 @@ async function requireCollectionAdmin(collectionId:string){
 async function resolveUser(supabase:any,username:string){
  const normalized=username.trim().replace(/^@/,"").toLowerCase();
  if(!normalized)return null;
- return (await supabase.from("profiles").select("id,username,display_name").eq("username",normalized).maybeSingle()).data;
+ return (await supabase.from("public_profiles").select("id,username,display_name").eq("username",normalized).maybeSingle()).data;
 }
 export async function setCollectionMemberRole(collectionId:string,formData:FormData){
  const {supabase,user,collection}=await requireCollectionAdmin(collectionId);
