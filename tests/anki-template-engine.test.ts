@@ -34,3 +34,24 @@ test("supports Anki special fields",()=>{
  const rendered=renderAnkiTemplate("{{Deck}}|{{Subdeck}}|{{Tags}}|{{Type}}|{{Card}}|{{CardFlag}}|{{CardSuspended}}",{front:"Q"},{specialFields:{Deck:"Biology::Cells",Subdeck:"Cells",Tags:"mitosis exam",Type:"Basic",Card:"Back",CardFlag:"2",CardSuspended:"1"}});
  assert.equal(rendered,"Biology::Cells|Cells|mitosis exam|Basic|Back|2|1");
 });
+
+
+test("resolves field names case-insensitively and renders FrontSide through filters",()=>{
+ const fields={Front:"<b>Question</b>",Back:"Answer"};
+ assert.equal(renderAnkiTemplate("{{front}}|{{text:FRONT}}|{{FrontSide}}",fields,{side:"back"}),"Question|Question|<b>Question</b>");
+});
+
+test("nested conditional blocks preserve inner sections",()=>{
+ const source="{{#A}}A{{#B}}B{{/B}}{{/A}}";
+ assert.equal(renderAnkiTemplate(source,{A:"yes",B:"yes"}),"AB");
+ assert.equal(renderAnkiTemplate(source,{A:"yes",B:""}),"A");
+ assert.equal(renderAnkiTemplate(source,{A:""}), "");
+});
+
+test("cloze hints remain hidden while non-selected clozes stay visible",()=>{
+ const field="{{c1::answer::hint}} and {{c2::other::second hint}}";
+ const rendered=renderAnkiTemplate("{{cloze:Text}}",{Text:field},{clozeIndex:1});
+ assert.match(rendered,/\[hint\]/);
+ assert.doesNotMatch(rendered,/second hint/);
+ assert.match(rendered,/other/);
+});
