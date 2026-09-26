@@ -162,6 +162,23 @@ export async function createBulkCards(deckId:string,formData:FormData):Promise<v
  redirect("/decks/"+deckId+"?bulk_created="+toInsert.length+"&bulk_skipped="+skipped);
 }
 
+export async function reorderCards(deckId:string,cardIds:string[]):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
+ if(!deck)fail("/decks/"+deckId,"Deck not found.");
+ const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
+ if(!["owner","admin","editor"].includes(String(member?.role||"")))fail("/decks/"+deckId,"You do not have permission to edit this deck.");
+ const ordered=[...new Set(cardIds)].filter(Boolean).slice(0,500);
+ for(let index=0;index<ordered.length;index++){
+  const {error}=await supabase.from("cards").update({sort_order:index}).eq("id",ordered[index]).eq("deck_id",deckId);
+  if(error)fail("/decks/"+deckId,error.message);
+ }
+ revalidatePath("/decks/"+deckId);
+ redirect("/decks/"+deckId);
+}
+
 export async function bulkEditCards(deckId:string,cardIds:string[],formData:FormData):Promise<void>{
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
