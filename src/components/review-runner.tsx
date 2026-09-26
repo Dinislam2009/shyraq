@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {createSchedulerCard,scheduleReview,type SchedulerEngine} from "@/lib/scheduler";
 import {queueReview,syncReviews} from "@/lib/sync/client";
@@ -171,6 +172,9 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
   </div>;
  }
 
+ 
+function ReviewImage({src}:{src:string}){const optimized=String(src).includes("supabase.co");return <Image src={src} alt="" width={960} height={540} unoptimized={!optimized} className="mx-auto mt-8 max-h-72 w-auto rounded-2xl object-contain"/>}
+
  const onPointerDown=(event:React.PointerEvent<HTMLDivElement>)=>{if(event.pointerType==="mouse"&&event.button!==0)return;swipeStartX.current=event.clientX;};
  const onPointerUp=(event:React.PointerEvent<HTMLDivElement>)=>{const start=swipeStartX.current;swipeStartX.current=null;if(start===null||!revealed||busy||paused||!effectiveSwipe)return;const delta=event.clientX-start;if(Math.abs(delta)<90)return;void answer(delta<0?"again":"easy");};
 
@@ -190,8 +194,8 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
    <div className={"shyraq-review-surface w-full rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12 "+(paused?"opacity-60":"")}>
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p>
     <RichContent content={front} clozeIndex={card.kind==="cloze"?Number(card.content.clozeIndex):undefined} revealCloze={revealed} className="mx-auto mt-6 max-w-2xl text-3xl font-semibold" />
-    {card.kind==="image"&&card.content.imageUrl&&((card.content.occlusions?.length??0)>0?<div className="mx-auto mt-8"><OccludedImage src={card.content.imageUrl} rects={card.content.occlusions??[]} revealed={revealed}/></div>:<img src={card.content.imageUrl} alt="" className="mx-auto mt-8 max-h-72 rounded-2xl object-contain"/> )}
-    {card.content.mediaUrl&&card.content.mediaType?.startsWith("image/")&&((card.content.occlusions?.length??0)>0?<div className="mx-auto mt-8"><OccludedImage src={card.content.mediaUrl} rects={card.content.occlusions??[]} revealed={revealed}/></div>:<img src={card.content.mediaUrl} alt="" className="mx-auto mt-8 max-h-72 rounded-2xl object-contain"/> )}
+    {card.kind==="image"&&card.content.imageUrl&&((card.content.occlusions?.length??0)>0?<div className="mx-auto mt-8"><OccludedImage src={card.content.imageUrl} rects={card.content.occlusions??[]} revealed={revealed}/></div>:<ReviewImage src={card.content.imageUrl}/> )}
+    {card.content.mediaUrl&&card.content.mediaType?.startsWith("image/")&&((card.content.occlusions?.length??0)>0?<div className="mx-auto mt-8"><OccludedImage src={card.content.mediaUrl} rects={card.content.occlusions??[]} revealed={revealed}/></div>:<ReviewImage src={card.content.mediaUrl}/> )}
     {card.content.mediaUrl&&card.content.mediaType?.startsWith("audio/")&&<audio controls src={card.content.mediaUrl} className="mx-auto mt-8 w-full max-w-xl"/>}
     {card.content.mediaUrl&&card.content.mediaType?.startsWith("video/")&&<video controls src={card.content.mediaUrl} className="mx-auto mt-8 max-h-72 w-full rounded-2xl"/>}
     {card.content.mediaItems?.map((item,i)=><div key={item.path+i} className="mt-8">{item.mime_type.startsWith("image/")&&item.url&&<img src={item.url} alt="" className="mx-auto max-h-72 rounded-2xl object-contain"/>}{item.mime_type.startsWith("audio/")&&item.url&&<audio controls src={item.url} className="mx-auto w-full max-w-xl"/>}{item.mime_type.startsWith("video/")&&item.url&&<video controls src={item.url} className="mx-auto max-h-72 w-full rounded-2xl"/>}</div>)}
