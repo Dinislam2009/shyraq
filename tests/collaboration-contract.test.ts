@@ -47,7 +47,7 @@ test("card editor uses realtime draft broadcast for existing collaborative cards
  assert.ok(draft.includes('event:"card-draft"'));
  assert.ok(draft.includes("sourceRef"));
  assert.ok(editor.includes("useCardDraftChannel"));
- assert.ok(editor.includes("Live draft collaboration is enabled"));
+ assert.ok(editor.includes('t("liveDraftCollaboration")'));
 });
 
 
@@ -65,8 +65,8 @@ test("remote card and deck drafts require explicit approval before applying",()=
  const editor=readFileSync(new URL("../src/components/card-editor.tsx",import.meta.url),"utf8");
  const deckForm=readFileSync(new URL("../src/components/offline-deck-form.tsx",import.meta.url),"utf8");
  assert.ok(editor.includes("pendingRemoteDraft"));
- assert.ok(editor.includes("Apply remote draft"));
- assert.ok(editor.includes("Ignore"));
+ assert.ok(editor.includes('t("applyRemoteDraft")'));
+ assert.ok(editor.includes('t("ignore")'));
  assert.ok(deckForm.includes("pendingRemoteDraft"));
  assert.ok(deckForm.includes("Apply remote draft"));
  assert.ok(deckForm.includes("Ignore"));
