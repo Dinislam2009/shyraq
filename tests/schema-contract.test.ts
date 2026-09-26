@@ -105,3 +105,15 @@ test("telemetry error logs accept only the signed-in user",()=>{
  assert.match(schema,/alter table public\.error_logs enable row level security/);
  assert.match(schema,/create policy error_logs_insert[\s\S]*user_id=\(select auth\.uid\(\)\)/);
 });
+
+
+test("backup restore tracks newly created resources for rollback",()=>{
+ const restore=readFileSync(new URL("../src/app/import/actions.ts",import.meta.url),"utf8");
+ assert.match(restore,/const createdDeckIds:string\[\]=\[\]/);
+ assert.match(restore,/const createdCollectionIds:string\[\]=\[\]/);
+ assert.match(restore,/const uploadedMediaPaths:string\[\]=\[\]/);
+ assert.match(restore,/createdDeckIds\.push\(deckId\)/);
+ assert.match(restore,/createdCollectionIds\.push\(data\.id\)/);
+ assert.match(restore,/uploadedMediaPaths\.push\(newPath\)/);
+ assert.match(restore,/cleanupRestore\(supabase,createdDeckIds,createdCollectionIds,uploadedMediaPaths\)/);
+});
