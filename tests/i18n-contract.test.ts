@@ -1,7 +1,7 @@
 import test from "node:test";
 import {readFileSync} from "node:fs";
 import assert from "node:assert/strict";
-import {dictionaries,locales,translateKey} from "../src/lib/i18n.ts";
+import {dictionaries,locales,translateKey,type TranslationKey} from "../src/lib/i18n.ts";
 import {extendedTranslations} from "../src/lib/i18n-catalog.ts";
 
 test("all supported locales expose the same translation keys",()=>{
@@ -26,7 +26,7 @@ test("extended translation catalog is complete for every supported locale",()=>{
   for(const locale of locales){
    assert.equal(typeof value[locale],"string",key+" missing "+locale);
    assert.notEqual(value[locale].trim(),"",key+" has empty "+locale);
-   assert.equal(translateKey(locale,key),value[locale]);
+   assert.equal(translateKey(locale,key as TranslationKey),value[locale]);
   }
  }
 });
