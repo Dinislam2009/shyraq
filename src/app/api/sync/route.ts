@@ -44,6 +44,20 @@ function sanitizeCardPayload(payload:Record<string,unknown>,userId:string){
  };
 }
 
+async function fetchAll<T>(queryFactory:(from:number,to:number)=>any,pageSize=1000):Promise<T[]>{
+ const rows:T[]=[];
+ let from=0;
+ while(true){
+  const {data,error}=await queryFactory(from,from+pageSize-1);
+  if(error)throw new Error(error.message);
+  const batch=(data??[]) as T[];
+  rows.push(...batch);
+  if(batch.length<pageSize)break;
+  from+=pageSize;
+ }
+ return rows;
+}
+
 async function canEditWorkspace(supabase:any,userId:string,workspaceId:string){
  const {data}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",userId).maybeSingle();
  return ["owner","admin","editor"].includes(String(data?.role||""));
@@ -58,39 +72,47 @@ export async function GET(request:NextRequest){
   const {data:members}=await supabase.from("workspace_members").select("workspace_id").eq("user_id",user.id);
   const workspaceIds=(members??[]).map(row=>row.workspace_id).filter(Boolean);
   if(!workspaceIds.length)return NextResponse.json({decks:[],cards:[],media:[]});
-  const [{data:decks,error:deckError}]=await Promise.all([
-   supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).limit(5000)
-  ]);
-  const deckIds=(decks??[]).map(deck=>deck.id);
-  const [{data:cards,error:cardError},{data:templates,error:templateError},{data:tags,error:tagError},{data:collections,error:collectionError}, {data:media}]=await Promise.all([
-   deckIds.length
-    ? supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).limit(20000)
-    : Promise.resolve({data:[],error:null}),
-   deckIds.length
-    ? supabase.from("card_templates").select("id,deck_id,name,front_template,back_template,css,field_schema,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).limit(5000)
-    : Promise.resolve({data:[],error:null}),
-   workspaceIds.length ? supabase.from("tags").select("id,workspace_id,name").in("workspace_id",workspaceIds).limit(5000) : Promise.resolve({data:[],error:null}),
-   workspaceIds.length ? supabase.from("collections").select("id,workspace_id,owner_id,name,description,kind,rule,sort_mode,is_public,is_featured,created_at").in("workspace_id",workspaceIds).limit(5000) : Promise.resolve({data:[],error:null}),
-   supabase.from("media").select("workspace_id,owner_id,storage_path,mime_type,byte_size,created_at").in("workspace_id",workspaceIds).order("created_at",{ascending:false}).limit(500)
-  ]);
-  if(deckError||cardError||templateError||tagError||collectionError)return NextResponse.json({error:deckError?.message||cardError?.message||templateError?.message||tagError?.message||collectionError?.message||"Bootstrap failed."},{status:500});
-  const reviewCardIds=(cards??[]).map(card=>card.id).filter(Boolean);
-  const {data:reviewStates,error:reviewStateError}=reviewCardIds.length?await supabase.from("review_states").select("id,user_id,card_id,queue,state_data,due_at,last_reviewed_at,reps,lapses,stability,difficulty,scheduled_days").eq("user_id",user.id).in("card_id",reviewCardIds):{data:[],error:null};
-  if(reviewStateError)return NextResponse.json({error:reviewStateError.message},{status:500});
-  const {data:reviewPreferences,error:reviewPreferencesError}=await supabase.from("review_preferences").select("desired_retention,maximum_interval,learning_steps,relearning_steps,enable_fuzz,enable_short_term,rating_labels,rating_order,show_keyboard_hints,swipe_enabled,rating_styles,accessibility,session_defaults,scheduler_profiles").eq("user_id",user.id).maybeSingle();
-  if(reviewPreferencesError)return NextResponse.json({error:reviewPreferencesError.message},{status:500});
-  const collectionIds=(collections??[]).map(collection=>collection.id).filter(Boolean);
-  let collectionCardRows:{collection_id:string;card_id:string;created_at:string}[]=[];
-  if(collectionIds.length){
-   const {data:links,error:linkError}=await supabase.from("collection_cards").select("collection_id,card_id,created_at").in("collection_id",collectionIds).limit(20000);
-   if(linkError)return NextResponse.json({error:linkError.message},{status:500});
-   collectionCardRows=links??[];
+  let decks:Record<string,unknown>[]=[];
+  try{
+   decks=await fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).range(...rangeFrom));
+  }catch(error){
+   return NextResponse.json({error:error instanceof Error?error.message:"Bootstrap failed."},{status:500});
   }
-  const mediaWithUrls=await Promise.all((media??[]).map(async item=>{
-   const {data}=await supabase.storage.from("user-media").createSignedUrl(item.storage_path,900);
-   return {...item,signed_url:data?.signedUrl||null};
-  }));
-  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],templates:templates??[],tags:tags??[],collections:collections??[],collectionCards:collectionCardRows,reviewStates:reviewStates??[],reviewPreferences:reviewPreferences??null,media:mediaWithUrls});
+  const deckIds=decks.map(deck=>deck.id).filter(Boolean);
+  try{
+   const [cards,templates,tags,collections,media]=await Promise.all([
+    deckIds.length
+     ? fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).range(...rangeFrom))
+     : Promise.resolve([]),
+    deckIds.length
+     ? fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("card_templates").select("id,deck_id,name,front_template,back_template,css,field_schema,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).range(...rangeFrom))
+     : Promise.resolve([]),
+    workspaceIds.length
+     ? fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("tags").select("id,workspace_id,name").in("workspace_id",workspaceIds).order("name").range(...rangeFrom))
+     : Promise.resolve([]),
+    workspaceIds.length
+     ? fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("collections").select("id,workspace_id,owner_id,name,description,kind,rule,sort_mode,is_public,is_featured,created_at").in("workspace_id",workspaceIds).order("created_at",{ascending:false}).range(...rangeFrom))
+     : Promise.resolve([]),
+    fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("media").select("workspace_id,owner_id,storage_path,mime_type,byte_size,created_at").in("workspace_id",workspaceIds).order("created_at",{ascending:false}).range(...rangeFrom))
+   ]);
+   const reviewCardIds=cards.map(card=>card.id).filter(Boolean);
+   const reviewStates=reviewCardIds.length
+    ? await fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("review_states").select("id,user_id,card_id,queue,state_data,due_at,last_reviewed_at,reps,lapses,stability,difficulty,scheduled_days").eq("user_id",user.id).in("card_id",reviewCardIds).range(...rangeFrom))
+    : [];
+   const {data:reviewPreferences,error:reviewPreferencesError}=await supabase.from("review_preferences").select("desired_retention,maximum_interval,learning_steps,relearning_steps,enable_fuzz,enable_short_term,rating_labels,rating_order,show_keyboard_hints,swipe_enabled,rating_styles,accessibility,session_defaults,scheduler_profiles").eq("user_id",user.id).maybeSingle();
+   if(reviewPreferencesError)throw new Error(reviewPreferencesError.message);
+   const collectionIds=collections.map(collection=>collection.id).filter(Boolean);
+   const collectionCardRows=collectionIds.length
+    ? await fetchAll<{collection_id:string;card_id:string;created_at:string}>(rangeFrom=>supabase.from("collection_cards").select("collection_id,card_id,created_at").in("collection_id",collectionIds).range(...rangeFrom))
+    : [];
+   const mediaWithUrls=await Promise.all(media.map(async item=>{
+    const {data}=await supabase.storage.from("user-media").createSignedUrl(String(item.storage_path),900);
+    return {...item,signed_url:data?.signedUrl||null};
+   }));
+   return NextResponse.json({user_id:user.id,decks,cards,templates,tags,collections,collectionCards:collectionCardRows,reviewStates,reviewPreferences:reviewPreferences??null,media:mediaWithUrls});
+  }catch(error){
+   return NextResponse.json({error:error instanceof Error?error.message:"Bootstrap failed."},{status:500});
+  }
  }
  const {data,error}=await supabase.from("sync_changes").select("cursor,event_key,entity_type,entity_id,operation,payload,occurred_at").eq("user_id",user.id).gt("cursor",since).order("cursor",{ascending:true}).limit(500);
  if(error)return NextResponse.json({error:error.message},{status:500});
