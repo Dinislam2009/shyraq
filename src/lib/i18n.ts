@@ -83,6 +83,10 @@ export const dictionaries = {
     imageOcclusion: "Суретті жабу",
     livePreview: "Тікелей алдын ала қарау",
     saveAndAddNextCard: "Сақтап, келесі картаны қосу",
+    privacy: "Құпиялылық",
+    terms: "Шарттар",
+    community: "Қауымдастық",
+    dataRetention: "Деректерді сақтау",
   },
   ru: {
     workspace: "Рабочее пространство",
@@ -159,6 +163,10 @@ export const dictionaries = {
     imageOcclusion: "Скрытие области изображения",
     livePreview: "Предпросмотр",
     saveAndAddNextCard: "Сохранить и добавить следующую карточку",
+    privacy: "Конфиденциальность",
+    terms: "Условия",
+    community: "Сообщество",
+    dataRetention: "Хранение данных",
   },
   en: {
     workspace: "Workspace",
@@ -235,6 +243,10 @@ export const dictionaries = {
     imageOcclusion: "Image occlusion",
     livePreview: "Live preview",
     saveAndAddNextCard: "Save and add next card",
+    privacy: "Privacy",
+    terms: "Terms",
+    community: "Community",
+    dataRetention: "Data retention",
   },
 } as const;
 
