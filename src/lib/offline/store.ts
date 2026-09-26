@@ -21,6 +21,7 @@ export type OfflineCard={
 
 export type OfflineTag={id:string;userId:string;workspaceId:string;name:string};
 export type OfflineCollection={id:string;userId:string;workspaceId:string;ownerId:string;name:string;kind:string;description:string;rule:unknown;sortMode:string;isPublic:boolean;isFeatured:boolean;createdAt:string};
+export type OfflineCollectionCard={collectionId:string;cardId:string;createdAt:string};
 export type OfflineCardTemplate={
  id:string;userId:string;deckId:string;name:string;frontTemplate:string;backTemplate:string;
  css:string;fieldSchema:unknown;createdAt:string;updatedAt:string;
@@ -62,6 +63,7 @@ class OfflineStore extends Dexie{
  cardTemplates!:Table<OfflineCardTemplate,string>;
  tags!:Table<OfflineTag,string>;
  collections!:Table<OfflineCollection,string>;
+ collectionCards!:Table<OfflineCollectionCard,string>;
  mutations!:Table<OfflineMutation,string>;
  mediaCache!:Table<OfflineMediaCache,string>;
  syncMeta!:Table<OfflineSyncMeta,string>;
@@ -86,6 +88,19 @@ class OfflineStore extends Dexie{
    cardTemplates:"id,userId,deckId,updatedAt",
    tags:"id,userId,workspaceId,name",
    collections:"id,userId,workspaceId,createdAt",
+   mutations:"id,userId,entityType,operation,status,createdAt",
+   mediaCache:"path,userId,savedAt",
+   syncMeta:"key,userId,cursor,lastSyncAt"
+  });
+  this.version(5).stores({
+   reviews:"id,userId,cardId,deviceId,sequence,status,reviewedAt",
+   reviewCache:"key,userId,savedAt",
+   decks:"id,userId,workspaceId,updatedAt",
+   cards:"id,userId,deckId,updatedAt,sortOrder",
+   cardTemplates:"id,userId,deckId,updatedAt",
+   tags:"id,userId,workspaceId,name",
+   collections:"id,userId,workspaceId,createdAt",
+   collectionCards:"collectionId,cardId,createdAt",
    mutations:"id,userId,entityType,operation,status,createdAt",
    mediaCache:"path,userId,savedAt",
    syncMeta:"key,userId,cursor,lastSyncAt"
@@ -157,12 +172,12 @@ export async function deleteCachedMedia(path:string){
 }
 
 export async function getOfflineStorageUsage(){
- const [reviews,reviewCache,decks,cards,cardTemplates,tags,collections,mutations,media]=await Promise.all([
+ const [reviews,reviewCache,decks,cards,cardTemplates,tags,collections,collectionCards,mutations,media]=await Promise.all([
   offlineStore.reviews.count(),offlineStore.reviewCache.count(),offlineStore.decks.count(),
-  offlineStore.cards.count(),offlineStore.cardTemplates.count(),offlineStore.tags.count(),offlineStore.collections.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
+  offlineStore.cards.count(),offlineStore.cardTemplates.count(),offlineStore.tags.count(),offlineStore.collections.count(),offlineStore.collectionCards.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
  ]);
  return {
-  reviews,reviewCache,decks,cards,cardTemplates,tags,collections,mutations,mediaFiles:media.length,
+  reviews,reviewCache,decks,cards,cardTemplates,tags,collections,collectionCards,mutations,mediaFiles:media.length,
   mediaBytes:media.reduce((sum,item)=>sum+item.byteSize,0)
  };
 }
