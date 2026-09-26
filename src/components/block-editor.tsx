@@ -1,6 +1,6 @@
  "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 export type EditorBlock = {
   id: string;
@@ -85,6 +85,44 @@ function serialize(blocks: EditorBlock[]) {
   }).filter(Boolean).join("\n\n");
 }
 
+function escapeHtml(value: string) {
+ return String(value||"").replace(/[&<>"']/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char] as string));
+}
+
+function markdownToVisualHtml(value:string){
+ let html=escapeHtml(value);
+ html=html.replace(/\[([^\]]+)\]\((https?:\\/\\/[^)]+)\)/g,'<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+ html=html.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+ html=html.replace(/__([^_]+)__/g,"<strong>$1</strong>");
+ html=html.replace(/\*([^*\n]+)\*/g,"<em>$1</em>");
+ html=html.replace(/_([^_\n]+)_/g,"<em>$1</em>");
+ html=html.replace(/\x60([^\x60]+)\x60/g,"<code>$1</code>");
+ return html.replace(/\n/g,"<br />");
+}
+
+function htmlToMarkdown(html:string){
+ const root=document.createElement("div");
+ root.innerHTML=html;
+ const render=(node:Node):string=>{
+  if(node.nodeType===Node.TEXT_NODE)return node.textContent||"";
+  if(!(node instanceof HTMLElement))return Array.from(node.childNodes).map(render).join("");
+  const inner=Array.from(node.childNodes).map(render).join("");
+  const tag=node.tagName.toLowerCase();
+  if(tag==="br")return "\n";
+  if(tag==="strong"||tag==="b")return "**"+inner+"**";
+  if(tag==="em"||tag==="i")return "*"+inner+"*";
+  if(tag==="code")return "\x60"+inner+"\x60";
+  if(tag==="a"){
+   const href=node.getAttribute("href")||"";
+   return href?"["+inner+"]("+href+")":inner;
+  }
+  if(tag==="li")return "- "+inner+"\n";
+  if(["div","p","h1","h2","h3"].includes(tag))return inner+"\n";
+  return inner;
+ };
+ return Array.from(root.childNodes).map(render).join("").replace(/\n{3,}/g,"\n\n").replace(/^\n|\n$/g,"");
+}
+
 function shortcut(value: string) {
   if (value === "# ") return "heading";
   if (value === "> ") return "quote";
@@ -98,6 +136,8 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
   const [focused, setFocused] = useState(blocks[0]?.id || "");
   const [dragged, setDragged] = useState<string | null>(null);
   const [slash, setSlash] = useState<string | null>(null);
+  const [visualMode, setVisualMode] = useState(true);
+  const visualRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   function commit(next: EditorBlock[]) {
     setBlocks(next);
@@ -154,6 +194,7 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white">
       <div className="flex flex-wrap items-center gap-1 border-b border-slate-100 bg-slate-50 p-2">
+        <button type="button" onClick={() => setVisualMode(value => !value)} className={"rounded-lg px-2.5 py-2 text-xs font-semibold " + (visualMode ? "bg-slate-950 text-white" : "hover:bg-white")}>{visualMode ? "Visual" : "Markdown"}</button>
         {types.map(([type, label]) => (
           <button key={type} type="button" onClick={() => {
             if (type === "table") patch(focused, { type, text: "| Column 1 | Column 2 |\n| --- | --- |\n| | |" });
@@ -195,7 +236,23 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
                       </select>
                     </div>
                   )}
-                  <textarea
+                  {visualMode && block.type === "paragraph" ? (
+                    <div
+                      ref={node => { visualRefs.current[block.id] = node; }}
+                      contentEditable
+                      suppressContentEditableWarning
+                      role="textbox"
+                      aria-multiline="true"
+                      aria-label={index === 0 ? "Visual content editor" : "Visual block editor"}
+                      onFocus={() => { setFocused(block.id); setSlash(null); }}
+                      onInput={event => {
+                        const markdown=htmlToMarkdown(event.currentTarget.innerHTML);
+                        patch(block.id,{text:markdown});
+                      }}
+                      dangerouslySetInnerHTML={{__html:markdownToVisualHtml(block.text)}}
+                      className="min-h-24 w-full rounded-xl border border-transparent bg-slate-50 px-3 py-3 text-sm outline-none focus:border-slate-300 focus:bg-white"
+                    />
+                  ) : <textarea
                     data-block={block.id}
                     value={block.text}
                     onFocus={() => { setFocused(block.id); setSlash(null); }}
@@ -234,7 +291,7 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
                       (block.type === "quote" ? "border-l-4 border-l-slate-300 italic text-slate-600" : "") +
                       (block.type === "code" ? "bg-slate-950 font-mono text-slate-100" : "")
                     }
-                  />
+                  />}
                   {slash === block.id && (
                     <div className="mt-1 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
                       {["paragraph", "heading", "bullet", "quote", "code", "table", "divider"].map(type => (
