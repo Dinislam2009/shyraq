@@ -37,8 +37,17 @@ export async function createTeamWorkspace(formData:FormData):Promise<void>{
  if(!name||!slug)return;
  const {data:workspace,error}=await supabase.from("workspaces").insert({owner_id:user.id,kind:"team",name,slug,description:String(formData.get("description")||"").trim()}).select("id").single();
  if(error||!workspace)return;
- await supabase.from("workspace_members").insert({workspace_id:workspace.id,user_id:user.id,role:"owner"});
- await supabase.from("workspace_audit_logs").insert({workspace_id:workspace.id,actor_id:user.id,event_type:"workspace.created",metadata:{name,slug}});
+ const {error:memberError}=await supabase.from("workspace_members").insert({workspace_id:workspace.id,user_id:user.id,role:"owner"});
+ if(memberError){
+  await supabase.from("workspaces").delete().eq("id",workspace.id).eq("owner_id",user.id);
+  return;
+ }
+ const {error:auditError}=await supabase.from("workspace_audit_logs").insert({workspace_id:workspace.id,actor_id:user.id,event_type:"workspace.created",metadata:{name,slug}});
+ if(auditError){
+  await supabase.from("workspace_members").delete().eq("workspace_id",workspace.id).eq("user_id",user.id);
+  await supabase.from("workspaces").delete().eq("id",workspace.id).eq("owner_id",user.id);
+  return;
+ }
  revalidatePath("/settings/workspace");redirect("/settings/workspace");
 }
 export async function updateMemberRole(workspaceId:string,userId:string,role:"admin"|"editor"|"reviewer"|"viewer"):Promise<void>{
