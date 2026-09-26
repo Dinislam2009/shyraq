@@ -241,11 +241,48 @@ create index if not exists collections_owner_id_idx on public.collections(owner_
 create index if not exists collections_workspace_id_idx on public.collections(workspace_id);
 create index if not exists deck_copies_source_deck_id_idx on public.deck_copies(source_deck_id);
 create index if not exists deck_copies_copied_deck_id_idx on public.deck_copies(copied_deck_id);
+
+create table if not exists public.deck_copy_update_history (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  source_deck_id uuid not null references public.decks(id) on delete cascade,
+  copied_deck_id uuid not null references public.decks(id) on delete cascade,
+  source_updated_at timestamptz not null,
+  accepted_at timestamptz not null default now(),
+  card_changes jsonb not null default '{}'::jsonb
+);
+create index if not exists deck_copy_update_history_user_idx on public.deck_copy_update_history(user_id,accepted_at desc);
+create index if not exists deck_copy_update_history_copy_idx on public.deck_copy_update_history(copied_deck_id,accepted_at desc);
+
 create index if not exists media_owner_id_idx on public.media(owner_id);
+
+create table if not exists public.backup_versions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  format text not null default 'json' check(format in ('json')),
+  storage_path text not null unique,
+  size_bytes bigint not null default 0 check(size_bytes >= 0),
+  checksum text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists backup_versions_user_idx on public.backup_versions(user_id,created_at desc);
+
 create index if not exists media_workspace_id_idx on public.media(workspace_id);
 create index if not exists public_deck_follows_deck_id_idx on public.public_deck_follows(deck_id);
 create index if not exists deck_reports_deck_idx on public.deck_reports(deck_id,status,created_at desc);
 create index if not exists deck_reports_reporter_idx on public.deck_reports(reporter_id);
+
+create table if not exists public.moderation_actions (
+  id uuid primary key default gen_random_uuid(),
+  report_id uuid not null references public.deck_reports(id) on delete cascade,
+  moderator_id uuid not null references auth.users(id) on delete cascade,
+  action text not null,
+  note text not null default '',
+  created_at timestamptz not null default now()
+);
+create index if not exists moderation_actions_report_idx on public.moderation_actions(report_id,created_at desc);
+create index if not exists moderation_actions_moderator_idx on public.moderation_actions(moderator_id,created_at desc);
+
 create index if not exists sync_conflicts_card_idx on public.sync_conflicts(card_id);
 create index if not exists review_states_due_idx on public.review_states(user_id,due_at);
 create index if not exists review_states_card_id_idx on public.review_states(card_id);
@@ -542,8 +579,11 @@ alter table public.media enable row level security;
 alter table public.sync_cursors enable row level security;
 alter table public.sync_changes enable row level security;
 alter table public.deck_reports enable row level security;
+alter table public.moderation_actions enable row level security;
 alter table public.public_deck_follows enable row level security;
 alter table public.deck_copies enable row level security;
+alter table public.deck_copy_update_history enable row level security;
+alter table public.backup_versions enable row level security;
 alter table public.workspace_invitations enable row level security;
 alter table public.notifications enable row level security;
 alter table public.review_devices enable row level security;
@@ -692,6 +732,40 @@ drop policy if exists deck_reports_read on public.deck_reports;
 create policy deck_reports_read on public.deck_reports for select to authenticated using(reporter_id=(select auth.uid()) or exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid())));
 drop policy if exists deck_reports_update on public.deck_reports;
 create policy deck_reports_update on public.deck_reports for update to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid()))) with check(exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid())));
+
+drop policy if exists moderation_actions_read on public.moderation_actions;
+create policy moderation_actions_read on public.moderation_actions for select to authenticated
+using (
+  moderator_id=(select auth.uid())
+  or public.is_platform_moderator()
+  or exists (
+    select 1 from public.deck_reports r
+    join public.decks d on d.id=r.deck_id
+    where r.id=report_id and d.owner_id=(select auth.uid())
+  )
+);
+drop policy if exists moderation_actions_insert on public.moderation_actions;
+create policy moderation_actions_insert on public.moderation_actions for insert to authenticated
+with check (
+  moderator_id=(select auth.uid())
+  and (
+    public.is_platform_moderator()
+    or exists (
+      select 1 from public.deck_reports r
+      join public.decks d on d.id=r.deck_id
+      where r.id=report_id and d.owner_id=(select auth.uid())
+    )
+  )
+);
+
+drop policy if exists deck_copy_update_history_self on public.deck_copy_update_history;
+create policy deck_copy_update_history_self on public.deck_copy_update_history for all to authenticated
+using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
+drop policy if exists backup_versions_self on public.backup_versions;
+create policy backup_versions_self on public.backup_versions for all to authenticated
+using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
 
 drop policy if exists follows_self on public.public_deck_follows;
 create policy follows_self on public.public_deck_follows for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
