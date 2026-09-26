@@ -47,7 +47,7 @@ test("core navigation uses the shared i18n API for visible labels",()=>{
 test("CardEditor uses component-level translations for core editor UI",()=>{
  const editor=readFileSync(new URL("../src/components/card-editor.tsx",import.meta.url),"utf8");
  assert.match(editor,/useI18n/);
- for(const key of ["cardTemplate","cardType","tags","markers","status","perCardReviewControls","customFields","editorControls","saveAndAddNextCard"]){
+ for(const key of ["cardTemplate","cardType","tags","markers","Status","perCardReviewControls","customFields","editorControls","saveAndAddNextCard"]){
   assert.match(editor,new RegExp('t\\("'+key+'"\\)'));
  }
 });
