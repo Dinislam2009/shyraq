@@ -54,6 +54,8 @@ jobs:
 
       - name: Bundle audit
         run: npm run audit:bundle
+      - name: Accessibility audit
+        run: npm run audit:aria
 
       - name: API smoke test
         run: npm run test:api
