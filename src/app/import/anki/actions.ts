@@ -104,7 +104,7 @@ export async function importAnki(formData:FormData):Promise<void>{
     fields.back=back;
     return {
      deck_id:deck.id,owner_id:user.id,kind:card.kind,
-     content:{front,back,tags:card.tags,fields,mediaItems,anki:{sourceCardId:card.sourceCardId,sourceModelId:card.modelId,ord:card.ord,due:card.due,interval:card.interval,reps:card.reps,lapses:card.lapses,factor:card.factor}},
+     content:{front,back,tags:card.tags,fields,mediaItems,clozeIndex:card.kind==="cloze"?card.ord+1:undefined,anki:{sourceCardId:card.sourceCardId,sourceModelId:card.modelId,ord:card.ord,due:card.due,interval:card.interval,reps:card.reps,lapses:card.lapses,factor:card.factor}},
      template_id:templateIdsByKey.get(deck.id+":"+String(card.modelId)+":"+String(card.ord))||templateIdsByKey.get(deck.id+":"+String(card.modelId)+":0")||null,
      sort_order:index
     };
