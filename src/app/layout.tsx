@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import {cookies} from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import {ServiceWorkerRegistration} from "@/components/service-worker-registration";
@@ -15,12 +16,15 @@ export const metadata: Metadata = {
   description: "A modern, local-first flashcard and spaced-repetition workspace.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore=await cookies();
+  const cookieLocale=cookieStore.get("shyraq-locale")?.value;
+  const initialLocale=cookieLocale==="kk"||cookieLocale==="ru"||cookieLocale==="en"?cookieLocale:"en";
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang={initialLocale} className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="min-h-screen bg-[#f8fafc] text-slate-950 antialiased">
         <a href="#main-content" className="skip-link">Skip to main content</a>
-        <ThemeProvider><I18nProvider><ServiceWorkerRegistration/><GlobalTranslator /><OfflineBootstrap />{children}</I18nProvider></ThemeProvider>
+        <ThemeProvider><I18nProvider initialLocale={initialLocale}><ServiceWorkerRegistration/><GlobalTranslator /><OfflineBootstrap />{children}</I18nProvider></ThemeProvider>
       </body>
     </html>
   );
