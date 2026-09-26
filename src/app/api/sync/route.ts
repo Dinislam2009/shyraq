@@ -187,16 +187,19 @@ export async function POST(request:NextRequest){
      user_id:user.id,card_id:e.card_id,event_key:e.event_key,incoming_state:incoming,current_state:existing?.state_data??{},
      incoming_reviewed_at:e.reviewed_at,current_reviewed_at:existing?.last_reviewed_at??null
     });
-    if(conflictError)continue;
-    const {error:notificationError}=await supabase.rpc("create_notification",{
+    if(conflictError){
+     failedEvents.push(String(e.event_key));
+     await supabase.from("review_events").delete().eq("event_key",e.event_key).eq("user_id",user.id);
+     continue;
+    }
+    conflicts.push(e.event_key);
+    await supabase.rpc("create_notification",{
      target_user:user.id,
      notification_kind:"sync_conflict",
      notification_title:"Review sync conflict detected",
      notification_body:"A newer remote review state was preserved. Open Sync to review the conflict.",
      notification_href:"/settings/sync"
     });
-    if(notificationError)continue;
-    conflicts.push(e.event_key);
     continue;
    }
    const {error:stateError}=await supabase.from("review_states").upsert({
@@ -261,13 +264,15 @@ export async function POST(request:NextRequest){
     if(tagNames.length){
      const {data:tags,error:tagError}=await supabase.from("tags").upsert(tagNames.map((name:string)=>({workspace_id:cardDeck.workspace_id,name})),{onConflict:"workspace_id,name"}).select("id");
      if(tagError)throw new Error(tagError.message);
-     await supabase.from("card_tags").delete().eq("card_id",row.id);
+     const {error:clearTagsError}=await supabase.from("card_tags").delete().eq("card_id",row.id);
+     if(clearTagsError)throw new Error(clearTagsError.message);
      if(tags?.length){
       const {error:linkError}=await supabase.from("card_tags").insert(tags.map((tag:any)=>({card_id:row.id,tag_id:tag.id})));
       if(linkError)throw new Error(linkError.message);
      }
     }else{
-     await supabase.from("card_tags").delete().eq("card_id",row.id);
+     const {error:clearTagsError}=await supabase.from("card_tags").delete().eq("card_id",row.id);
+     if(clearTagsError)throw new Error(clearTagsError.message);
     }
    }
   }else if(entityType==="tags"){
