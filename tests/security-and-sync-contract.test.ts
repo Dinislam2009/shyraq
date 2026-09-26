@@ -14,6 +14,9 @@ test("profiles expose private fields only to the owner and use a public projecti
  assert.ok(schema.includes("select id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers"));
  assert.match(workspacePage,/from\("public_profiles"\)/);
  assert.match(creatorPage,/from\("public_profiles"\)/);
+ assert.match(schema,/create or replace function private\.sync_public_profile\(\) returns trigger[\\s\\S]*?security definer[\\s\\S]*?set search_path=public,private/);
+ assert.match(schema,/create trigger sync_public_profile[\\s\\S]*?execute function private\.sync_public_profile\(\)/);
+ assert.doesNotMatch(schema,/create policy public_profiles_public_(insert|update|delete)/);
 });
 
 test("workspace owner role cannot be reassigned through member updates",()=>{
