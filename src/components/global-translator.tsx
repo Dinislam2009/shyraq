@@ -267,31 +267,83 @@ function dynamicTranslation(raw: string, locale: "kk" | "ru" | "en") {
 export function GlobalTranslator() {
   const { locale } = useI18n();
   useEffect(() => {
-    const translate = () => {
-      document.querySelectorAll("[data-shyraq-i18n]").forEach((node) => {
-        const el = node as HTMLElement;
-        const key = el.getAttribute("data-shyraq-i18n");
-        if (key && translations[key]) el.textContent = translations[key][locale];
+    const reverse = new Map<string,string>();
+    Object.entries(translations).forEach(([key,value]) => {
+      reverse.set(key,key);
+      reverse.set(value.kk,key);
+      reverse.set(value.ru,key);
+      reverse.set(value.en,key);
+    });
+
+    const translateTextNode = (node: Node) => {
+      const parent = node.parentElement;
+      if (!parent || parent.children.length > 0) return;
+      const raw = normalize(node.textContent || "");
+      if (!raw) return;
+      const key = reverse.get(raw);
+      const next = key ? translations[key][locale] : dynamicTranslation(raw, locale);
+      if (next && node.textContent !== next) node.textContent = next;
+    };
+
+    const translateRoot = (root: ParentNode) => {
+      if (root instanceof Element && root.hasAttribute("data-shyraq-i18n")) {
+        const key = root.getAttribute("data-shyraq-i18n");
+        if (key && translations[key]) root.textContent = translations[key][locale];
+      }
+      const selector = "[data-shyraq-i18n],input[placeholder],textarea[placeholder]";
+      root.querySelectorAll?.(selector).forEach(node => {
+        const element = node as HTMLElement & HTMLInputElement;
+        if (element.hasAttribute("data-shyraq-i18n")) {
+          const key = element.getAttribute("data-shyraq-i18n");
+          if (key && translations[key]) element.textContent = translations[key][locale];
+        }
+        if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+          const raw = element.getAttribute("data-shyraq-placeholder") || element.getAttribute("placeholder") || "";
+          const key = reverse.get(raw);
+          if (key) {
+            element.setAttribute("data-shyraq-placeholder", key);
+            element.setAttribute("placeholder", translations[key][locale]);
+          }
+        }
       });
-      document.querySelectorAll("body *").forEach((el) => {
-        if (el.children.length > 0) return;
-        const node = el.firstChild;
-        if (!node || node.nodeType !== Node.TEXT_NODE) return;
-        const raw = normalize(node.textContent || "");
-        if (!raw) return;
-        const key = Object.prototype.hasOwnProperty.call(translations, raw) ? raw : Object.keys(translations).find(k => translations[k].kk === raw || translations[k].ru === raw || translations[k].en === raw);
-        if (key) { const next = translations[key][locale]; if (node.textContent !== next) node.textContent = next; } else { const dynamic = dynamicTranslation(raw, locale); if (dynamic && node.textContent !== dynamic) node.textContent = dynamic; }
-      });
-      document.querySelectorAll<HTMLElement>("input[placeholder],textarea[placeholder]").forEach((el) => {
-        const raw = el.getAttribute("data-shyraq-placeholder") || el.getAttribute("placeholder") || "";
-        const key = Object.keys(translations).find(k => k === raw || translations[k].kk === raw || translations[k].ru === raw || translations[k].en === raw);
-        if (key) { el.setAttribute("data-shyraq-placeholder", key); el.setAttribute("placeholder", translations[key][locale]); }
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) translateTextNode(node);
+    };
+
+    translateRoot(document.body);
+    let frame = 0;
+    const pendingRoots = new Set<Node>();
+    const flush = () => {
+      frame = 0;
+      const roots = [...pendingRoots];
+      pendingRoots.clear();
+      roots.forEach(root => {
+        if (root instanceof CharacterData) translateTextNode(root);
+        else translateRoot(root as ParentNode);
       });
     };
-    translate();
-    const observer = new MutationObserver(() => translate());
+    const schedule = (root: Node) => {
+      pendingRoots.add(root);
+      if (!frame) frame = window.requestAnimationFrame(flush);
+    };
+
+    const observer = new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        if (mutation.type === "characterData") {
+          schedule(mutation.target);
+        } else {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) schedule(node);
+          });
+        }
+      }
+    });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, [locale]);
   return null;
 }
