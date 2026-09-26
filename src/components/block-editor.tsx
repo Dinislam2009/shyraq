@@ -249,7 +249,7 @@ export function BlockEditor({ value, onChange, placeholder = "Start writing…" 
                       </select>
                     </div>
                   )}
-                  {visualMode && block.type !== "code" && block.type !== "table" && block.type !== "divider" ? (
+                  {visualMode && block.type !== "code" && block.type !== "table" ? (
                     <div
                       ref={node => { visualRefs.current[block.id] = node; }}
                       contentEditable
