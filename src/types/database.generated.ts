@@ -47,6 +47,77 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_feed: {
+        Row: {
+          actor_id: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          event_type: string
+          id: string
+          metadata: Json
+          workspace_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          workspace_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_feed_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backup_versions: {
+        Row: {
+          checksum: string | null
+          created_at: string
+          format: string
+          id: string
+          size_bytes: number
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          checksum?: string | null
+          created_at?: string
+          format: string
+          id?: string
+          size_bytes?: number
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          checksum?: string | null
+          created_at?: string
+          format?: string
+          id?: string
+          size_bytes?: number
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       card_states: {
         Row: {
           card_id: string
@@ -255,29 +326,83 @@ export type Database = {
           },
         ]
       }
+      collection_members: {
+        Row: {
+          collection_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_members_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collections: {
         Row: {
           created_at: string
           id: string
+          is_featured: boolean
+          is_public: boolean
           kind: Database["public"]["Enums"]["collection_kind"]
           name: string
           owner_id: string
+          rule: Json
+          sort_mode: string
           workspace_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_featured?: boolean
+          is_public?: boolean
           kind?: Database["public"]["Enums"]["collection_kind"]
           name: string
           owner_id: string
+          rule?: Json
+          sort_mode?: string
           workspace_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_featured?: boolean
+          is_public?: boolean
           kind?: Database["public"]["Enums"]["collection_kind"]
           name?: string
           owner_id?: string
+          rule?: Json
+          sort_mode?: string
           workspace_id?: string
         }
         Relationships: [
@@ -289,6 +414,124 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      comment_mentions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          mentioned_user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          mentioned_user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          mentioned_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_id: string
+          body: string
+          card_id: string | null
+          created_at: string
+          deck_id: string
+          id: string
+          parent_id: string | null
+          resolved: boolean
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          card_id?: string | null
+          created_at?: string
+          deck_id: string
+          id?: string
+          parent_id?: string | null
+          resolved?: boolean
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          card_id?: string | null
+          created_at?: string
+          deck_id?: string
+          id?: string
+          parent_id?: string | null
+          resolved?: boolean
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_relations: {
+        Row: {
+          created_at: string
+          creator_id: string
+          relation: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          relation: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          relation?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       deck_copies: {
         Row: {
@@ -335,6 +578,93 @@ export type Database = {
           },
         ]
       }
+      deck_copy_update_history: {
+        Row: {
+          accepted_at: string
+          card_changes: Json
+          copied_deck_id: string
+          id: string
+          source_deck_id: string
+          source_updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          card_changes?: Json
+          copied_deck_id: string
+          id?: string
+          source_deck_id: string
+          source_updated_at: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          card_changes?: Json
+          copied_deck_id?: string
+          id?: string
+          source_deck_id?: string
+          source_updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deck_copy_update_history_copied_deck_id_fkey"
+            columns: ["copied_deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deck_copy_update_history_source_deck_id_fkey"
+            columns: ["source_deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deck_members: {
+        Row: {
+          created_at: string
+          deck_id: string
+          id: string
+          role: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          deck_id: string
+          id?: string
+          role: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deck_members_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deck_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deck_reports: {
         Row: {
           created_at: string
@@ -376,14 +706,67 @@ export type Database = {
           },
         ]
       }
+      deck_versions: {
+        Row: {
+          created_at: string
+          created_by: string
+          deck_id: string
+          id: string
+          label: string
+          reason: string | null
+          snapshot: Json
+          version_number: number
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          deck_id: string
+          id?: string
+          label?: string
+          reason?: string | null
+          snapshot?: Json
+          version_number: number
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deck_id?: string
+          id?: string
+          label?: string
+          reason?: string | null
+          snapshot?: Json
+          version_number?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deck_versions_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deck_versions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decks: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string
           id: string
           name: string
           owner_id: string
           settings: Json
+          sort_order: number
           source_deck_id: string | null
           updated_at: string
           visibility: Database["public"]["Enums"]["deck_visibility"]
@@ -391,11 +774,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string
           id?: string
           name: string
           owner_id: string
           settings?: Json
+          sort_order?: number
           source_deck_id?: string | null
           updated_at?: string
           visibility?: Database["public"]["Enums"]["deck_visibility"]
@@ -403,11 +788,13 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string
           id?: string
           name?: string
           owner_id?: string
           settings?: Json
+          sort_order?: number
           source_deck_id?: string | null
           updated_at?: string
           visibility?: Database["public"]["Enums"]["deck_visibility"]
@@ -429,6 +816,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      error_logs: {
+        Row: {
+          created_at: string
+          digest: string | null
+          id: string
+          level: string
+          message: string
+          metadata: Json
+          route: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          digest?: string | null
+          id?: string
+          level?: string
+          message: string
+          metadata?: Json
+          route?: string | null
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          digest?: string | null
+          id?: string
+          level?: string
+          message?: string
+          metadata?: Json
+          route?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       flashcard_decks: {
         Row: {
@@ -724,6 +1147,134 @@ export type Database = {
           },
         ]
       }
+      moderation_actions: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          moderator_id: string
+          note: string | null
+          report_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          moderator_id: string
+          note?: string | null
+          report_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          moderator_id?: string
+          note?: string | null
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_actions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "deck_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      moderators: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          author_updates: boolean
+          backup: boolean
+          collaboration: boolean
+          in_app: boolean
+          moderation: boolean
+          offline_state: boolean
+          sync_conflicts: boolean
+          updated_at: string
+          user_id: string
+          workspace_invites: boolean
+        }
+        Insert: {
+          author_updates?: boolean
+          backup?: boolean
+          collaboration?: boolean
+          in_app?: boolean
+          moderation?: boolean
+          offline_state?: boolean
+          sync_conflicts?: boolean
+          updated_at?: string
+          user_id: string
+          workspace_invites?: boolean
+        }
+        Update: {
+          author_updates?: boolean
+          backup?: boolean
+          collaboration?: boolean
+          in_app?: boolean
+          moderation?: boolean
+          offline_state?: boolean
+          sync_conflicts?: boolean
+          updated_at?: string
+          user_id?: string
+          workspace_invites?: boolean
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          href: string | null
+          id: string
+          kind: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          href?: string | null
+          id?: string
+          kind: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          href?: string | null
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -732,6 +1283,9 @@ export type Database = {
           display_name: string | null
           id: string
           locale: string
+          selected_workspace_id: string | null
+          show_activity: boolean
+          show_followers: boolean
           timezone: string
           updated_at: string
           username: string | null
@@ -743,6 +1297,9 @@ export type Database = {
           display_name?: string | null
           id: string
           locale?: string
+          selected_workspace_id?: string | null
+          show_activity?: boolean
+          show_followers?: boolean
           timezone?: string
           updated_at?: string
           username?: string | null
@@ -754,11 +1311,22 @@ export type Database = {
           display_name?: string | null
           id?: string
           locale?: string
+          selected_workspace_id?: string | null
+          show_activity?: boolean
+          show_followers?: boolean
           timezone?: string
           updated_at?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_selected_workspace_id_fkey"
+            columns: ["selected_workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
@@ -798,6 +1366,32 @@ export type Database = {
           },
         ]
       }
+      public_deck_follow_counts: {
+        Row: {
+          deck_id: string
+          follow_count: number
+          updated_at: string
+        }
+        Insert: {
+          deck_id: string
+          follow_count?: number
+          updated_at?: string
+        }
+        Update: {
+          deck_id?: string
+          follow_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_deck_follow_counts_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: true
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_deck_follows: {
         Row: {
           created_at: string
@@ -823,6 +1417,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      review_devices: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          last_seen_at?: string
+          name?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       review_events: {
         Row: {
@@ -882,46 +1500,62 @@ export type Database = {
       }
       review_preferences: {
         Row: {
+          accessibility: Json
           desired_retention: number
           enable_fuzz: boolean
           enable_short_term: boolean
           learning_steps: Json
           maximum_interval: number
           new_cards_per_day: number
-          relearning_steps: Json
-          reviews_per_day: number
           rating_labels: Json
           rating_order: Json
+          rating_styles: Json
+          relearning_steps: Json
+          reviews_per_day: number
+          scheduler_profiles: Json
+          session_defaults: Json
           show_keyboard_hints: boolean
           swipe_enabled: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          accessibility?: Json
           desired_retention?: number
           enable_fuzz?: boolean
           enable_short_term?: boolean
           learning_steps?: Json
           maximum_interval?: number
           new_cards_per_day?: number
-          relearning_steps?: Json
-          reviews_per_day?: number
           rating_labels?: Json
           rating_order?: Json
+          rating_styles?: Json
+          relearning_steps?: Json
+          reviews_per_day?: number
+          scheduler_profiles?: Json
+          session_defaults?: Json
           show_keyboard_hints?: boolean
           swipe_enabled?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          accessibility?: Json
           desired_retention?: number
           enable_fuzz?: boolean
           enable_short_term?: boolean
           learning_steps?: Json
           maximum_interval?: number
           new_cards_per_day?: number
+          rating_labels?: Json
+          rating_order?: Json
+          rating_styles?: Json
           relearning_steps?: Json
           reviews_per_day?: number
+          scheduler_profiles?: Json
+          session_defaults?: Json
+          show_keyboard_hints?: boolean
+          swipe_enabled?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -979,6 +1613,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      saved_filters: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          query: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          query?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          query?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saved_searches: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          name: string
+          query: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name: string
+          query: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name?: string
+          query?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       sync_changes: {
         Row: {
@@ -1136,19 +1827,29 @@ export type Database = {
         Row: {
           id: string
           name: string
+          parent_id: string | null
           workspace_id: string
         }
         Insert: {
           id?: string
           name: string
+          parent_id?: string | null
           workspace_id: string
         }
         Update: {
           id?: string
           name?: string
+          parent_id?: string | null
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tags_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tags_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -1235,6 +1936,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      workspace_audit_logs: {
+        Row: {
+          actor_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          target_user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          target_user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          target_user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_audit_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workspace_invitations: {
         Row: {
@@ -1347,7 +2086,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_platform_moderator: { Args: never; Returns: boolean }
     }
     Enums: {
       card_kind:
@@ -1358,7 +2097,7 @@ export type Database = {
         | "image"
         | "custom"
       card_queue: "learning" | "review" | "relearning" | "suspended"
-      collection_kind: "favorites" | "custom"
+      collection_kind: "favorites" | "custom" | "smart"
       deck_visibility: "private" | "workspace" | "public"
       review_rating: "again" | "hard" | "good" | "easy"
       workspace_kind: "personal" | "team"
@@ -1499,7 +2238,7 @@ export const Constants = {
         "custom",
       ],
       card_queue: ["learning", "review", "relearning", "suspended"],
-      collection_kind: ["favorites", "custom"],
+      collection_kind: ["favorites", "custom", "smart"],
       deck_visibility: ["private", "workspace", "public"],
       review_rating: ["again", "hard", "good", "easy"],
       workspace_kind: ["personal", "team"],
