@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { RichContent } from "@/components/rich-content";
+import {renderAnkiTemplate} from "@/lib/anki/template-engine";
 
 export function TemplateEditor({
   template,
@@ -19,7 +20,8 @@ export function TemplateEditor({
   const [back,setBack]=useState(template.back_template);
   const [css,setCss]=useState(template.css||"");
   const fields=useMemo(()=>({front:"What is photosynthesis?",back:"A process used by plants to convert light into chemical energy.",subject:"Biology",example:"Leaves use chlorophyll."}),[]);
-  const render=(value:string)=>{let output=String(value||"");output=output.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key,body)=>fields[String(key).trim() as keyof typeof fields]?body:"");output=output.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key,body)=>fields[String(key).trim() as keyof typeof fields]?"":body);return output.replace(/\{\{\s*([^}]+?)\s*\}\}/g,(_,key)=>fields[String(key).trim() as keyof typeof fields]??"");};
+  const renderedFront=renderAnkiTemplate(front,fields,{side:"front",clozeIndex:1,revealCloze:false});
+  const render=(value:string,side:"front"|"back")=>renderAnkiTemplate(value,fields,{side,frontSide:renderedFront,clozeIndex:1,revealCloze:side==="back"});
   return <div className="rounded-2xl border border-black/[0.06] bg-white p-6">
     <form action={updateAction}>
       <div className="grid gap-4 md:grid-cols-3">
