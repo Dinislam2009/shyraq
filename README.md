@@ -1206,7 +1206,7 @@ Before calling Shyraq production-ready:
 - [ ] Auth security audit complete
 - [ ] Leaked-password protection enabled
 - [x] Secret audit complete
-- [ ] Dependency audit complete
+- [x] Dependency audit complete
 
 ### UX
 - [ ] Kazakh UI complete
