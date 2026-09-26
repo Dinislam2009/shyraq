@@ -71,7 +71,7 @@ export async function GET(request:NextRequest){
     : Promise.resolve({data:[],error:null}),
    workspaceIds.length ? supabase.from("tags").select("id,workspace_id,name").in("workspace_id",workspaceIds).limit(5000) : Promise.resolve({data:[],error:null}),
    workspaceIds.length ? supabase.from("collections").select("id,workspace_id,owner_id,name,description,kind,rule,sort_mode,is_public,is_featured,created_at").in("workspace_id",workspaceIds).limit(5000) : Promise.resolve({data:[],error:null}),
-   supabase.from("media").select("storage_path,mime_type,byte_size,created_at").eq("owner_id",user.id).order("created_at",{ascending:false}).limit(200)
+   supabase.from("media").select("workspace_id,owner_id,storage_path,mime_type,byte_size,created_at").in("workspace_id",workspaceIds).order("created_at",{ascending:false}).limit(500)
   ]);
   if(deckError||cardError||templateError||tagError||collectionError)return NextResponse.json({error:deckError?.message||cardError?.message||templateError?.message||tagError?.message||collectionError?.message||"Bootstrap failed."},{status:500});
   const reviewCardIds=(cards??[]).map(card=>card.id).filter(Boolean);
