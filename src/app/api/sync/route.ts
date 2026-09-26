@@ -111,10 +111,14 @@ export async function POST(request:NextRequest){
      incoming_reviewed_at:e.reviewed_at,current_reviewed_at:existing?.last_reviewed_at??null
     });
     if(conflictError)continue;
-    await supabase.from("notifications").insert({
-     user_id:user.id,kind:"sync_conflict",title:"Review sync conflict detected",
-     body:"A newer remote review state was preserved. Open Sync to review the conflict.",href:"/settings/sync"
+    const {error:notificationError}=await supabase.rpc("create_notification",{
+     target_user:user.id,
+     notification_kind:"sync_conflict",
+     notification_title:"Review sync conflict detected",
+     notification_body:"A newer remote review state was preserved. Open Sync to review the conflict.",
+     notification_href:"/settings/sync"
     });
+    if(notificationError)continue;
     conflicts.push(e.event_key);
     continue;
    }
