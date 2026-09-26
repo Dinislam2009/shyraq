@@ -129,7 +129,9 @@ export async function POST(request:NextRequest){
  const operations=Array.isArray(body.operations)?body.operations:[];
  const batch=events.slice(0,500);
  const conflicts:string[]=[];
+ const failedEvents:string[]=[];
  const failedOperations:string[]=[];
+ const attemptedOperationIds:string[]=[];
  let acceptedCount=0;
  let deviceIds:string[]=[];
 
@@ -142,7 +144,7 @@ export async function POST(request:NextRequest){
     client_sequence:e.client_sequence??e.clientSequence,
     reviewed_at:e.reviewed_at??e.reviewedAt,
     rating:e.rating,
-    elapsed_ms:e.elapsed_ms??e.elapsedMs,
+    elapsed_ms:Math.max(0,Math.min(15*60*1000,Number.isFinite(Number(e.elapsed_ms??e.elapsedMs))?Math.round(Number(e.elapsed_ms??e.elapsedMs)):0)),
     previous_state:e.previous_state??e.previousState??{},
     next_state:e.next_state??e.nextState??{},
     metadata:e.metadata??{}
@@ -183,13 +185,17 @@ export async function POST(request:NextRequest){
     conflicts.push(e.event_key);
     continue;
    }
-   await supabase.from("review_states").upsert({
+   const {error:stateError}=await supabase.from("review_states").upsert({
     user_id:user.id,card_id:e.card_id,
     queue:incoming.state===2?"review":incoming.state===3?"relearning":"learning",
     state_data:incoming,due_at:new Date(incoming.due).toISOString(),last_reviewed_at:e.reviewed_at,
     reps:incoming.reps??0,lapses:incoming.lapses??0,stability:incoming.stability??null,
     difficulty:incoming.difficulty??null,scheduled_days:incoming.scheduled_days??0
    });
+   if(stateError){
+    failedEvents.push(String(e.event_key));
+    await supabase.from("review_events").delete().eq("event_key",e.event_key).eq("user_id",user.id);
+   }
   }
  }
 
@@ -201,6 +207,7 @@ export async function POST(request:NextRequest){
  const entityId=String(raw.entity_id||"");
  const payload=isPlainObject(raw.payload)?raw.payload:{};
  if(!id||!entityId||!["upsert","delete"].includes(operation))continue;
+ attemptedOperationIds.push(id);
  try{
   if(entityType==="decks"){
    const {data:existingDeck}=await supabase.from("decks").select("id,workspace_id,owner_id").eq("id",entityId).maybeSingle();
@@ -321,7 +328,7 @@ export async function POST(request:NextRequest){
 
 
  return NextResponse.json({
-  accepted:Math.max(0,acceptedCount-conflicts.length)+operations.filter((item:any)=>!failedOperations.includes(String(item?.id||""))).length,
-  conflicts,failed:failedOperations,devices:deviceIds
+  accepted:Math.max(0,acceptedCount-conflicts.length-failedEvents.length)+attemptedOperationIds.filter(id=>!failedOperations.includes(id)).length,
+  conflicts,failed:failedOperations,failedEvents,devices:deviceIds
  });
 }
