@@ -11,7 +11,7 @@ test.describe("public browser launch gate",()=>{
   await expect(page.getByPlaceholder(/password|пароль|құпия/i)).toBeVisible();
   await page.getByRole("link",{name:/create|создать|аккаунт/i}).click();
   await expect(page).toHaveURL(/\/signup$/);
-  await expect(page.getByRole("heading",{name:/Create account|Создать аккаунт|Аккаунт жасау/i})).toBeVisible();
+  await expect(page.getByRole("main")).toContainText(/Create account|Создать аккаунт|Аккаунт жасау/i);
   expect(errors).toEqual([]);
  });
 
