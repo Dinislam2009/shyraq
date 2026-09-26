@@ -468,6 +468,8 @@ alter table public.deck_reports enable row level security;
 alter table public.public_deck_follows enable row level security;
 alter table public.deck_copies enable row level security;
 alter table public.workspace_invitations enable row level security;
+alter table public.notifications enable row level security;
+alter table public.review_devices enable row level security;
 alter table public.deck_members enable row level security;
 alter table public.collection_members enable row level security;
 alter table public.comments enable row level security;
@@ -589,6 +591,22 @@ create policy invitations_admin_update on public.workspace_invitations for updat
 
 
 -- Collaboration and user-owned utility policies.
+drop policy if exists notifications_self on public.notifications;
+create policy notifications_self on public.notifications for all to authenticated
+using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
+drop policy if exists review_devices_self on public.review_devices;
+create policy review_devices_self on public.review_devices for all to authenticated
+using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
+drop policy if exists sync_conflicts_self on public.sync_conflicts;
+create policy sync_conflicts_self on public.sync_conflicts for all to authenticated
+using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
+drop policy if exists invitations_admin_delete on public.workspace_invitations;
+create policy invitations_admin_delete on public.workspace_invitations for delete to authenticated
+using(private.is_workspace_member(workspace_id,'admin'));
+
 drop policy if exists deck_members_read on public.deck_members;
 create policy deck_members_read on public.deck_members for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
 drop policy if exists deck_members_admin_write on public.deck_members;
