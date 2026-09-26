@@ -621,7 +621,7 @@ revoke all on function private.touch_updated_at() from public,anon,authenticated
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function private.handle_new_user();
 
-create or replace function private.record_sync_change() returns trigger language plpgsql security definer set search_path=public,private as $
+create or replace function private.record_sync_change() returns trigger language plpgsql security definer set search_path=public,private as $shyraq_sync$
 declare
  payload jsonb;
  eid uuid;
@@ -665,7 +665,7 @@ begin
    values(gen_random_uuid(),uid,tg_table_name,eid,operation_name,payload);
  end if;
  return coalesce(new,old);
-end $;
+end $shyraq_sync$;
 revoke all on function private.record_sync_change() from public,anon,authenticated;
 
 do $$ declare t text; begin
