@@ -25,15 +25,21 @@ test("offline mirror includes card templates",()=>{
  const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
  const sync=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
  assert.match(store,/cardTemplates!:Table<OfflineCardTemplate,string>/);
+ assert.match(store,/tags!:Table<OfflineTag,string>/);
+ assert.match(store,/collections!:Table<OfflineCollection,string>/);
  assert.match(store,/this\.version\(4\)\.stores/);
  assert.match(sync,/function mapTemplate/);
  assert.match(sync,/offlineStore\.cardTemplates\.put/);
+ assert.match(sync,/function mapTag/);
+ assert.match(sync,/function mapCollection/);
+ assert.match(sync,/offlineStore\.tags\.put/);
+ assert.match(sync,/offlineStore\.collections\.put/);
 });
 
 
 test("offline storage usage counts templates independently",()=>{
  const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
- assert.match(store,/offlineStore\.cardTemplates\.count\(\),offlineStore\.mutations\.count\(\),offlineStore\.mediaCache\.toArray\(\)/);
+ assert.match(store,/offlineStore\.cardTemplates\.count\(\),offlineStore\.tags\.count\(\),offlineStore\.collections\.count\(\),offlineStore\.mutations\.count\(\)/);
 });
 
 
@@ -42,4 +48,15 @@ test("offline bootstrap keeps templates in the local mirror",()=>{
  assert.ok(sync.includes("templates?:Record<string,unknown>[]"));
  assert.ok(sync.includes("(data.templates??[]).map(item=>mapTemplate(item,userId))"));
  assert.ok(sync.includes("return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[]}"));
+});
+
+
+test("workspace sync fans out tags and collections",()=>{
+ const schema=readFileSync(new URL("../supabase/schema.sql",import.meta.url),"utf8");
+ const route=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
+ assert.match(schema,/tg_table_name in \('decks','cards','card_templates','tags','collections'\)/);
+ assert.match(route,/entityType==="tags"/);
+ assert.match(route,/entityType==="collections"/);
+ assert.match(route,/tags:\(tags\?\?\[\]\)/);
+ assert.match(route,/collections:\(collections\?\?\[\]\)/);
 });
