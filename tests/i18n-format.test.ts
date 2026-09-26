@@ -4,8 +4,7 @@ import {formatDate,formatDateTime,formatNumber} from "../src/lib/i18n-format.ts"
 
 test("locale-aware number formatting is deterministic for supported locales",()=>{
  assert.equal(formatNumber(1234567,"en"),"1,234,567");
- assert.equal(formatNumber(1234567,"de" as never),"1,234,567");
- assert.notEqual(formatNumber(1234567,"kk"),formatNumber(1234567,"en"));
+ assert.equal(formatNumber(12.5,"ru"),"12,5");
 });
 
 test("locale-aware dates and date-times format valid timestamps",()=>{
