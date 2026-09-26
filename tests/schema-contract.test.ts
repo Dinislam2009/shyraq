@@ -150,3 +150,18 @@ test("offline mutation API enforces workspace editor permissions for shared reso
  assert.match(syncRoute,/if\(!templateDeck\|\|!\(await canEditWorkspace/);
  assert.match(syncRoute,/if\(existingCard\)row\.owner_id=existingCard\.owner_id/);
 });
+
+
+test("creator mute and block relations have secure storage and feed filtering",()=>{
+ assert.match(schema,/create table if not exists public\.creator_relations/);
+ assert.match(schema,/relation text not null check\(relation in \('mute','block'\)\)/);
+ assert.match(schema,/alter table public\.creator_relations enable row level security/);
+ assert.match(schema,/create policy creator_relations_self_select[\s\S]*user_id=\(select auth\.uid\(\)\)/);
+ const explore=readFileSync(new URL("../src/app/explore/page.tsx",import.meta.url),"utf8");
+ const following=readFileSync(new URL("../src/app/explore/following/page.tsx",import.meta.url),"utf8");
+ assert.match(explore,/from\("creator_relations"\)/);
+ assert.match(explore,/hiddenCreators/);
+ assert.match(explore,/!hiddenCreators\.has\(String\(deck\.owner_id\)\)/);
+ assert.match(following,/from\("creator_relations"\)/);
+ assert.match(following,/visibleFollows/);
+});
