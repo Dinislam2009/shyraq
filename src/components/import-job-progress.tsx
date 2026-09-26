@@ -40,8 +40,7 @@ export function ImportJobProgress(){
   setBusy(true);
   setError("");
   try{
-   let active=true;
-   while(active){
+   while(true){
     const response=await fetch("/api/import/jobs/"+encodeURIComponent(id),{method:"POST",cache:"no-store"});
     if(!response.ok)throw new Error((await response.json().catch(()=>({})) as {error?:string}).error||"Import step failed.");
     const data=await response.json() as Job;
