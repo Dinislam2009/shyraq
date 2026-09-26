@@ -18,7 +18,7 @@ test.describe("public browser launch gate",()=>{
  test("all supported locales render the core public UI",async({page})=>{
   const expectations={
    kk:{login:/Қош келдіңіз/i,privacy:"Құпиялылық",terms:"Шарттар",offline:"Офлайн қайталау"},
-   ru:{login:/Добро пожаловать/i,privacy:"Конфиденциальность",terms:"Условия",offline:"Офлайн-повторение"},
+   ru:{login:/С возвращением/i,privacy:"Конфиденциальность",terms:"Условия",offline:"Офлайн-повторение"},
    en:{login:/Welcome back/i,privacy:"Privacy",terms:"Terms",offline:"Offline review"},
   };
   for(const [locale,labels] of Object.entries(expectations)){
