@@ -248,5 +248,10 @@ export const extendedTranslations = {
   "Invite link": { kk: "Шақыру сілтемесі", ru: "Ссылка-приглашение", en: "Invite link" },
   "Copy link": { kk: "Сілтемені көшіру", ru: "Копировать ссылку", en: "Copy link" },
   "Admin": { kk: "Әкімші", ru: "Администратор", en: "Admin" },
+  "continueWithGoogle": { kk: "Google арқылы жалғастыру", ru: "Продолжить через Google", en: "Continue with Google" },
+  "continueWithApple": { kk: "Apple арқылы жалғастыру", ru: "Продолжить через Apple", en: "Continue with Apple" },
+  "orSeparator": { kk: "немесе", ru: "или", en: "or" },
+  "authenticationFailed": { kk: "Аутентификация сәтсіз аяқталды.", ru: "Ошибка аутентификации.", en: "Authentication failed." },
+  "authenticationUnavailable": { kk: "Аутентификация қызметі уақытша қолжетімсіз.", ru: "Сервис аутентификации временно недоступен.", en: "Authentication service is temporarily unavailable." },
 } as const satisfies Record<string, Record<SupportedLocale, string>>;
 
