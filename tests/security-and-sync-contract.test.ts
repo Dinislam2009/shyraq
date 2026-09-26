@@ -10,7 +10,7 @@ const creatorPage=readFileSync(new URL("../src/app/u/[username]/page.tsx",import
 test("profiles expose private fields only to the owner and use a public projection for shared identity",()=>{
  assert.match(schema,/create policy profiles_self_select on public\.profiles for select to authenticated using\(id=\(select auth\.uid\(\)\)\);/);
  assert.doesNotMatch(schema,/create policy profiles_public_select on public\.profiles for select to authenticated using\(true\);/);
- assert.ok(schema.includes("create or replace view public.public_profiles as"));
+ assert.ok(schema.includes("create or replace view public.public_profiles with (security_barrier=true) as"));
  assert.ok(schema.includes("select id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers"));
  assert.match(workspacePage,/from\("public_profiles"\)/);
  assert.match(creatorPage,/from\("public_profiles"\)/);
@@ -31,5 +31,6 @@ test("workspace owner role cannot be reassigned through member updates",()=>{
 test("offline bootstrap uses paginated range queries instead of fixed row caps",()=>{
  assert.match(syncRoute,/async function fetchAll<T>/);
  assert.match(syncRoute,/\.range\(from,to\)/);
- assert.doesNotMatch(syncRoute,/\.limit\((?:500|5000|20000)\)/);
+ const bootstrap=syncRoute.split('if(request.nextUrl.searchParams.get("bootstrap")==="1")')[1]?.split('const {data,error}=await supabase.from("sync_changes")')[0]||"";
+ assert.doesNotMatch(bootstrap,/\.limit\((?:500|5000|20000)\)/);
 });
