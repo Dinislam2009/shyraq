@@ -7,12 +7,15 @@ do $$ begin create type public.deck_visibility as enum ('private','workspace','p
 do $$ begin create type public.card_kind as enum ('basic','reverse','cloze','multiple_choice','image','custom'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.review_rating as enum ('again','hard','good','easy'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.card_queue as enum ('learning','review','relearning','suspended'); exception when duplicate_object then null; end $$;
-do $$ begin create type public.collection_kind as enum ('favorites','custom'); exception when duplicate_object then null; end $$;
+do $ begin create type public.collection_kind as enum ('favorites','custom'); exception when duplicate_object then null; end $;
+alter type public.collection_kind add value if not exists 'smart';
 
 create table if not exists public.profiles (
  id uuid primary key references auth.users(id) on delete cascade,
  username text unique, display_name text, avatar_url text, bio text,
  timezone text not null default 'Asia/Almaty', locale text not null default 'en',
+ show_activity boolean not null default true, show_followers boolean not null default true,
+ selected_workspace_id uuid references public.workspaces(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table if not exists public.workspaces (
@@ -31,7 +34,8 @@ create table if not exists public.decks (
  id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
  owner_id uuid not null references auth.users(id) on delete cascade, name text not null,
  description text not null default '', visibility public.deck_visibility not null default 'private',
- settings jsonb not null default '{}'::jsonb, source_deck_id uuid references public.decks(id) on delete set null,
+ settings jsonb not null default '{}'::jsonb, sort_order integer not null default 0,
+ deleted_at timestamptz, source_deck_id uuid references public.decks(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table if not exists public.card_templates (
@@ -58,7 +62,10 @@ create table if not exists public.card_tags (
 create table if not exists public.collections (
  id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
  owner_id uuid not null references auth.users(id) on delete cascade, name text not null,
- kind public.collection_kind not null default 'custom', created_at timestamptz not null default now()
+ kind public.collection_kind not null default 'custom',
+ rule jsonb not null default '{}'::jsonb, sort_mode text not null default 'manual',
+ is_public boolean not null default false, is_featured boolean not null default false,
+ created_at timestamptz not null default now()
 );
 create table if not exists public.collection_cards (
  collection_id uuid not null references public.collections(id) on delete cascade,
@@ -79,6 +86,10 @@ create table if not exists public.review_preferences (
  rating_order jsonb not null default '["again","hard","good","easy"]'::jsonb,
  show_keyboard_hints boolean not null default true,
  swipe_enabled boolean not null default true,
+ rating_styles jsonb not null default '{}'::jsonb,
+ accessibility jsonb not null default '{}'::jsonb,
+ session_defaults jsonb not null default '{}'::jsonb,
+ scheduler_profiles jsonb not null default '[]'::jsonb,
  updated_at timestamptz not null default now()
 );
 
@@ -217,6 +228,138 @@ create index if not exists workspace_members_user_id_idx on public.workspace_mem
 create index if not exists public_decks_idx on public.decks(visibility,updated_at desc);
 create index if not exists workspace_invitations_workspace_idx on public.workspace_invitations(workspace_id,expires_at);
 
+-- Application features added after the initial schema.
+create table if not exists public.deck_members (
+ id uuid primary key default gen_random_uuid(),
+ deck_id uuid not null references public.decks(id) on delete cascade,
+ workspace_id uuid not null references public.workspaces(id) on delete cascade,
+ user_id uuid not null references auth.users(id) on delete cascade,
+ role text not null check(role in ('editor','commenter','viewer')),
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now(),
+ unique(deck_id,user_id)
+);
+create index if not exists deck_members_deck_idx on public.deck_members(deck_id);
+create index if not exists deck_members_user_idx on public.deck_members(user_id);
+
+create table if not exists public.collection_members (
+ id uuid primary key default gen_random_uuid(),
+ collection_id uuid not null references public.collections(id) on delete cascade,
+ workspace_id uuid not null references public.workspaces(id) on delete cascade,
+ user_id uuid not null references auth.users(id) on delete cascade,
+ role text not null check(role in ('editor','commenter','viewer')),
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now(),
+ unique(collection_id,user_id)
+);
+create index if not exists collection_members_collection_idx on public.collection_members(collection_id);
+create index if not exists collection_members_user_idx on public.collection_members(user_id);
+
+create table if not exists public.comments (
+ id uuid primary key default gen_random_uuid(),
+ workspace_id uuid not null references public.workspaces(id) on delete cascade,
+ deck_id uuid not null references public.decks(id) on delete cascade,
+ card_id uuid references public.cards(id) on delete cascade,
+ author_id uuid not null references auth.users(id) on delete cascade,
+ parent_id uuid references public.comments(id) on delete cascade,
+ body text not null,
+ resolved boolean not null default false,
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now()
+);
+create index if not exists comments_deck_idx on public.comments(deck_id,created_at);
+create index if not exists comments_card_idx on public.comments(card_id,created_at);
+
+create table if not exists public.comment_mentions (
+ comment_id uuid not null references public.comments(id) on delete cascade,
+ mentioned_user_id uuid not null references auth.users(id) on delete cascade,
+ created_at timestamptz not null default now(),
+ primary key(comment_id,mentioned_user_id)
+);
+
+create table if not exists public.activity_feed (
+ id uuid primary key default gen_random_uuid(),
+ workspace_id uuid not null references public.workspaces(id) on delete cascade,
+ actor_id uuid not null references auth.users(id) on delete cascade,
+ event_type text not null,
+ entity_type text not null,
+ entity_id uuid,
+ metadata jsonb not null default '{}'::jsonb,
+ created_at timestamptz not null default now()
+);
+create index if not exists activity_feed_workspace_idx on public.activity_feed(workspace_id,created_at desc);
+
+create table if not exists public.deck_versions (
+ id uuid primary key default gen_random_uuid(),
+ deck_id uuid not null references public.decks(id) on delete cascade,
+ workspace_id uuid not null references public.workspaces(id) on delete cascade,
+ created_by uuid not null references auth.users(id) on delete cascade,
+ version_number integer not null,
+ label text not null default 'Snapshot',
+ reason text,
+ snapshot jsonb not null default '{}'::jsonb,
+ created_at timestamptz not null default now(),
+ unique(deck_id,version_number)
+);
+create index if not exists deck_versions_deck_idx on public.deck_versions(deck_id,version_number desc);
+
+create table if not exists public.workspace_audit_logs (
+ id uuid primary key default gen_random_uuid(),
+ workspace_id uuid not null references public.workspaces(id) on delete cascade,
+ actor_id uuid not null references auth.users(id) on delete cascade,
+ event_type text not null,
+ metadata jsonb not null default '{}'::jsonb,
+ created_at timestamptz not null default now()
+);
+create index if not exists workspace_audit_logs_workspace_idx on public.workspace_audit_logs(workspace_id,created_at desc);
+
+create table if not exists public.moderators (
+ user_id uuid primary key references auth.users(id) on delete cascade,
+ role text not null check(role in ('moderator','admin')),
+ enabled boolean not null default true,
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now()
+);
+
+create table if not exists public.notification_preferences (
+ user_id uuid primary key references auth.users(id) on delete cascade,
+ sync_conflicts boolean not null default true,
+ author_updates boolean not null default true,
+ workspace_invites boolean not null default true,
+ collaboration boolean not null default true,
+ moderation boolean not null default true,
+ backup boolean not null default true,
+ offline_state boolean not null default true,
+ in_app boolean not null default true,
+ updated_at timestamptz not null default now()
+);
+
+create table if not exists public.saved_searches (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references auth.users(id) on delete cascade,
+ name text not null,
+ query text not null,
+ filters jsonb not null default '{}'::jsonb,
+ created_at timestamptz not null default now()
+);
+create index if not exists saved_searches_user_idx on public.saved_searches(user_id,created_at desc);
+
+create table if not exists public.saved_filters (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references auth.users(id) on delete cascade,
+ name text not null,
+ kind text not null default 'review_history',
+ query jsonb not null default '{}'::jsonb,
+ created_at timestamptz not null default now()
+);
+create index if not exists saved_filters_user_idx on public.saved_filters(user_id,created_at desc);
+
+-- Keep notification types in sync with application events.
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+ check(kind in ('sync_conflict','deck_update','workspace_invite','collaboration','moderation','backup','system','comment_mention'));
+
+
 create or replace function private.is_workspace_member(target_workspace uuid, minimum_role public.workspace_role default 'viewer')
 returns boolean language sql security definer set search_path=public,private as $$
  select exists(select 1 from public.workspace_members m where m.workspace_id=target_workspace and m.user_id=(select auth.uid()) and
@@ -318,6 +461,17 @@ alter table public.deck_reports enable row level security;
 alter table public.public_deck_follows enable row level security;
 alter table public.deck_copies enable row level security;
 alter table public.workspace_invitations enable row level security;
+alter table public.deck_members enable row level security;
+alter table public.collection_members enable row level security;
+alter table public.comments enable row level security;
+alter table public.comment_mentions enable row level security;
+alter table public.activity_feed enable row level security;
+alter table public.deck_versions enable row level security;
+alter table public.workspace_audit_logs enable row level security;
+alter table public.moderators enable row level security;
+alter table public.notification_preferences enable row level security;
+alter table public.saved_searches enable row level security;
+alter table public.saved_filters enable row level security;
 
 drop policy if exists profiles_self on public.profiles;
 drop policy if exists profiles_public_read on public.profiles;
@@ -423,6 +577,65 @@ drop policy if exists invitations_admin_write on public.workspace_invitations;
 create policy invitations_admin_write on public.workspace_invitations for insert to authenticated with check(invited_by=(select auth.uid()) and private.is_workspace_member(workspace_id,'admin'));
 drop policy if exists invitations_admin_update on public.workspace_invitations;
 create policy invitations_admin_update on public.workspace_invitations for update to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
+
+
+-- Collaboration and user-owned utility policies.
+drop policy if exists deck_members_read on public.deck_members;
+create policy deck_members_read on public.deck_members for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+drop policy if exists deck_members_admin_write on public.deck_members;
+create policy deck_members_admin_write on public.deck_members for insert to authenticated with check(private.is_workspace_member(workspace_id,'admin'));
+create policy deck_members_admin_update on public.deck_members for update to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
+create policy deck_members_admin_delete on public.deck_members for delete to authenticated using(private.is_workspace_member(workspace_id,'admin'));
+
+drop policy if exists collection_members_read on public.collection_members;
+create policy collection_members_read on public.collection_members for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+drop policy if exists collection_members_admin_write on public.collection_members;
+create policy collection_members_admin_write on public.collection_members for insert to authenticated with check(private.is_workspace_member(workspace_id,'admin'));
+create policy collection_members_admin_update on public.collection_members for update to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
+create policy collection_members_admin_delete on public.collection_members for delete to authenticated using(private.is_workspace_member(workspace_id,'admin'));
+
+drop policy if exists comments_read on public.comments;
+create policy comments_read on public.comments for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+drop policy if exists comments_insert on public.comments;
+create policy comments_insert on public.comments for insert to authenticated with check(author_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists comments_update on public.comments;
+create policy comments_update on public.comments for update to authenticated using(private.is_workspace_member(workspace_id,'editor')) with check(private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists comments_delete on public.comments;
+create policy comments_delete on public.comments for delete to authenticated using(author_id=(select auth.uid()) or private.is_workspace_member(workspace_id,'admin'));
+
+drop policy if exists comment_mentions_read on public.comment_mentions;
+create policy comment_mentions_read on public.comment_mentions for select to authenticated using(mentioned_user_id=(select auth.uid()) or exists(select 1 from public.comments c where c.id=comment_id and private.is_workspace_member(c.workspace_id,'viewer')));
+drop policy if exists comment_mentions_insert on public.comment_mentions;
+create policy comment_mentions_insert on public.comment_mentions for insert to authenticated with check(exists(select 1 from public.comments c where c.id=comment_id and c.author_id=(select auth.uid())));
+
+drop policy if exists activity_feed_read on public.activity_feed;
+create policy activity_feed_read on public.activity_feed for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+drop policy if exists activity_feed_insert on public.activity_feed;
+create policy activity_feed_insert on public.activity_feed for insert to authenticated with check(actor_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'reviewer'));
+
+drop policy if exists deck_versions_read on public.deck_versions;
+create policy deck_versions_read on public.deck_versions for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+drop policy if exists deck_versions_write on public.deck_versions;
+create policy deck_versions_write on public.deck_versions for all to authenticated using(private.is_workspace_member(workspace_id,'editor')) with check(created_by=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+
+drop policy if exists workspace_audit_logs_read on public.workspace_audit_logs;
+create policy workspace_audit_logs_read on public.workspace_audit_logs for select to authenticated using(private.is_workspace_member(workspace_id,'admin'));
+drop policy if exists workspace_audit_logs_insert on public.workspace_audit_logs;
+create policy workspace_audit_logs_insert on public.workspace_audit_logs for insert to authenticated with check(actor_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'admin'));
+
+drop policy if exists moderators_self_read on public.moderators;
+create policy moderators_self_read on public.moderators for select to authenticated using(user_id=(select auth.uid()));
+drop policy if exists moderators_admin_write on public.moderators;
+create policy moderators_admin_write on public.moderators for all to authenticated using(exists(select 1 from public.moderators m where m.user_id=(select auth.uid()) and m.role='admin' and m.enabled)) with check(exists(select 1 from public.moderators m where m.user_id=(select auth.uid()) and m.role='admin' and m.enabled));
+
+drop policy if exists notification_preferences_self on public.notification_preferences;
+create policy notification_preferences_self on public.notification_preferences for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
+drop policy if exists saved_searches_self on public.saved_searches;
+create policy saved_searches_self on public.saved_searches for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
+drop policy if exists saved_filters_self on public.saved_filters;
+create policy saved_filters_self on public.saved_filters for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
 drop policy if exists public_user_media_read on storage.objects;
 create policy public_user_media_read on storage.objects for select to authenticated using(bucket_id='user-media' and (storage.foldername(name))[1]=(select auth.uid())::text);
