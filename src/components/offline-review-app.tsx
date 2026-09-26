@@ -5,6 +5,8 @@ import {scheduleReview,type SchedulerEngine} from "@/lib/scheduler";
 import {getDeviceId,cacheReviewSession,getCachedReviewPreferences,offlineStore,getOfflineReviewQueue,upsertOfflineReviewState} from "@/lib/offline/store";
 import {queueReview,syncReviews} from "@/lib/sync/client";
 import {RichContent} from "@/components/rich-content";
+import {AnkiTemplateContent} from "@/components/anki-template-content";
+import {renderAnkiTemplate} from "@/lib/anki/template-engine";
 
 type QueueItem=Awaited<ReturnType<typeof getOfflineReviewQueue>>[number];
 type Preferences={scheduler_engine?:SchedulerEngine;desired_retention?:number;maximum_interval?:number;enable_fuzz?:boolean;enable_short_term?:boolean;learning_steps?:string[];relearning_steps?:string[]};
@@ -37,10 +39,20 @@ export function OfflineReviewApp(){
  useEffect(()=>{void load();},[load]);
 
  const current=queue[index];
- const content=(current?.card.content||{}) as {front?:string;back?:string;tags?:string[];fields?:Record<string,string>};
- const template=Array.isArray(current?.card.card_templates)?current?.card.card_templates.find(item=>item.id===current.card.template_id)||current?.card.card_templates[0]:current?.card.card_templates;
- const front=useMemo(()=>renderTemplate(template?.frontTemplate||"{{front}}",content.front||"",content.back||"",content.fields||{}),[template,content.front,content.back,content.fields]);
- const back=useMemo(()=>renderTemplate(template?.backTemplate||"{{back}}",content.front||"",content.back||"",content.fields||{}),[template,content.front,content.back,content.fields]);
+ const content=(current?.card.content||{}) as {front?:string;back?:string;tags?:string[];fields?:Record<string,string>;anki?:{rawFields?:Record<string,string>;deckName?:string;modelName?:string;flags?:number}};
+ const template=Array.isArray(current?.card.card_templates)?current?.card.card_templates.find(item=>item.id===current.card.template_id)||current.card.card_templates[0]:current?.card.card_templates;
+ const rendered=useMemo(()=>{
+  if(!template)return {front:content.front||"",back:content.back||"",css:"",templated:false};
+  const rawFields=content.anki?.rawFields||{};
+  const fields={front:content.front||"",back:content.back||"",...(content.fields||{}),...rawFields};
+  const deckName=String(content.anki?.deckName||"");
+  const specialFields={Tags:(content.tags||[]).join(" "),Deck:deckName,Subdeck:deckName.includes("::")?deckName.split("::").at(-1)||deckName:deckName,Type:String(content.anki?.modelName||current?.card.kind||""),CardFlag:String(content.anki?.flags||0),Card:template.name,CardSuspended:current?.card.isSuspended?"1":"0"};
+  const front=renderAnkiTemplate(template.frontTemplate,fields,{side:"front",clozeIndex:Number(content.clozeIndex||1),revealCloze:false,specialFields});
+  const back=renderAnkiTemplate(template.backTemplate,fields,{side:"back",frontSide:front,clozeIndex:Number(content.clozeIndex||1),revealCloze:true,specialFields});
+  return {front,back,css:template.css||"",templated:true};
+ },[template,content,current?.card.kind,current?.card.isSuspended]);
+
+
 
  const answer=useCallback(async(rating:"again"|"hard"|"good"|"easy")=>{
   if(!current||busy||!userId)return;
@@ -64,7 +76,7 @@ export function OfflineReviewApp(){
   <div className="mx-auto max-w-4xl">
    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Offline review</p><h1 className="mt-1 text-2xl font-semibold">Local study session</h1></div><select value={deckId} onChange={event=>{setDeckId(event.target.value);void load(event.target.value,userId);}} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="">All cached decks</option>{decks.map(deck=><option key={deck.id} value={deck.id}>{deck.name}</option>)}</select></div>
    {message?<div className="mt-4 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</div>:null}
-   {!current?<div className="mt-10 rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center"><h2 className="text-xl font-semibold">No cards due offline</h2><p className="mt-3 text-sm text-slate-500">Your local mirror is up to date. Reconnect to pull newly due cards from other devices.</p></div>:<div className="mt-8"><div className="mb-4 flex items-center justify-between text-xs text-slate-400"><span>{index+1} / {queue.length}</span><span>{String(current.card.kind).toUpperCase()} · {(preferences.scheduler_engine||"fsrs").toUpperCase()}</span></div><section className="rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p><RichContent content={front} className="mx-auto mt-6 max-w-2xl text-3xl font-semibold"/>{!revealed?<button type="button" onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold">Show answer</button>:<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p><RichContent content={back} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600"/></div>}</section>{revealed?<div className="mt-4 grid grid-cols-4 gap-2">{(["again","hard","good","easy"] as const).map(rating=><button key={rating} disabled={busy} type="button" onClick={()=>void answer(rating)} className="rounded-xl bg-slate-950 px-3 py-3 text-sm font-semibold text-white disabled:opacity-40">{rating}</button>)}</div>:null}</div>}
+   {!current?<div className="mt-10 rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center"><h2 className="text-xl font-semibold">No cards due offline</h2><p className="mt-3 text-sm text-slate-500">Your local mirror is up to date. Reconnect to pull newly due cards from other devices.</p></div>:<div className="mt-8"><div className="mb-4 flex items-center justify-between text-xs text-slate-400"><span>{index+1} / {queue.length}</span><span>{String(current.card.kind).toUpperCase()} · {(preferences.scheduler_engine||"fsrs").toUpperCase()}</span></div><section className="rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm sm:p-12"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Front</p>{rendered.templated?<AnkiTemplateContent html={rendered.front} css={rendered.css} className="mx-auto mt-6 max-w-2xl text-3xl font-semibold"/>:<RichContent content={rendered.front} className="mx-auto mt-6 max-w-2xl text-3xl font-semibold"/>}{!revealed?<button type="button" onClick={()=>setRevealed(true)} className="mt-12 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold">Show answer</button>:<div className="mt-10 border-t border-slate-100 pt-8"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Back</p>{rendered.templated?<AnkiTemplateContent html={rendered.back} css={rendered.css} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600"/>:<RichContent content={rendered.back} className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600"/>}</div>}</section>{revealed?<div className="mt-4 grid grid-cols-4 gap-2">{(["again","hard","good","easy"] as const).map(rating=><button key={rating} disabled={busy} type="button" onClick={()=>void answer(rating)} className="rounded-xl bg-slate-950 px-3 py-3 text-sm font-semibold text-white disabled:opacity-40">{rating}</button>)}</div>:null}</div>}
    <p className="mt-8 text-center text-xs text-slate-400">Cards, review states and pending events are stored locally and remain available without a network connection.</p>
   </div>
  </main>;
