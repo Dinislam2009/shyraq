@@ -20,7 +20,7 @@ export default async function ExplorePage({searchParams}:{searchParams:Promise<S
  });
  const ids=decks.map((deck:any)=>deck.id);
  const [{data:profiles},{data:followCounts}]=await Promise.all([
-  [...new Set(decks.map((d:any)=>d.owner_id).filter(Boolean))].length?supabase.from("profiles").select("id,username,display_name").in("id",[...new Set(decks.map((d:any)=>d.owner_id).filter(Boolean))]):Promise.resolve({data:[]}),
+  [...new Set(decks.map((d:any)=>d.owner_id).filter(Boolean))].length?supabase.from("public_profiles").select("id,username,display_name").in("id",[...new Set(decks.map((d:any)=>d.owner_id).filter(Boolean))]):Promise.resolve({data:[]}),
   ids.length?supabase.from("public_deck_follow_counts").select("deck_id,follow_count").in("deck_id",ids):Promise.resolve({data:[]})
  ]);
  const counts=new Map((followCounts??[]).map((row:any)=>[row.deck_id,Number(row.follow_count||0)]));
