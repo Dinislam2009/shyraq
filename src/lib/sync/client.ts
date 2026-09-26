@@ -77,7 +77,9 @@ function mapTag(item:Record<string,unknown>,userId:string){
  return {id:String(item.id),userId,workspaceId:String(item.workspace_id??item.workspaceId??""),name:String(item.name??"")};
 }
 function mapCollectionCard(item:Record<string,unknown>){
- return {collectionId:String(item.collection_id??item.collectionId),cardId:String(item.card_id??item.cardId),createdAt:String(item.created_at??item.createdAt??new Date().toISOString())};
+ const collectionId=String(item.collection_id??item.collectionId);
+ const cardId=String(item.card_id??item.cardId);
+ return {id:collectionId+":"+cardId,collectionId,cardId,createdAt:String(item.created_at??item.createdAt??new Date().toISOString())};
 }
 function mapCollection(item:Record<string,unknown>,userId:string){
  return {id:String(item.id),userId,workspaceId:String(item.workspace_id??item.workspaceId??""),ownerId:String(item.owner_id??item.ownerId??userId),name:String(item.name??""),kind:String(item.kind??"custom"),description:String(item.description??""),rule:item.rule??{},sortMode:String(item.sort_mode??"manual"),isPublic:Boolean(item.is_public??item.isPublic),isFeatured:Boolean(item.is_featured??item.isFeatured),createdAt:String(item.created_at??item.createdAt??new Date().toISOString())};
@@ -116,7 +118,13 @@ async function applyPulledChanges(userId:string,changes:Array<Record<string,unkn
   const operation=String(change.operation||"");
   const id=String(change.entity_id||"");
   if(operation==="delete"){
-   await removeMirroredEntity(type,id);
+   if(type==="collection_cards"){
+    const payload=(change.payload&&typeof change.payload==="object"?change.payload:{}) as Record<string,unknown>;
+    const key=String(payload.collection_id??payload.collectionId)+":"+String(payload.card_id??payload.cardId);
+    await offlineStore.collectionCards.delete(key);
+   }else{
+    await removeMirroredEntity(type,id);
+   }
    continue;
   }
   const payload=(change.payload&&typeof change.payload==="object"?change.payload:{}) as Record<string,unknown>;
@@ -125,6 +133,7 @@ async function applyPulledChanges(userId:string,changes:Array<Record<string,unkn
   if(type==="card_templates")await offlineStore.cardTemplates.put(mapTemplate(payload,userId));
   if(type==="tags")await offlineStore.tags.put(mapTag(payload,userId));
   if(type==="collections")await offlineStore.collections.put(mapCollection(payload,userId));
+  if(type==="collection_cards")await offlineStore.collectionCards.put(mapCollectionCard(payload));
  }
 }
 
@@ -245,7 +254,7 @@ export async function bootstrapOfflineMirror(){
  const userId=String(data.user_id||"");
  if(!userId)throw new Error("No authenticated user.");
  if(typeof window!=="undefined")localStorage.setItem("shyraq:last-user-id",userId);
- await cacheMirror(userId,(data.decks??[]).map(item=>mapDeck(item,userId)),(data.cards??[]).map(item=>mapCard(item,userId)),(data.templates??[]).map(item=>mapTemplate(item,userId)));
+ await cacheMirror(userId,(data.decks??[]).map(item=>mapDeck(item,userId)),(data.cards??[]).map(item=>mapCard(item,userId)),(data.templates??[]).map(item=>mapTemplate(item,userId)),(data.tags??[]).map(item=>mapTag(item,userId)),(data.collections??[]).map(item=>mapCollection(item,userId)),(data.collectionCards??[]).map(mapCollectionCard));
  await setSyncMeta(userId,{lastSyncAt:new Date().toISOString(),lastError:null});
  return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[],tags:data.tags??[],collections:data.collections??[],collectionCards:data.collectionCards??[]};
 }
