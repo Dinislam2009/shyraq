@@ -9,7 +9,7 @@ export default async function PublicDeckPage({params}:{params:Promise<{id:string
  const {id}=await params;const supabase=await createClient();
  const {data:deck}=await supabase.from("decks").select("id,name,description,updated_at,settings,cards(id,content,kind,sort_order),owner_id").eq("id",id).eq("visibility","public").maybeSingle();
  if(!deck)notFound();
- const {data:profile}=await supabase.from("profiles").select("username,display_name,bio").eq("id",deck.owner_id).maybeSingle();
+ const {data:profile}=await supabase.from("public_profiles").select("username,display_name,bio").eq("id",deck.owner_id).maybeSingle();
  const {data:{user}}=await supabase.auth.getUser();
  const following=user?(await supabase.from("public_deck_follows").select("deck_id").eq("user_id",user.id).eq("deck_id",id).maybeSingle()).data: null;
  const settings=(deck.settings||{}) as any;
