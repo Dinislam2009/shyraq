@@ -236,7 +236,7 @@ export function CardEditor({
             <div key={name} className="grid gap-2 sm:grid-cols-[10rem_1fr_auto]">
               <input value={name} readOnly className="h-10 rounded-lg border border-slate-200 bg-slate-100 px-3 text-sm" />
               <input value={value} onChange={event => setFields(current => ({ ...current, [name]: event.target.value }))} placeholder={name} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm" />
-              <button type="button" onClick={() => setFields(current => { const next = { ...current }; delete next[name]; return next; })} className="rounded-lg px-3 text-xs text-red-600 hover:bg-white">{t("remove")}</button>
+              <button type="button" onClick={() => setFields(current => { const next = { ...current }; delete next[name]; return next; })} className="rounded-lg px-3 text-xs text-red-600 hover:bg-white">{t("Remove")}</button>
             </div>
           ))}
         </div>
