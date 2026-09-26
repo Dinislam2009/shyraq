@@ -1038,11 +1038,11 @@ The checklist below records implemented product flows and automated contract/int
 
 ## Browser verification
 
-- [ ] Desktop verification
-- [ ] Mobile responsive verification
+- [x] Desktop verification (public launch, legal, offline and auth smoke coverage)
+- [x] Mobile responsive verification (mobile Chromium public-route smoke coverage)
 - [x] Dark mode verification
-- [ ] All three language verification
-- [ ] Console-error audit (browser execution required)
+- [x] All three language verification (auth, legal and offline public UI)
+- [x] Console-error audit (public browser routes; uncaught console/page errors fail CI)
 - [x] Browser E2E suite (Playwright; desktop and mobile Chromium launch/auth/offline smoke)
 - [x] Accessibility audit (AST-based CI audit)
 
@@ -1101,7 +1101,7 @@ Requirements:
 - language preference synchronization;
 - translation QA on every major screen.
 
-The current global client translation layer is a temporary bridge. The final implementation should move product text into proper component-level/server-compatible translation keys.
+The current global client translation layer remains a compatibility bridge for legacy UI. Core navigation, AuthForm, CardEditor, offline entry, and legal public pages now use shared/server-compatible translation keys.
 
 ---
 
