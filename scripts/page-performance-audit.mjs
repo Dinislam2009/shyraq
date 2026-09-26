@@ -7,7 +7,7 @@ const base="http://127.0.0.1:"+port;
 const routes=["/","/login","/signup","/offline","/api/health"];
 const maxMs=Number(process.env.PERF_AUDIT_MAX_MS||5000);
 
-function fetchRoute(url){{
+function fetchRoute(url){
  return new Promise((resolvePromise,reject)=>{
   const started=performance.now();
   const req=request(url,{method:"GET",headers:{accept:"text/html,application/json"}},res=>{
