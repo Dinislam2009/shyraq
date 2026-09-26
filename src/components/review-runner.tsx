@@ -17,6 +17,7 @@ function applyCardTemplate(source:string,fields:Record<string,string>){let outpu
 type QueueItem={card:{id:string;content:CardContent;kind:string;template_id?:string;card_templates?:{id:string;name:string;front_template:string;back_template:string;css?:string|null}|{id:string;name:string;front_template:string;back_template:string;css?:string|null}[]};stateData:any;isNew:boolean};
 
 type CompletedReview={cardId:string;rating:"again"|"hard"|"good"|"easy";elapsedMs:number;previousState:any;nextState:any;hadPreviousState:boolean;queueIndex:number};
+function ReviewImage({src}:{src:string}){const optimized=String(src).includes("supabase.co");return <Image src={src} alt="" width={960} height={540} unoptimized={!optimized} className="mx-auto mt-8 max-h-72 w-auto rounded-2xl object-contain"/>}
 
 export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:QueueItem[];preferences:Preferences}){
  const router=useRouter();
@@ -173,7 +174,6 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
  }
 
  
-function ReviewImage({src}:{src:string}){const optimized=String(src).includes("supabase.co");return <Image src={src} alt="" width={960} height={540} unoptimized={!optimized} className="mx-auto mt-8 max-h-72 w-auto rounded-2xl object-contain"/>}
 
  const onPointerDown=(event:React.PointerEvent<HTMLDivElement>)=>{if(event.pointerType==="mouse"&&event.button!==0)return;swipeStartX.current=event.clientX;};
  const onPointerUp=(event:React.PointerEvent<HTMLDivElement>)=>{const start=swipeStartX.current;swipeStartX.current=null;if(start===null||!revealed||busy||paused||!effectiveSwipe)return;const delta=event.clientX-start;if(Math.abs(delta)<90)return;void answer(delta<0?"again":"easy");};
