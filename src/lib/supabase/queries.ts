@@ -29,7 +29,23 @@ export async function getSelectedWorkspace(){
    if(workspace)return workspace;
   }
  }
- const {data:personal}=await supabase.from("workspaces").select("*").eq("owner_id",user.id).eq("kind","personal").order("created_at").limit(1).maybeSingle();
+ let {data:personal}=await supabase.from("workspaces").select("*").eq("owner_id",user.id).eq("kind","personal").order("created_at").limit(1).maybeSingle();
+ if(!personal){
+  const {data:created}=await supabase.from("workspaces").upsert({
+   owner_id:user.id,
+   kind:"personal",
+   name:"Personal workspace",
+   slug:"personal",
+  },{onConflict:"owner_id,slug"}).select("*").single();
+  personal=created;
+  if(personal){
+   await supabase.from("workspace_members").upsert({
+    workspace_id:personal.id,
+    user_id:user.id,
+    role:"owner",
+   },{onConflict:"workspace_id,user_id"});
+  }
+ }
  return personal;
 }
 
