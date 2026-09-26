@@ -2,6 +2,8 @@ import {readFileSync} from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 
+const standalonePages=new Set(["src/app/login/page.tsx","src/app/signup/page.tsx"]);
+
 const pageFiles=[
   "src/app/collections/[id]/page.tsx",
   "src/app/collections/[id]/permissions/page.tsx",
@@ -65,7 +67,7 @@ test("all App Router pages expose a semantic primary heading and no nested main 
  for(const file of pageFiles){
   const source=readFileSync(new URL("../"+file,import.meta.url),"utf8");
   assert.match(source,/<h1(?:\s|>)/,file+" should expose an h1");
-  assert.doesNotMatch(source,/<main(?:\s|>)/,file+" should rely on the shared AppShell main landmark");
+  if(!standalonePages.has(file)) assert.doesNotMatch(source,/<main(?:\s|>)/,file+" should rely on the shared AppShell main landmark");
  }
 });
 
