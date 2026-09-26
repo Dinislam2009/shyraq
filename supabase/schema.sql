@@ -538,12 +538,14 @@ revoke all on function private.touch_updated_at() from public,anon,authenticated
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function private.handle_new_user();
 
-create or replace function private.record_sync_change() returns trigger language plpgsql security definer set search_path=public,private as $$
+create or replace function private.record_sync_change() returns trigger language plpgsql security definer set search_path=public,private as $
 declare
  payload jsonb;
  eid uuid;
  uid uuid;
  deck_id_value uuid;
+ workspace_id_value uuid;
+ operation_name text;
 begin
  payload:=case when tg_op='DELETE' then to_jsonb(old) else to_jsonb(new) end;
  eid:=nullif(payload->>'id','')::uuid;
@@ -551,21 +553,32 @@ begin
  if payload ? 'user_id' then uid:=nullif(payload->>'user_id','')::uuid;
  elsif payload ? 'owner_id' then uid:=nullif(payload->>'owner_id','')::uuid;
  end if;
+ if payload ? 'workspace_id' then workspace_id_value:=nullif(payload->>'workspace_id','')::uuid; end if;
  if payload ? 'deck_id' then deck_id_value:=nullif(payload->>'deck_id','')::uuid;
  elsif tg_table_name='card_tags' then
    select c.deck_id into deck_id_value from public.cards c where c.id=eid;
  elsif tg_table_name='review_states' then
    select c.deck_id into deck_id_value from public.cards c where c.id=eid;
  end if;
+ if workspace_id_value is null and deck_id_value is not null then
+   select d.workspace_id into workspace_id_value from public.decks d where d.id=deck_id_value;
+ end if;
  if uid is null and deck_id_value is not null then
    select d.owner_id into uid from public.decks d where d.id=deck_id_value;
  end if;
- if uid is not null and eid is not null then
+ operation_name:=case when tg_op='DELETE' then 'delete' else 'upsert' end;
+
+ if eid is not null and workspace_id_value is not null and tg_table_name in ('decks','cards','card_templates') then
    insert into public.sync_changes(event_key,user_id,entity_type,entity_id,operation,payload)
-   values(gen_random_uuid(),uid,tg_table_name,eid,case when tg_op='DELETE' then 'delete' else 'upsert' end,payload);
+   select gen_random_uuid(),wm.user_id,tg_table_name,eid,operation_name,payload
+   from public.workspace_members wm
+   where wm.workspace_id=workspace_id_value;
+ elsif uid is not null and eid is not null then
+   insert into public.sync_changes(event_key,user_id,entity_type,entity_id,operation,payload)
+   values(gen_random_uuid(),uid,tg_table_name,eid,operation_name,payload);
  end if;
  return coalesce(new,old);
-end $$;
+end $;
 revoke all on function private.record_sync_change() from public,anon,authenticated;
 
 do $$ declare t text; begin
