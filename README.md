@@ -686,7 +686,7 @@ If a local edit conflicts with an author update:
 - [x] Creator statistics
 - [x] Creator collections
 - [x] Creator activity controls
-- [ ] Block/mute creator
+- [x] Block/mute creator
 - [x] Community moderation/report history
 
 ---
