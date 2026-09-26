@@ -1,5 +1,16 @@
 import {createClient} from "@/lib/supabase/server";
 
+async function fetchAllRows<T>(queryFactory:(from:number,to:number)=>any,pageSize=1000):Promise<{data:T[];error:Error|null}>{
+ const rows:T[]=[];
+ for(let from=0;;from+=pageSize){
+  const {data,error}=await queryFactory(from,from+pageSize-1);
+  if(error)return {data:[],error:new Error(error.message)};
+  const batch=(data??[]) as T[];
+  rows.push(...batch);
+  if(batch.length<pageSize)return {data:rows,error:null};
+ }
+}
+
 async function withMediaUrl(supabase:any,card:any){
  const content={...(card?.content??{})};
  if(content.mediaPath){
@@ -132,8 +143,9 @@ export async function getReviewBatch(deckId?:string,limit=20){
 
  const newLimit=Math.min(batchLimit-result.length,remainingNewCards);
  if(newLimit>0&&result.length<batchLimit){
-  const {data:tracked}=await supabase.from("review_states").select("card_id").eq("user_id",user.id).limit(5000);
-  const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
+  const trackedResult=await fetchAllRows<{card_id:string}>((from,to)=>supabase.from("review_states").select("card_id").eq("user_id",user.id).order("card_id",{ascending:true}).range(from,to));
+  if(trackedResult.error)return result;
+  const trackedIds=trackedResult.data.map(row=>row.card_id).filter(Boolean);
   let query=supabase
    .from("cards")
    .select("id,deck_id,kind,content,template_id,card_templates(id,name,front_template,back_template,css)")
@@ -163,8 +175,9 @@ export async function getReviewCard(deckId?:string){
    if(card&&!card.is_suspended&&(!deckId||card.deck_id===deckId))return {card:await withMediaUrl(supabase,card),stateData:due.state_data,isNew:false};
  }
 
- const {data:tracked}=await supabase.from("review_states").select("card_id").eq("user_id",user.id).limit(5000);
- const trackedIds=(tracked??[]).map((row:any)=>row.card_id).filter(Boolean);
+ const trackedResult=await fetchAllRows<{card_id:string}>((from,to)=>supabase.from("review_states").select("card_id").eq("user_id",user.id).order("card_id",{ascending:true}).range(from,to));
+ if(trackedResult.error)return null;
+ const trackedIds=trackedResult.data.map(row=>row.card_id).filter(Boolean);
  let query=supabase.from("cards").select("id,deck_id,kind,content,template_id,card_templates(id,name,front_template,back_template,css)").eq("is_suspended",false).order("updated_at",{ascending:true}).limit(1);
  if(deckId)query=query.eq("deck_id",deckId);
  if(trackedIds.length)query=query.not("id","in","("+trackedIds.join(",")+")");
