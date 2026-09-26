@@ -19,23 +19,6 @@ export function ImportJobProgress(){
   setJob(null);
  },[]);
 
- const step=useCallback(async(id:string)=>{
-  const response=await fetch("/api/import/jobs/"+encodeURIComponent(id),{cache:"no-store"});
-  if(!response.ok)throw new Error("Import job could not be loaded.");
-  const data=await response.json() as Job;
-  setJob(data);
-  if(data.status==="completed"){
-   clear();
-   router.push("/decks?imported="+data.created_rows+"&replaced="+data.replaced_rows+"&skipped="+data.skipped_rows);
-   return false;
-  }
-  if(data.status==="failed"){
-   setError(data.error||"Import job failed.");
-   return false;
-  }
-  return true;
- },[clear,router]);
-
  const pump=useCallback(async(id:string)=>{
   if(busyRef.current)return;
   busyRef.current=true;
@@ -72,7 +55,7 @@ export function ImportJobProgress(){
    }catch(err){if(!cancelled)setError(err instanceof Error?err.message:"Unable to resume import.");}
   })();
   return()=>{cancelled=true;};
- },[pump,step]);
+ },[pump]);
 
  if(!job&&!error)return null;
  const progress=job&&job.total_rows?Math.min(100,Math.round(job.processed_rows/job.total_rows*100)):0;
