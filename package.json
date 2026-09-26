@@ -14,7 +14,8 @@
     "test:api": "node scripts/api-smoke.mjs",
     "audit:bundle": "node scripts/bundle-audit.mjs",
     "audit:aria": "node scripts/aria-audit.mjs",
-    "audit:performance": "node scripts/page-performance-audit.mjs"
+    "audit:performance": "node scripts/page-performance-audit.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "16.3.6",
