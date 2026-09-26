@@ -73,5 +73,5 @@ test("Anki import preserves raw template fields and card special metadata",()=>{
 test("Anki template conversion preserves renderer filter semantics",()=>{
  const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
  assert.doesNotMatch(parser,/convertAnkiTemplate[\s\S]*cloze\|text\|hint\|type/);
- assert.match(parser,/uses Anki filters; Shyraq preserves common text\\/cloze\\/hint\\/type filter semantics/);
+ assert.ok(parser.includes("uses Anki filters; Shyraq preserves common text/cloze/hint/type filter semantics."));
 });
