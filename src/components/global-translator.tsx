@@ -286,9 +286,9 @@ export function GlobalTranslator() {
     };
 
     const translateRoot = (root: ParentNode) => {
-      if (root instanceof Element && root.hasAttribute("data-shyraq-i18n")) {
-        const key = root.getAttribute("data-shyraq-i18n");
-        if (key && translations[key]) root.textContent = translations[key][locale];
+      if (typeof Element !== "undefined" && (root as unknown) instanceof Element) { const rootElement = root as Element;
+        const key = rootElement.getAttribute("data-shyraq-i18n");
+        if (key && translations[key]) rootElement.textContent = translations[key][locale];
       }
       const selector = "[data-shyraq-i18n],input[placeholder],textarea[placeholder]";
       root.querySelectorAll?.(selector).forEach(node => {
