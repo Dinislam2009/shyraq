@@ -19,7 +19,10 @@ export async function submitReview(cardId:string,rating:(typeof ratingNames)[num
  const {error:eventError}=await supabase.from("review_events").insert({event_key:eventKey,user_id:user.id,card_id:cardId,device_id:crypto.randomUUID(),reviewed_at:new Date().toISOString(),rating,elapsed_ms:safeElapsed,previous_state:previous,next_state:next,metadata:{scheduler:result.scheduler}});
  if(eventError)return {error:eventError.message};
  const {error:stateError}=await supabase.from("review_states").upsert({user_id:user.id,card_id:cardId,queue:Number(next.state||2)===2?"review":"learning",state_data:next,due_at:due.toISOString(),last_reviewed_at:new Date().toISOString(),reps:next.reps,lapses:next.lapses,stability:next.stability,difficulty:next.difficulty,scheduled_days:next.scheduled_days});
- if(stateError)return {error:stateError.message};
+ if(stateError){
+  await supabase.from("review_events").delete().eq("event_key",eventKey).eq("user_id",user.id);
+  return {error:stateError.message};
+ }
  revalidatePath("/review"); revalidatePath("/dashboard"); revalidatePath("/statistics"); return {ok:true};
 }
 export async function undoReview(cardId:string,previousState:any,hadPreviousState:boolean,originalRating:(typeof ratingNames)[number]){
