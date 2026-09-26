@@ -671,27 +671,170 @@ create policy invitations_admin_delete on public.workspace_invitations for delet
 using(private.is_workspace_member(workspace_id,'admin'));
 
 drop policy if exists deck_members_read on public.deck_members;
-create policy deck_members_read on public.deck_members for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+create policy deck_members_read on public.deck_members for select to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=deck_members.deck_id
+      and d.workspace_id=deck_members.workspace_id
+      and private.is_workspace_member(d.workspace_id,'viewer')
+  )
+);
 drop policy if exists deck_members_admin_write on public.deck_members;
-create policy deck_members_admin_write on public.deck_members for insert to authenticated with check(private.is_workspace_member(workspace_id,'admin'));
-create policy deck_members_admin_update on public.deck_members for update to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
-create policy deck_members_admin_delete on public.deck_members for delete to authenticated using(private.is_workspace_member(workspace_id,'admin'));
+create policy deck_members_admin_write on public.deck_members for insert to authenticated
+with check (
+  exists (
+    select 1 from public.decks d
+    where d.id=deck_members.deck_id
+      and d.workspace_id=deck_members.workspace_id
+      and private.is_workspace_member(d.workspace_id,'admin')
+  )
+);
+create policy deck_members_admin_update on public.deck_members for update to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=deck_members.deck_id
+      and d.workspace_id=deck_members.workspace_id
+      and private.is_workspace_member(d.workspace_id,'admin')
+  )
+)
+with check (
+  exists (
+    select 1 from public.decks d
+    where d.id=deck_members.deck_id
+      and d.workspace_id=deck_members.workspace_id
+      and private.is_workspace_member(d.workspace_id,'admin')
+  )
+);
+create policy deck_members_admin_delete on public.deck_members for delete to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=deck_members.deck_id
+      and d.workspace_id=deck_members.workspace_id
+      and private.is_workspace_member(d.workspace_id,'admin')
+  )
+);
 
 drop policy if exists collection_members_read on public.collection_members;
-create policy collection_members_read on public.collection_members for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+create policy collection_members_read on public.collection_members for select to authenticated
+using (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_members.collection_id
+      and c.workspace_id=collection_members.workspace_id
+      and private.is_workspace_member(c.workspace_id,'viewer')
+  )
+);
 drop policy if exists collection_members_admin_write on public.collection_members;
-create policy collection_members_admin_write on public.collection_members for insert to authenticated with check(private.is_workspace_member(workspace_id,'admin'));
-create policy collection_members_admin_update on public.collection_members for update to authenticated using(private.is_workspace_member(workspace_id,'admin')) with check(private.is_workspace_member(workspace_id,'admin'));
-create policy collection_members_admin_delete on public.collection_members for delete to authenticated using(private.is_workspace_member(workspace_id,'admin'));
+create policy collection_members_admin_write on public.collection_members for insert to authenticated
+with check (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_members.collection_id
+      and c.workspace_id=collection_members.workspace_id
+      and private.is_workspace_member(c.workspace_id,'admin')
+  )
+);
+create policy collection_members_admin_update on public.collection_members for update to authenticated
+using (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_members.collection_id
+      and c.workspace_id=collection_members.workspace_id
+      and private.is_workspace_member(c.workspace_id,'admin')
+  )
+)
+with check (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_members.collection_id
+      and c.workspace_id=collection_members.workspace_id
+      and private.is_workspace_member(c.workspace_id,'admin')
+  )
+);
+create policy collection_members_admin_delete on public.collection_members for delete to authenticated
+using (
+  exists (
+    select 1 from public.collections c
+    where c.id=collection_members.collection_id
+      and c.workspace_id=collection_members.workspace_id
+      and private.is_workspace_member(c.workspace_id,'admin')
+  )
+);
 
 drop policy if exists comments_read on public.comments;
-create policy comments_read on public.comments for select to authenticated using(private.is_workspace_member(workspace_id,'viewer'));
+create policy comments_read on public.comments for select to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=comments.deck_id
+      and d.workspace_id=comments.workspace_id
+      and private.is_workspace_member(d.workspace_id,'viewer')
+  )
+);
 drop policy if exists comments_insert on public.comments;
-create policy comments_insert on public.comments for insert to authenticated with check(author_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+create policy comments_insert on public.comments for insert to authenticated
+with check (
+  author_id=(select auth.uid())
+  and exists (
+    select 1 from public.decks d
+    where d.id=comments.deck_id
+      and d.workspace_id=comments.workspace_id
+      and private.is_workspace_member(d.workspace_id,'editor')
+  )
+  and (
+    comments.card_id is null
+    or exists (
+      select 1 from public.cards c
+      where c.id=comments.card_id and c.deck_id=comments.deck_id
+    )
+  )
+);
 drop policy if exists comments_update on public.comments;
-create policy comments_update on public.comments for update to authenticated using(private.is_workspace_member(workspace_id,'editor')) with check(private.is_workspace_member(workspace_id,'editor'));
+create policy comments_update on public.comments for update to authenticated
+using (
+  exists (
+    select 1 from public.decks d
+    where d.id=comments.deck_id
+      and d.workspace_id=comments.workspace_id
+      and private.is_workspace_member(d.workspace_id,'editor')
+  )
+)
+with check (
+  exists (
+    select 1 from public.decks d
+    where d.id=comments.deck_id
+      and d.workspace_id=comments.workspace_id
+      and private.is_workspace_member(d.workspace_id,'editor')
+  )
+  and (
+    comments.card_id is null
+    or exists (
+      select 1 from public.cards c
+      where c.id=comments.card_id and c.deck_id=comments.deck_id
+    )
+  )
+);
 drop policy if exists comments_delete on public.comments;
-create policy comments_delete on public.comments for delete to authenticated using(author_id=(select auth.uid()) or private.is_workspace_member(workspace_id,'admin'));
+create policy comments_delete on public.comments for delete to authenticated
+using (
+  (
+    comments.author_id=(select auth.uid())
+    or exists (
+      select 1 from public.decks d
+      where d.id=comments.deck_id
+        and d.workspace_id=comments.workspace_id
+        and private.is_workspace_member(d.workspace_id,'admin')
+    )
+  )
+  and exists (
+    select 1 from public.decks d
+    where d.id=comments.deck_id
+      and d.workspace_id=comments.workspace_id
+  )
+);
 
 drop policy if exists comment_mentions_read on public.comment_mentions;
 create policy comment_mentions_read on public.comment_mentions for select to authenticated using(mentioned_user_id=(select auth.uid()) or exists(select 1 from public.comments c where c.id=comment_id and private.is_workspace_member(c.workspace_id,'viewer')));
@@ -745,7 +888,7 @@ grant select,insert,update on public.workspace_invitations to authenticated;
 
 
 -- Shyraq collaboration realtime
-do $
+do $shyraq$
 begin
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='decks') then
     alter publication supabase_realtime add table public.decks;
@@ -789,7 +932,7 @@ begin
   end if;
   return new;
 end;
-$$;
+$shyraq$;
 
 drop trigger if exists cards_owner_immutable on public.cards;
 create trigger cards_owner_immutable
@@ -834,7 +977,7 @@ begin
   end if;
   return new;
 end;
-$$;
+$shyraq$;
 
 drop trigger if exists decks_owner_immutable on public.decks;
 create trigger decks_owner_immutable
