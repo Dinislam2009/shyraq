@@ -21,7 +21,7 @@ export type OfflineCard={
 
 export type OfflineTag={id:string;userId:string;workspaceId:string;name:string};
 export type OfflineCollection={id:string;userId:string;workspaceId:string;ownerId:string;name:string;kind:string;description:string;rule:unknown;sortMode:string;isPublic:boolean;isFeatured:boolean;createdAt:string};
-export type OfflineCollectionCard={collectionId:string;cardId:string;createdAt:string};
+export type OfflineCollectionCard={id:string;collectionId:string;cardId:string;createdAt:string};
 export type OfflineCardTemplate={
  id:string;userId:string;deckId:string;name:string;frontTemplate:string;backTemplate:string;
  css:string;fieldSchema:unknown;createdAt:string;updatedAt:string;
@@ -100,7 +100,7 @@ class OfflineStore extends Dexie{
    cardTemplates:"id,userId,deckId,updatedAt",
    tags:"id,userId,workspaceId,name",
    collections:"id,userId,workspaceId,createdAt",
-   collectionCards:"collectionId,cardId,createdAt",
+   collectionCards:"id,collectionId,cardId,createdAt",
    mutations:"id,userId,entityType,operation,status,createdAt",
    mediaCache:"path,userId,savedAt",
    syncMeta:"key,userId,cursor,lastSyncAt"
