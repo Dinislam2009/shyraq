@@ -1,4 +1,4 @@
-import {extendedTranslations,type SupportedLocale} from "./i18n-catalog";
+import {extendedTranslations,type SupportedLocale} from "./i18n-catalog.ts";
 export const locales = ["kk", "ru", "en"] as const;
 export type Locale = (typeof locales)[number];
 
