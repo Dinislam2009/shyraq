@@ -18,6 +18,18 @@ function sanitizeDeckPayload(payload:Record<string,unknown>,userId:string){
  };
 }
 
+function sanitizeTagPayload(payload:Record<string,unknown>,userId:string,workspaceId:string){
+ return {id:String(payload.id),workspace_id:workspaceId,name:String(payload.name??"").trim().slice(0,120)};
+}
+function sanitizeCollectionPayload(payload:Record<string,unknown>,userId:string,workspaceId:string){
+ return {
+  id:String(payload.id),workspace_id:workspaceId,owner_id:userId,name:String(payload.name??"Imported collection").trim().slice(0,120),
+  description:String(payload.description??"").slice(0,5000),kind:String(payload.kind??"custom"),
+  rule:isPlainObject(payload.rule)?payload.rule:{},sort_mode:String(payload.sort_mode??payload.sortMode??"manual").slice(0,40),
+  is_public:Boolean(payload.is_public??payload.isPublic),is_featured:false
+ };
+}
+
 function sanitizeCardPayload(payload:Record<string,unknown>,userId:string){
  return {
   id:String(payload.id),
@@ -50,21 +62,23 @@ export async function GET(request:NextRequest){
    supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).limit(5000)
   ]);
   const deckIds=(decks??[]).map(deck=>deck.id);
-  const [{data:cards,error:cardError},{data:templates,error:templateError},{data:media}]=await Promise.all([
+  const [{data:cards,error:cardError},{data:templates,error:templateError},{data:tags,error:tagError},{data:collections,error:collectionError},{data:media}]=await Promise.all([
    deckIds.length
     ? supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).limit(20000)
     : Promise.resolve({data:[],error:null}),
    deckIds.length
     ? supabase.from("card_templates").select("id,deck_id,name,front_template,back_template,css,field_schema,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).limit(5000)
     : Promise.resolve({data:[],error:null}),
+   workspaceIds.length ? supabase.from("tags").select("id,workspace_id,name").in("workspace_id",workspaceIds).limit(5000) : Promise.resolve({data:[],error:null}),
+   workspaceIds.length ? supabase.from("collections").select("id,workspace_id,owner_id,name,description,kind,rule,sort_mode,is_public,is_featured,created_at").in("workspace_id",workspaceIds).limit(5000) : Promise.resolve({data:[],error:null}),
    supabase.from("media").select("storage_path,mime_type,byte_size,created_at").eq("owner_id",user.id).order("created_at",{ascending:false}).limit(200)
   ]);
-  if(deckError||cardError||templateError)return NextResponse.json({error:deckError?.message||cardError?.message||templateError?.message||"Bootstrap failed."},{status:500});
+  if(deckError||cardError||templateError||tagError||collectionError)return NextResponse.json({error:deckError?.message||cardError?.message||templateError?.message||tagError?.message||collectionError?.message||"Bootstrap failed."},{status:500});
   const mediaWithUrls=await Promise.all((media??[]).map(async item=>{
    const {data}=await supabase.storage.from("user-media").createSignedUrl(item.storage_path,900);
    return {...item,signed_url:data?.signedUrl||null};
   }));
-  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],templates:templates??[],media:mediaWithUrls});
+  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],templates:templates??[],tags:tags??[],collections:collections??[],media:mediaWithUrls});
  }
  const {data,error}=await supabase.from("sync_changes").select("cursor,event_key,entity_type,entity_id,operation,payload,occurred_at").eq("user_id",user.id).gt("cursor",since).order("cursor",{ascending:true}).limit(500);
  if(error)return NextResponse.json({error:error.message},{status:500});
@@ -200,6 +214,31 @@ export async function POST(request:NextRequest){
     }else{
      await supabase.from("card_tags").delete().eq("card_id",row.id);
     }
+   }
+  }else if(entityType==="tags"){
+   const {data:existingTag}=await supabase.from("tags").select("id,workspace_id").eq("id",entityId).maybeSingle();
+   const workspaceId=String(existingTag?.workspace_id||payload.workspace_id||payload.workspaceId||"");
+   if(!workspaceId||!(await canEditWorkspace(supabase,user.id,workspaceId)))throw new Error("Workspace edit permission required.");
+   if(operation==="delete"){
+    const {error}=await supabase.from("tags").delete().eq("id",entityId);
+    if(error)throw new Error(error.message);
+   }else{
+    const row=sanitizeTagPayload({...payload,id:entityId},user.id,workspaceId);
+    const {error}=await supabase.from("tags").upsert(row,{onConflict:"id"});
+    if(error)throw new Error(error.message);
+   }
+  }else if(entityType==="collections"){
+   const {data:existingCollection}=await supabase.from("collections").select("id,workspace_id,owner_id").eq("id",entityId).maybeSingle();
+   const workspaceId=String(existingCollection?.workspace_id||payload.workspace_id||payload.workspaceId||"");
+   if(!workspaceId||!(await canEditWorkspace(supabase,user.id,workspaceId)))throw new Error("Workspace edit permission required.");
+   if(operation==="delete"){
+    const {error}=await supabase.from("collections").delete().eq("id",entityId);
+    if(error)throw new Error(error.message);
+   }else{
+    const row=sanitizeCollectionPayload({...payload,id:entityId},user.id,workspaceId);
+    if(existingCollection)row.owner_id=existingCollection.owner_id;
+    const {error}=await supabase.from("collections").upsert(row,{onConflict:"id"});
+    if(error)throw new Error(error.message);
    }
   }else if(entityType==="card_templates"){
    const {data:existingTemplate}=await supabase.from("card_templates").select("id,deck_id").eq("id",entityId).maybeSingle();
