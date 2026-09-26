@@ -32,6 +32,11 @@ function sanitizeCardPayload(payload:Record<string,unknown>,userId:string){
  };
 }
 
+async function canEditWorkspace(supabase:any,userId:string,workspaceId:string){
+ const {data}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",userId).maybeSingle();
+ return ["owner","admin","editor"].includes(String(data?.role||""));
+}
+
 export async function GET(request:NextRequest){
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
@@ -141,72 +146,92 @@ export async function POST(request:NextRequest){
  }
 
  for(const raw of operations.slice(0,500)){
-  if(!isPlainObject(raw))continue;
-  const id=String(raw.id||"");
-  const entityType=String(raw.entity_type||"");
-  const operation=String(raw.operation||"");
-  const entityId=String(raw.entity_id||"");
-  const payload=isPlainObject(raw.payload)?raw.payload:{};
-  if(!id||!entityId||!["upsert","delete"].includes(operation))continue;
-  try{
-   if(entityType==="decks"){
-    if(operation==="delete"){
-     const {error}=await supabase.from("decks").delete().eq("id",entityId).eq("owner_id",user.id);
-     if(error)throw new Error(error.message);
-    }else{
-     const row=sanitizeDeckPayload({...payload,id:entityId},user.id);
-     const {error}=await supabase.from("decks").upsert(row,{onConflict:"id"});
-     if(error)throw new Error(error.message);
-     const {data:template}=await supabase.from("card_templates").select("id").eq("deck_id",row.id).limit(1).maybeSingle();
-     if(!template){
-      const {error:templateError}=await supabase.from("card_templates").insert({deck_id:row.id,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
-      if(templateError)throw new Error(templateError.message);
-     }
-    }
-   }else if(entityType==="cards"){
-    if(operation==="delete"){
-     const {error}=await supabase.from("cards").delete().eq("id",entityId).eq("owner_id",user.id);
-     if(error)throw new Error(error.message);
-    }else{
-     const row=sanitizeCardPayload({...payload,id:entityId},user.id);
-     const {error}=await supabase.from("cards").upsert(row,{onConflict:"id"});
-     if(error)throw new Error(error.message);
-     const {data:deckForCard}=await supabase.from("decks").select("workspace_id").eq("id",row.deck_id).maybeSingle();
-     const tagNames=Array.isArray((row.content as any)?.tags)?(row.content as any).tags.map((tag:any)=>String(tag).trim()).filter(Boolean).slice(0,30):[];
-     if(deckForCard?.workspace_id){
-      if(tagNames.length){
-       const {data:tags,error:tagError}=await supabase.from("tags").upsert(tagNames.map((name:string)=>({workspace_id:deckForCard.workspace_id,name})),{onConflict:"workspace_id,name"}).select("id");
-       if(tagError)throw new Error(tagError.message);
-       await supabase.from("card_tags").delete().eq("card_id",row.id);
-       if(tags?.length){const {error:linkError}=await supabase.from("card_tags").insert(tags.map((tag:any)=>({card_id:row.id,tag_id:tag.id})));if(linkError)throw new Error(linkError.message);}
-      }else{
-       await supabase.from("card_tags").delete().eq("card_id",row.id);
-      }
-     }
-    }
-   }else if(entityType==="card_templates"){
-    if(operation==="delete"){
-     const {error}=await supabase.from("card_templates").delete().eq("id",entityId);
-     if(error)throw new Error(error.message);
-    }else{
-     const row={
-      id:entityId,deck_id:String(payload.deck_id??payload.deckId),
-      name:String(payload.name??"Basic").slice(0,120),
-      front_template:String(payload.front_template??payload.frontTemplate??"{{front}}"),
-      back_template:String(payload.back_template??payload.backTemplate??"{{back}}"),
-      css:String(payload.css??"").slice(0,20000),
-      field_schema:isPlainObject(payload.field_schema)?payload.field_schema:(Array.isArray(payload.field_schema)?payload.field_schema:[])
-     };
-     const {error}=await supabase.from("card_templates").upsert(row,{onConflict:"id"});
-     if(error)throw new Error(error.message);
-    }
+ if(!isPlainObject(raw))continue;
+ const id=String(raw.id||"");
+ const entityType=String(raw.entity_type||"");
+ const operation=String(raw.operation||"");
+ const entityId=String(raw.entity_id||"");
+ const payload=isPlainObject(raw.payload)?raw.payload:{};
+ if(!id||!entityId||!["upsert","delete"].includes(operation))continue;
+ try{
+  if(entityType==="decks"){
+   const {data:existingDeck}=await supabase.from("decks").select("id,workspace_id,owner_id").eq("id",entityId).maybeSingle();
+   const workspaceId=String(existingDeck?.workspace_id||payload.workspace_id||payload.workspaceId||"");
+   if(!workspaceId||!(await canEditWorkspace(supabase,user.id,workspaceId)))throw new Error("Workspace edit permission required.");
+   if(operation==="delete"){
+    const {error}=await supabase.from("decks").delete().eq("id",entityId);
+    if(error)throw new Error(error.message);
    }else{
-    throw new Error("Unsupported offline entity.");
+    const row=sanitizeDeckPayload({...payload,id:entityId,workspace_id:workspaceId},user.id);
+    if(existingDeck)row.owner_id=existingDeck.owner_id;
+    const {error}=await supabase.from("decks").upsert(row,{onConflict:"id"});
+    if(error)throw new Error(error.message);
+    const {data:template}=await supabase.from("card_templates").select("id").eq("deck_id",row.id).limit(1).maybeSingle();
+    if(!template){
+     const {error:templateError}=await supabase.from("card_templates").insert({deck_id:row.id,name:"Basic",front_template:"{{front}}",back_template:"{{back}}",css:"",field_schema:[{name:"front",type:"text"},{name:"back",type:"text"}]});
+     if(templateError)throw new Error(templateError.message);
+    }
    }
-  }catch(error){
-   failedOperations.push(id);
+  }else if(entityType==="cards"){
+   const {data:existingCard}=await supabase.from("cards").select("id,deck_id,owner_id").eq("id",entityId).maybeSingle();
+   const requestedDeckId=String(payload.deck_id??payload.deckId??existingCard?.deck_id??"");
+   const {data:cardDeck}=requestedDeckId
+    ? await supabase.from("decks").select("id,workspace_id").eq("id",requestedDeckId).maybeSingle()
+    : {data:null};
+   if(!cardDeck||!(await canEditWorkspace(supabase,user.id,cardDeck.workspace_id)))throw new Error("Workspace edit permission required.");
+   if(existingCard&&String(existingCard.deck_id)!==String(cardDeck.id))throw new Error("Moving an existing card between decks is not supported offline.");
+   if(operation==="delete"){
+    const {error}=await supabase.from("cards").delete().eq("id",entityId);
+    if(error)throw new Error(error.message);
+   }else{
+    const row=sanitizeCardPayload({...payload,id:entityId,deck_id:cardDeck.id},user.id);
+    if(existingCard)row.owner_id=existingCard.owner_id;
+    const {error}=await supabase.from("cards").upsert(row,{onConflict:"id"});
+    if(error)throw new Error(error.message);
+    const tagNames=Array.isArray((row.content as any)?.tags)?(row.content as any).tags.map((tag:any)=>String(tag).trim()).filter(Boolean).slice(0,30):[];
+    if(tagNames.length){
+     const {data:tags,error:tagError}=await supabase.from("tags").upsert(tagNames.map((name:string)=>({workspace_id:cardDeck.workspace_id,name})),{onConflict:"workspace_id,name"}).select("id");
+     if(tagError)throw new Error(tagError.message);
+     await supabase.from("card_tags").delete().eq("card_id",row.id);
+     if(tags?.length){
+      const {error:linkError}=await supabase.from("card_tags").insert(tags.map((tag:any)=>({card_id:row.id,tag_id:tag.id})));
+      if(linkError)throw new Error(linkError.message);
+     }
+    }else{
+     await supabase.from("card_tags").delete().eq("card_id",row.id);
+    }
+   }
+  }else if(entityType==="card_templates"){
+   const {data:existingTemplate}=await supabase.from("card_templates").select("id,deck_id").eq("id",entityId).maybeSingle();
+   const deckId=String(payload.deck_id??payload.deckId??existingTemplate?.deck_id??"");
+   const {data:templateDeck}=deckId
+    ? await supabase.from("decks").select("id,workspace_id").eq("id",deckId).maybeSingle()
+    : {data:null};
+   if(!templateDeck||!(await canEditWorkspace(supabase,user.id,templateDeck.workspace_id)))throw new Error("Workspace edit permission required.");
+   if(existingTemplate&&String(existingTemplate.deck_id)!==String(templateDeck.id))throw new Error("Moving an existing template between decks is not supported offline.");
+   if(operation==="delete"){
+    const {error}=await supabase.from("card_templates").delete().eq("id",entityId);
+    if(error)throw new Error(error.message);
+   }else{
+    const row={
+     id:entityId,deck_id:templateDeck.id,
+     name:String(payload.name??"Basic").slice(0,120),
+     front_template:String(payload.front_template??payload.frontTemplate??"{{front}}"),
+     back_template:String(payload.back_template??payload.backTemplate??"{{back}}"),
+     css:String(payload.css??"").slice(0,20000),
+     field_schema:isPlainObject(payload.field_schema)?payload.field_schema:(Array.isArray(payload.field_schema)?payload.field_schema:[])
+    };
+    const {error}=await supabase.from("card_templates").upsert(row,{onConflict:"id"});
+    if(error)throw new Error(error.message);
+   }
+  }else{
+   throw new Error("Unsupported offline entity.");
   }
+ }catch(error){
+  failedOperations.push(id);
  }
+}
+
 
  return NextResponse.json({
   accepted:Math.max(0,acceptedCount-conflicts.length)+operations.filter((item:any)=>!failedOperations.includes(String(item?.id||""))).length,
