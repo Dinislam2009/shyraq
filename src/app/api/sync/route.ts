@@ -62,6 +62,20 @@ async function canEditWorkspace(supabase:any,userId:string,workspaceId:string){
  const {data}=await supabase.from("workspace_members").select("role").eq("workspace_id",workspaceId).eq("user_id",userId).maybeSingle();
  return ["owner","admin","editor"].includes(String(data?.role||""));
 }
+async function canEditDeck(supabase:any,userId:string,deckId:string){
+ const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
+ if(!deck)return false;
+ if(await canEditWorkspace(supabase,userId,String(deck.workspace_id)))return true;
+ const {data:member}=await supabase.from("deck_members").select("role").eq("deck_id",deckId).eq("user_id",userId).maybeSingle();
+ return String(member?.role||"")==="editor";
+}
+async function canEditCollection(supabase:any,userId:string,collectionId:string){
+ const {data:collection}=await supabase.from("collections").select("workspace_id").eq("id",collectionId).maybeSingle();
+ if(!collection)return false;
+ if(await canEditWorkspace(supabase,userId,String(collection.workspace_id)))return true;
+ const {data:member}=await supabase.from("collection_members").select("role").eq("collection_id",collectionId).eq("user_id",userId).maybeSingle();
+ return String(member?.role||"")==="editor";
+}
 
 export async function GET(request:NextRequest){
  const supabase=await createClient();
@@ -233,7 +247,7 @@ export async function POST(request:NextRequest){
    const {data:cardDeck}=requestedDeckId
     ? await supabase.from("decks").select("id,workspace_id").eq("id",requestedDeckId).maybeSingle()
     : {data:null};
-   if(!cardDeck||!(await canEditWorkspace(supabase,user.id,cardDeck.workspace_id)))throw new Error("Workspace edit permission required.");
+   if(!cardDeck||!(await canEditDeck(supabase,user.id,String(cardDeck.id))))throw new Error("Deck edit permission required.");
    if(existingCard&&String(existingCard.deck_id)!==String(cardDeck.id))throw new Error("Moving an existing card between decks is not supported offline.");
    if(operation==="delete"){
     const {error}=await supabase.from("cards").delete().eq("id",entityId);
@@ -287,7 +301,7 @@ export async function POST(request:NextRequest){
    const {data:collection}=collectionId?await supabase.from("collections").select("id,workspace_id").eq("id",collectionId).maybeSingle():{data:null};
    const {data:card}=cardId?await supabase.from("cards").select("id,deck_id").eq("id",cardId).maybeSingle():{data:null};
    const {data:deck}=card?.deck_id?await supabase.from("decks").select("id,workspace_id").eq("id",card.deck_id).maybeSingle():{data:null};
-   if(!collection||!card||!deck||String(collection.workspace_id)!==String(deck.workspace_id)||!(await canEditWorkspace(supabase,user.id,String(collection.workspace_id))))throw new Error("Workspace edit permission required.");
+   if(!collection||!card||!deck||String(collection.workspace_id)!==String(deck.workspace_id)||!(await canEditCollection(supabase,user.id,String(collection.id))))throw new Error("Collection edit permission required.");
    if(operation==="delete"){
     const {error}=await supabase.from("collection_cards").delete().eq("collection_id",collectionId).eq("card_id",cardId);
     if(error)throw new Error(error.message);
@@ -301,7 +315,7 @@ export async function POST(request:NextRequest){
    const {data:templateDeck}=deckId
     ? await supabase.from("decks").select("id,workspace_id").eq("id",deckId).maybeSingle()
     : {data:null};
-   if(!templateDeck||!(await canEditWorkspace(supabase,user.id,templateDeck.workspace_id)))throw new Error("Workspace edit permission required.");
+   if(!templateDeck||!(await canEditDeck(supabase,user.id,String(templateDeck.id))))throw new Error("Deck edit permission required.");
    if(existingTemplate&&String(existingTemplate.deck_id)!==String(templateDeck.id))throw new Error("Moving an existing template between decks is not supported offline.");
    if(operation==="delete"){
     const {error}=await supabase.from("card_templates").delete().eq("id",entityId);
