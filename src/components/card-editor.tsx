@@ -44,6 +44,7 @@ export function CardEditor({
     templateId?: string;
     fields?: Record<string, string>;
     reviewPreferences?: {autoRevealSeconds?:number;showTimer?:boolean;swipeEnabled?:boolean;ratingOrder?:string[]};
+    clozeIndex?: number;
     updatedAt?: string;
   };
   submitLabel?: string;
