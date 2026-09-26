@@ -100,7 +100,7 @@ test("legal policy pages remain publicly reachable",()=>{
 test("offline sync honors direct deck and collection editor overrides",()=>{
  assert.match(syncRoute,/async function canEditDeck/);
  assert.match(syncRoute,/from\("deck_members"\)/);
- assert.match(syncRoute,/role\|\|"\)===\"editor\"/);
+ assert.match(syncRoute,/String\(member\?\.role\|\|\"\")==={3}\"editor\"/);
  assert.match(syncRoute,/async function canEditCollection/);
  assert.match(syncRoute,/from\("collection_members"\)/);
  assert.match(syncRoute,/canEditDeck\(supabase,user\.id,String\(cardDeck\.id\)\)/);
