@@ -28,6 +28,9 @@ test.describe("public browser launch gate",()=>{
    await select.selectOption(locale);
    await expect(page.locator("html")).toHaveAttribute("lang",locale);
    await expect(select).toHaveValue(locale);
+   await expect.poll(()=>page.evaluate(()=>document.cookie),{timeout:5000}).toContain("shyraq-locale="+locale);
+   await page.reload();
+   await expect(page.locator("html")).toHaveAttribute("lang",locale);
 
    await page.goto("/legal/privacy");
    await expect(page.getByRole("heading",{name:labels.privacy})).toBeVisible();
