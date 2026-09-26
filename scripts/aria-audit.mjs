@@ -2,11 +2,11 @@ import {readdir,readFile} from "node:fs/promises";
 import {join,relative} from "node:path";
 
 const ROOT="src/app";
-const failures:string[]=[];
+const failures=[];
 
-async function walk(dir:string){
+async function walk(dir){
  const entries=await readdir(dir,{withFileTypes:true});
- const files:string[]=[];
+ const files=[];
  for(const entry of entries){
   const path=join(dir,entry.name);
   if(entry.isDirectory())files.push(...await walk(path));
@@ -15,7 +15,7 @@ async function walk(dir:string){
  return files;
 }
 
-function stripComments(source:string){
+function stripComments(source){
  return source.replace(/\/\*[\s\S]*?\*\//g,"").replace(/\/\/.*$/gm,"");
 }
 
@@ -24,17 +24,17 @@ for(const file of files){
  const source=stripComments(await readFile(file,"utf8"));
  const rel=relative(process.cwd(),file);
 
- for(const match of source.matchAll(/<img\b([\s\S]*?)>/g)){
+ for(const match of source.matchAll(//g)){
   const attrs=match[1];
   if(!/\balt\s*=/.test(attrs))failures.push(rel+": img without alt");
  }
- for(const match of source.matchAll(/<button\b([\s\S]*?)>([\s\S]*?)<\/button>/g)){
+ for(const match of source.matchAll(/([\s\S]*?)/g)){
   const attrs=match[1],body=match[2];
   if(!/\baria-label\s*=|\btitle\s*=/.test(attrs)&&!body.replace(/\{[\s\S]*?\}/g,"").trim()){
    failures.push(rel+": button without accessible name");
   }
  }
- for(const match of source.matchAll(/<input\b([^>]*)>/g)){
+ for(const match of source.matchAll(/]*)>/g)){
   const attrs=match[1];
   if(/type\s*=\s*["'](?:hidden|checkbox|radio)["']/.test(attrs))continue;
   if(!/\baria-label\s*=|\bplaceholder\s*=|\bid\s*=/.test(attrs))failures.push(rel+": input without label/placeholder/id");
