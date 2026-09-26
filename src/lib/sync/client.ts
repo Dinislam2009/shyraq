@@ -1,9 +1,9 @@
 "use client";
 import {
- cacheMirror,cacheMediaBlob,getCachedReviewSession,getDeviceId,getOfflineStorageUsage,
- getPendingMutations,offlineStore,queueMutation,removeMirroredEntity,setSyncMeta
+ cacheMirror,cacheMediaBlob,getCachedReviewSession,getCachedReviewPreferences,getDeviceId,getOfflineStorageUsage,
+ getPendingMutations,offlineStore,queueMutation,removeMirroredEntity,setSyncMeta,cacheReviewPreferences,upsertOfflineReviewState,getOfflineReviewQueue
 } from "@/lib/offline/store";
-import type {OfflineReview,OfflineCardTemplate} from "@/lib/offline/store";
+import type {OfflineReview,OfflineCardTemplate,OfflineReviewState} from "@/lib/offline/store";
 
 export type SyncOperation={
  id:string;entity_type:"decks"|"cards"|"card_templates"|"tags"|"collections"|"collection_cards";
@@ -60,6 +60,23 @@ export async function syncReviews(){
  const conflictSet=new Set(result.conflicts??[]);
  await offlineStore.reviews.bulkPut(events.map(e=>({...e,status:conflictSet.has(e.id)?"failed" as const:"synced" as const})));
  return result;
+}
+
+function mapReviewState(item:Record<string,unknown>,userId:string):OfflineReviewState{
+ return {
+  id:String(item.id??(userId+":"+String(item.card_id??item.cardId))),
+  userId,
+  cardId:String(item.card_id??item.cardId??""),
+  queue:String(item.queue??"review"),
+  stateData:(item.state_data&&typeof item.state_data==="object"?item.state_data:{}) as Record<string,unknown>,
+  dueAt:item.due_at?String(item.due_at):null,
+  lastReviewedAt:item.last_reviewed_at?String(item.last_reviewed_at):null,
+  reps:Number(item.reps??0),
+  lapses:Number(item.lapses??0),
+  stability:item.stability===null||item.stability===undefined?null:Number(item.stability),
+  difficulty:item.difficulty===null||item.difficulty===undefined?null:Number(item.difficulty),
+  scheduledDays:Number(item.scheduled_days??0)
+ };
 }
 
 function mapDeck(item:Record<string,unknown>,userId:string){
@@ -134,6 +151,7 @@ async function applyPulledChanges(userId:string,changes:Array<Record<string,unkn
   if(type==="tags")await offlineStore.tags.put(mapTag(payload,userId));
   if(type==="collections")await offlineStore.collections.put(mapCollection(payload,userId));
   if(type==="collection_cards")await offlineStore.collectionCards.put(mapCollectionCard(payload));
+  if(type==="review_states")await offlineStore.reviewStates.put(mapReviewState(payload,userId));
  }
 }
 
@@ -254,7 +272,10 @@ export async function bootstrapOfflineMirror(){
  const userId=String(data.user_id||"");
  if(!userId)throw new Error("No authenticated user.");
  if(typeof window!=="undefined")localStorage.setItem("shyraq:last-user-id",userId);
- await cacheMirror(userId,(data.decks??[]).map(item=>mapDeck(item,userId)),(data.cards??[]).map(item=>mapCard(item,userId)),(data.templates??[]).map(item=>mapTemplate(item,userId)),(data.tags??[]).map(item=>mapTag(item,userId)),(data.collections??[]).map(item=>mapCollection(item,userId)),(data.collectionCards??[]).map(mapCollectionCard));
+ await cacheMirror(userId,(data.decks??[]).map(item=>mapDeck(item,userId)),(data.cards??[]).map(item=>mapCard(item,userId)),(data.templates??[]).map(item=>mapTemplate(item,userId)),(data.tags??[]).map(item=>mapTag(item,userId)),(data.collections??[]).map(item=>mapCollection(item,userId)),(data.collectionCards??[]).map(mapCollectionCard),(data.reviewStates??[]).map(item=>mapReviewState(item,userId)));
+ if(data.reviewPreferences)await cacheReviewPreferences(userId,data.reviewPreferences);
  await setSyncMeta(userId,{lastSyncAt:new Date().toISOString(),lastError:null});
  return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[],tags:data.tags??[],collections:data.collections??[],collectionCards:data.collectionCards??[]};
 }
+
+export {getOfflineReviewQueue,getCachedReviewPreferences,getCachedReviewSession};
