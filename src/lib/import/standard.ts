@@ -115,5 +115,5 @@ export function validateImportRows(rows: ImportRow[]) {
 }
 
 export function duplicateKey(row: Pick<ImportRow,"front"|"back">) {
-  return (String(row.front || "").trim() + "\u0000" + String(row.back || "").trim()).toLowerCase();
+  return (String(row.front || "").trim() + "␟" + String(row.back || "").trim()).toLowerCase();
 }
