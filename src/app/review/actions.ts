@@ -10,9 +10,9 @@ export async function submitReview(cardId:string,rating:(typeof ratingNames)[num
  const {data:existing}=await supabase.from("review_states").select("*").eq("user_id",user.id).eq("card_id",cardId).maybeSingle();
  const {data:prefs}=await supabase.from("review_preferences").select("desired_retention,maximum_interval,enable_fuzz,enable_short_term,learning_steps,relearning_steps,session_defaults").eq("user_id",user.id).maybeSingle();
  const sessionDefaults=prefs?.session_defaults&&typeof prefs.session_defaults==="object"&&!Array.isArray(prefs.session_defaults)?prefs.session_defaults as Record<string,unknown>:{};
- const engine:String=sessionDefaults.schedulerEngine==="sm2"?"sm2":"fsrs";
+ const engine:"fsrs"|"sm2"=sessionDefaults.schedulerEngine==="sm2"?"sm2":"fsrs";
  const previous=revive(existing?.state_data);
- const result=scheduleReview(previous,rating,{engine:engine as SchedulerEngine,desiredRetention:Number(prefs?.desired_retention)||0.9,maximumInterval:Number(prefs?.maximum_interval)||36500,enableFuzz:prefs?.enable_fuzz!==false,enableShortTerm:prefs?.enable_short_term!==false,learningSteps:Array.isArray(prefs?.learning_steps)?prefs.learning_steps:["1m","10m"],relearningSteps:Array.isArray(prefs?.relearning_steps)?prefs.relearning_steps:["10m"]});
+ const result=scheduleReview(previous,rating,{engine,desiredRetention:Number(prefs?.desired_retention)||0.9,maximumInterval:Number(prefs?.maximum_interval)||36500,enableFuzz:prefs?.enable_fuzz!==false,enableShortTerm:prefs?.enable_short_term!==false,learningSteps:Array.isArray(prefs?.learning_steps)?prefs.learning_steps:["1m","10m"],relearningSteps:Array.isArray(prefs?.relearning_steps)?prefs.relearning_steps:["10m"]});
  const next=result.card; const eventKey=crypto.randomUUID();
  const {error:eventError}=await supabase.from("review_events").insert({event_key:eventKey,user_id:user.id,card_id:cardId,device_id:crypto.randomUUID(),reviewed_at:new Date().toISOString(),rating,elapsed_ms:elapsedMs,previous_state:previous,next_state:next,metadata:{scheduler:result.scheduler}});
  if(eventError)return {error:eventError.message};
