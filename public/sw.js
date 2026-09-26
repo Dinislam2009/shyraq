@@ -1,7 +1,7 @@
 const VERSION="shyraq-v2";
 const SHELL_CACHE=VERSION+"-shell";
 const RUNTIME_CACHE=VERSION+"-runtime";
-const APP_SHELL=["/offline","/dashboard","/decks","/review","/settings/sync","/favicon.ico"];
+const APP_SHELL=["/offline","/favicon.ico"];
 
 self.addEventListener("install",event=>{
  event.waitUntil(caches.open(SHELL_CACHE).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting()));
