@@ -88,6 +88,42 @@ export type Database = {
           },
         ]
       }
+      backup_schedules: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          frequency: string
+          id: string
+          last_error: string | null
+          last_run_at: string | null
+          next_run_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          next_run_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          next_run_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       backup_versions: {
         Row: {
           checksum: string | null
@@ -1102,6 +1138,84 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_rows: number
+          deck_id: string | null
+          duplicate_mode: string
+          error: string | null
+          format: string
+          id: string
+          processed_rows: number
+          replaced_rows: number
+          skipped_rows: number
+          source_name: string
+          status: string
+          storage_path: string
+          total_rows: number
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_rows?: number
+          deck_id?: string | null
+          duplicate_mode?: string
+          error?: string | null
+          format?: string
+          id?: string
+          processed_rows?: number
+          replaced_rows?: number
+          skipped_rows?: number
+          source_name: string
+          status?: string
+          storage_path: string
+          total_rows?: number
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_rows?: number
+          deck_id?: string | null
+          duplicate_mode?: string
+          error?: string | null
+          format?: string
+          id?: string
+          processed_rows?: number
+          replaced_rows?: number
+          skipped_rows?: number
+          source_name?: string
+          status?: string
+          storage_path?: string
+          total_rows?: number
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
