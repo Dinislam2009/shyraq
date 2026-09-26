@@ -25,12 +25,10 @@ function decode(value:Uint8Array){return new TextDecoder().decode(value);}
 
 function convertAnkiTemplate(source:string){
  let output=String(source||"")
-  .replace(/\{\{\s*FrontSide\s*\}\}/gi,"{{front}}")
-  .replace(/\{\{\s*BackSide\s*\}\}/gi,"{{back}}")
   .replace(/\{\{\s*Front\s*\}\}/gi,"{{front}}")
   .replace(/\{\{\s*Back\s*\}\}/gi,"{{back}}");
  for(let pass=0;pass<6;pass++){
-  const next=output.replace(/\{\{\s*(?:cloze|text|hint|type|field)\s*:\s*([^}]+)\}\}/gi,"{{$1}}");
+  const next=output.replace(/\{\{\s*field\s*:\s*([^}]+)\}\}/gi,"{{$1}}");
   if(next===output)break;
   output=next;
  }
