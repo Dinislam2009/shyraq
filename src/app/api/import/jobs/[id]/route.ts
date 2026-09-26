@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 import {NextResponse} from "next/server";
 import {createClient} from "@/lib/supabase/server";
 import {parseStandardText,validateImportRows,duplicateKey} from "@/lib/import/standard";
@@ -39,7 +40,8 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    return NextResponse.json({...job,status:"completed",processed_rows:rows.length,total_rows:rows.length});
   }
 
-  const {data:existing,error:existingError}=await supabase.from("cards").select("id,content,kind,is_suspended,is_marked").eq("owner_id",user.id).limit(50000);
+  const fingerprints=chunk.map(row=>createHash("md5").update(duplicateKey(row)).digest("hex"));
+  const {data:existing,error:existingError}=fingerprints.length?await supabase.from("cards").select("id,content,kind,is_suspended,is_marked,duplicate_fingerprint").eq("owner_id",user.id).in("duplicate_fingerprint",fingerprints):{data:[],error:null};
   if(existingError)throw new Error(existingError.message);
   const byKey=new Map<string,any>((existing??[]).map((card:any)=>[duplicateKey({front:String(card.content?.front||""),back:String(card.content?.back||"")}),card]));
   let created=0,replaced=0,skipped=0;
