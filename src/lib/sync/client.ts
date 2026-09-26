@@ -269,7 +269,7 @@ export {getCachedReviewSession,getDeviceId};
 export async function bootstrapOfflineMirror(){
  const response=await fetch("/api/sync?bootstrap=1",{cache:"no-store"});
  if(!response.ok)throw new Error("Offline bootstrap failed.");
- const data=await response.json() as {user_id:string;decks:Record<string,unknown>[];cards:Record<string,unknown>[];templates?:Record<string,unknown>[];tags?:Record<string,unknown>[];collections?:Record<string,unknown>[];collectionCards?:Record<string,unknown>[];reviewStates?:Record<string,unknown>[] };
+ const data=await response.json() as {user_id:string;decks:Record<string,unknown>[];cards:Record<string,unknown>[];templates?:Record<string,unknown>[];tags?:Record<string,unknown>[];collections?:Record<string,unknown>[];collectionCards?:Record<string,unknown>[];reviewStates?:Record<string,unknown>[];reviewPreferences?:Record<string,unknown>|null};
  const userId=String(data.user_id||"");
  if(!userId)throw new Error("No authenticated user.");
  if(typeof window!=="undefined")localStorage.setItem("shyraq:last-user-id",userId);
