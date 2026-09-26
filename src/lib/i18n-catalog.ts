@@ -524,6 +524,11 @@ export const extendedTranslations = {
   "Auto reveal after (seconds)": { kk: "Кейін автоматты ашу (секунд)", ru: "Автораскрытие через (секунды)", en: "Auto reveal after (seconds)" },
   "The FSRS scheduler still determines due intervals. These options only control the current review queue.": { kk: "FSRS жоспарлаушысы қайталау интервалдарын әлі де анықтайды. Бұл параметрлер тек ағымдағы қайталау кезегін басқарады.", ru: "Планировщик FSRS по-прежнему определяет интервалы. Эти параметры управляют только текущей очередью повторения.", en: "The FSRS scheduler still determines due intervals. These options only control the current review queue." },
   "Start session": { kk: "Сеансты бастау", ru: "Начать сеанс", en: "Start session" },
-  "Preflight the APKG first, inspect templates/media/history compatibility, then import the complete deck into Shyraq.": { kk: "Алдымен APKG-ні алдын ала тексеріп, шаблон/медиа/тарих үйлесімділігін қарап, содан кейін толық колоданы Shyraq-қа импорттаңыз.", ru: "Сначала проверьте APKG, изучите совместимость шаблонов, медиа и истории, затем импортируйте всю колоду в Shyraq.", en: "Preflight the APKG first, inspect templates/media/history compatibility, then import the complete deck into Shyraq." },
-} as const satisfies Record<string, Record<SupportedLocale, string>>;
+  "Preflight the APKG first, inspect templates/media/history compatibility, then import the complete deck into Shyraq.": { kk: "Алдымен APKG-ні алдын ала тексеріп, шаблон/медиа/тарих үйлесімділігін қарап, содан кейін толық колоданы Shyraq-қа импорттаңыз.", ru: "Сначала проверьте APKG, изучите совместимость шаблонов, медиа и истории, затем импортируйте всю колоду в Shyraq.", en: "Preflight the APKG first, inspect templates/media/history compatibility, then import the complete deck into Shyraq." },,
+  "Pause": { kk: "Үзіліс", ru: "Пауза", en: "Pause" },
+  "Resume": { kk: "Жалғастыру", ru: "Продолжить", en: "Resume" },
+  "Session paused": { kk: "Сеанс тоқтатылды", ru: "Сеанс приостановлен", en: "Session paused" },
+  "Your queue stays local. Resume when ready.": { kk: "Кезек құрылғыда сақталады. Дайын болғанда жалғастырыңыз.", ru: "Очередь сохраняется локально. Продолжите, когда будете готовы.", en: "Your queue stays local. Resume when ready." },
+  "Correct option": { kk: "Дұрыс жауап", ru: "Правильный вариант", en: "Correct option" },
 
+} as const satisfies Record<string, Record<SupportedLocale, string>>;
