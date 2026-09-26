@@ -62,7 +62,7 @@ export async function GET(request:NextRequest){
    supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).limit(5000)
   ]);
   const deckIds=(decks??[]).map(deck=>deck.id);
-  const [{data:cards,error:cardError},{data:templates,error:templateError},{data:tags,error:tagError},{data:collections,error:collectionError},{data:media}]=await Promise.all([
+  const [{data:cards,error:cardError},{data:templates,error:templateError},{data:tags,error:tagError},{data:collections,error:collectionError},{data:collectionCards,error:collectionCardError},{data:media}]=await Promise.all([
    deckIds.length
     ? supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).limit(20000)
     : Promise.resolve({data:[],error:null}),
@@ -71,14 +71,22 @@ export async function GET(request:NextRequest){
     : Promise.resolve({data:[],error:null}),
    workspaceIds.length ? supabase.from("tags").select("id,workspace_id,name").in("workspace_id",workspaceIds).limit(5000) : Promise.resolve({data:[],error:null}),
    workspaceIds.length ? supabase.from("collections").select("id,workspace_id,owner_id,name,description,kind,rule,sort_mode,is_public,is_featured,created_at").in("workspace_id",workspaceIds).limit(5000) : Promise.resolve({data:[],error:null}),
+   workspaceIds.length ? supabase.from("collection_cards").select("collection_id,card_id,created_at").in("collection_id",[]).limit(1) : Promise.resolve({data:[],error:null}),
    supabase.from("media").select("storage_path,mime_type,byte_size,created_at").eq("owner_id",user.id).order("created_at",{ascending:false}).limit(200)
   ]);
-  if(deckError||cardError||templateError||tagError||collectionError)return NextResponse.json({error:deckError?.message||cardError?.message||templateError?.message||tagError?.message||collectionError?.message||"Bootstrap failed."},{status:500});
+  if(deckError||cardError||templateError||tagError||collectionError||collectionCardError)return NextResponse.json({error:deckError?.message||cardError?.message||templateError?.message||tagError?.message||collectionError?.message||"Bootstrap failed."},{status:500});
+  const collectionIds=(collections??[]).map(collection=>collection.id).filter(Boolean);
+  let collectionCardRows:{collection_id:string;card_id:string;created_at:string}[]=[];
+  if(collectionIds.length){
+   const {data:links,error:linkError}=await supabase.from("collection_cards").select("collection_id,card_id,created_at").in("collection_id",collectionIds).limit(20000);
+   if(linkError)return NextResponse.json({error:linkError.message},{status:500});
+   collectionCardRows=links??[];
+  }
   const mediaWithUrls=await Promise.all((media??[]).map(async item=>{
    const {data}=await supabase.storage.from("user-media").createSignedUrl(item.storage_path,900);
    return {...item,signed_url:data?.signedUrl||null};
   }));
-  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],templates:templates??[],tags:tags??[],collections:collections??[],media:mediaWithUrls});
+  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],templates:templates??[],tags:tags??[],collections:collections??[],collectionCards:collectionCardRows,media:mediaWithUrls});
  }
  const {data,error}=await supabase.from("sync_changes").select("cursor,event_key,entity_type,entity_id,operation,payload,occurred_at").eq("user_id",user.id).gt("cursor",since).order("cursor",{ascending:true}).limit(500);
  if(error)return NextResponse.json({error:error.message},{status:500});
