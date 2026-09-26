@@ -94,8 +94,8 @@ Create a stable technical foundation before adding advanced product features.
 - [x] Automatic profile creation
 - [x] Automatic personal workspace creation
 - [x] No email verification code requirement
-- [ ] Optional Google login
-- [ ] Optional Apple login
+- [x] Optional Google login (provider enablement is deployment configuration)
+- [x] Optional Apple login (provider enablement is deployment configuration)
 - [x] Password reset UX refinement
 - [x] Auth error UX refinement
 - [x] Session/device management UI
@@ -527,7 +527,7 @@ Shyraq should maximize Anki compatibility while explicitly avoiding the claim th
 - [x] Media size protection
 - [x] JSON database backup
 - [x] CSV card export
-- [ ] Scheduled automatic backup versions
+- [x] Scheduled automatic backup versions
 - [x] Backup history UI
 - [x] One-click restore
 - [x] Restore preview with a complete pre-restore change summary
