@@ -7,7 +7,7 @@ do $$ begin create type public.deck_visibility as enum ('private','workspace','p
 do $$ begin create type public.card_kind as enum ('basic','reverse','cloze','multiple_choice','image','custom'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.review_rating as enum ('again','hard','good','easy'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.card_queue as enum ('learning','review','relearning','suspended'); exception when duplicate_object then null; end $$;
-do $ begin create type public.collection_kind as enum ('favorites','custom'); exception when duplicate_object then null; end $;
+do $shyraq$ begin create type public.collection_kind as enum ('favorites','custom'); exception when duplicate_object then null; end $shyraq$;
 alter type public.collection_kind add value if not exists 'smart';
 
 create table if not exists public.profiles (
@@ -324,7 +324,7 @@ create table if not exists public.moderators (
 create or replace function public.is_platform_moderator()
 returns boolean language sql security definer set search_path=public,private as $
  select exists(select 1 from public.moderators m where m.user_id=(select auth.uid()) and m.enabled);
-$;
+$shyraq$;
 revoke all on function public.is_platform_moderator() from public,anon;
 grant execute on function public.is_platform_moderator() to authenticated;
 
@@ -383,9 +383,9 @@ returns boolean language sql security definer set search_path=public,private as 
  select exists(select 1 from public.workspaces w where w.id=target_workspace and w.owner_id=(select auth.uid()));
 $$;
 
-create or replace function private.touch_deck_updated_at() returns trigger language plpgsql set search_path=public,private as $ begin update public.decks set updated_at=now() where id=coalesce(new.deck_id,old.deck_id); return coalesce(new,old); end $;
+create or replace function private.touch_deck_updated_at() returns trigger language plpgsql set search_path=public,private as $shyraq$ begin update public.decks set updated_at=now() where id=coalesce(new.deck_id,old.deck_id); return coalesce(new,old); end $shyraq$;
 
-create or replace function private.touch_updated_at() returns trigger language plpgsql set search_path=public,private as $ begin new.updated_at=now(); return new; end $;
+create or replace function private.touch_updated_at() returns trigger language plpgsql set search_path=public,private as $shyraq$ begin new.updated_at=now(); return new; end $shyraq$;
 do $$ declare t text; begin
  foreach t in array array['profiles','workspaces','decks','card_templates','cards','review_states','sync_cursors'] loop
   execute format('drop trigger if exists %I_touch on public.%I',t,t);
@@ -684,7 +684,7 @@ begin
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='activity_feed') then
     alter publication supabase_realtime add table public.activity_feed;
   end if;
-end $;
+end $shyraq$;
 
 
 -- Collaboration hardening: editors may update shared cards, ownership remains immutable.
@@ -692,7 +692,7 @@ create or replace function private.prevent_card_owner_change()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
-as $
+as $shyraq$
 begin
   if new.owner_id is distinct from old.owner_id then
     raise exception 'card owner cannot be changed';
@@ -737,7 +737,7 @@ create or replace function private.prevent_deck_owner_change()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
-as $
+as $shyraq$
 begin
   if new.owner_id is distinct from old.owner_id then
     raise exception 'deck owner cannot be changed';
