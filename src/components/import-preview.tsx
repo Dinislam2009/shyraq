@@ -95,7 +95,18 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
       {initialError && <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">{initialError}</div>}
       <ImportJobProgress />
       <form action={importCards} onSubmit={async event=>{
-        if(largeStandard || rows.length>500){\n          event.preventDefault();\n          setJobStarting(true);setJobError("");\n          try{\n            const formData=new FormData(event.currentTarget);\n            const response=await fetch("/api/import/jobs",{method:"POST",body:formData});\n            const data=await response.json() as {jobId?:string;error?:string};\n            if(!response.ok||!data.jobId)throw new Error(data.error||"Unable to start import job.");\n            localStorage.setItem("shyraq:import-job",data.jobId);\n            window.location.reload();\n          }catch(error){setJobError(error instanceof Error?error.message:"Unable to start import job.");}finally{setJobStarting(false);}\n        }
+        if(largeStandard || rows.length>500){
+          event.preventDefault();
+          setJobStarting(true);setJobError("");
+          try{
+            const formData=new FormData(event.currentTarget);
+            const response=await fetch("/api/import/jobs",{method:"POST",body:formData});
+            const data=await response.json() as {jobId?:string;error?:string};
+            if(!response.ok||!data.jobId)throw new Error(data.error||"Unable to start import job.");
+            localStorage.setItem("shyraq:import-job",data.jobId);
+            window.location.reload();
+          }catch(error){setJobError(error instanceof Error?error.message:"Unable to start import job.");}finally{setJobStarting(false);}
+        }
       }} className="rounded-2xl border border-black/[0.06] bg-white p-6">
         <label className="block">
           <span className="text-sm font-semibold">Choose import file</span>
