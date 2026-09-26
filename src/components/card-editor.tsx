@@ -9,19 +9,13 @@ import { BlockEditor } from "@/components/block-editor";
 import { OcclusionEditor, type OcclusionRect } from "@/components/image-occlusion";
 import { CompressedImageInput } from "@/components/compressed-image-input";
 import {useCardDraftChannel} from "@/lib/collaboration/draft";
+import {renderAnkiTemplate} from "@/lib/anki/template-engine";
 
 type CardAction = (formData: FormData) => void | Promise<void>;
 type Template = { id: string; name: string; front_template: string; back_template: string; css?: string };
 type MediaItem = { path: string; url: string; mimeType: string; name: string };
 type FieldName = "front" | "back";
 
-function applyTemplatePreview(source: string, fields: Record<string, string>) {
-  let output=String(source||"");
-  const resolve=(key:string)=>{const normalized=String(key).trim();if(/^frontside$/i.test(normalized))return fields.front||"";return fields[normalized]??fields[normalized.toLowerCase()]??"";};
-  output=output.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key,body)=>resolve(key)?body:"");
-  output=output.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key,body)=>resolve(key)?"":body);
-  return output.replace(/\{\{\s*([^}]+?)\s*\}\}/g,(_,key)=>resolve(key));
-}
 
 export function CardEditor({
   action,
@@ -117,8 +111,8 @@ export function CardEditor({
   const previewBack = kind === "cloze"
     ? [front.replace(/\{\{c\d+::([^}:|]+)(?:::[^}|]+)?(?:\|[^}]+)?\}\}/g, "$1"), back].filter(Boolean).join("\n\n")
     : back;
-  const templatePreviewFront = selectedTemplate ? applyTemplatePreview(selectedTemplate.front_template, { ...customValues, front: previewFront, back: previewBack }) : previewFront;
-  const templatePreviewBack = selectedTemplate ? applyTemplatePreview(selectedTemplate.back_template, { ...customValues, front: previewFront, back: previewBack }) : previewBack;
+  const templatePreviewFront = selectedTemplate ? renderAnkiTemplate(selectedTemplate.front_template, { ...customValues, front: previewFront, back: previewBack }, { side: "front", clozeIndex: Number(initial?.clozeIndex || 1), revealCloze: false }) : previewFront;
+  const templatePreviewBack = selectedTemplate ? renderAnkiTemplate(selectedTemplate.back_template, { ...customValues, front: previewFront, back: previewBack }, { side: "back", frontSide: templatePreviewFront, clozeIndex: Number(initial?.clozeIndex || 1), revealCloze: true }) : previewBack;
 
   function addField() {
     const name = window.prompt("Field name");
