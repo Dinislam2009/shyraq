@@ -39,25 +39,25 @@ const copiedDeckActions=readFileSync(new URL("../src/app/explore/[id]/actions.ts
 const collectionActions=readFileSync(new URL("../src/app/collections/actions.ts",import.meta.url),"utf8");
 
 test("card actions surface media cleanup and bulk tag write failures",()=>{
- assert.ok(cardsActions.includes("const {error:mediaError}=await supabase.from("media").delete"));
- assert.ok(cardsActions.includes("const {error:storageError}=await supabase.storage.from("user-media").remove"));
- assert.ok(cardsActions.includes("const {error:linkError}=await supabase.from("card_tags").upsert"));
+ assert.ok(cardsActions.includes(`const {error:mediaError}=await supabase.from("media").delete`));
+ assert.ok(cardsActions.includes(`const {error:storageError}=await supabase.storage.from("user-media").remove`));
+ assert.ok(cardsActions.includes(`const {error:linkError}=await supabase.from("card_tags").upsert`));
  assert.ok(cardsActions.includes("async function fetchAllRows<T>"));
 });
 
 test("collaboration actions surface activity, mention, and restore write failures",()=>{
- assert.ok(collaborationActions.includes("const {error}=await supabase.from("activity_feed").insert"));
- assert.ok(collaborationActions.includes("const {error:mentionError}=await supabase.from("comment_mentions").upsert"));
- assert.ok(collaborationActions.includes("const {error:cardError}=await supabase.from("cards").update"));
+ assert.ok(collaborationActions.includes(`const {error}=await supabase.from("activity_feed").insert`));
+ assert.ok(collaborationActions.includes(`const {error:mentionError}=await supabase.from("comment_mentions").upsert`));
+ assert.ok(collaborationActions.includes(`const {error:cardError}=await supabase.from("cards").update`));
 });
 
 test("copied-deck updates surface partial write failures",()=>{
- assert.ok(copiedDeckActions.includes("const {error}=await supabase.from("cards").update"));
- assert.ok(copiedDeckActions.includes("const {error:copyUpdateError}=await supabase.from("deck_copies").update"));
- assert.ok(copiedDeckActions.includes("const {error:historyError}=await supabase.from("deck_copy_update_history").insert"));
+ assert.ok(copiedDeckActions.includes(`const {error}=await supabase.from("cards").update`));
+ assert.ok(copiedDeckActions.includes(`const {error:copyUpdateError}=await supabase.from("deck_copies").update`));
+ assert.ok(copiedDeckActions.includes(`const {error:historyError}=await supabase.from("deck_copy_update_history").insert`));
 });
 
 test("collection favorite link mutations surface database failures",()=>{
- assert.ok(collectionActions.includes("const {error}=await supabase.from("collection_cards").delete"));
- assert.ok(collectionActions.includes("const {error}=await supabase.from("collection_cards").insert"));
+ assert.ok(collectionActions.includes(`const {error}=await supabase.from("collection_cards").delete`));
+ assert.ok(collectionActions.includes(`const {error}=await supabase.from("collection_cards").insert`));
 });
