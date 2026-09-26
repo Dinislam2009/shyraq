@@ -37,3 +37,10 @@ test("Anki cloze hint and type filters are normalized consistently",()=>{
  assert.ok(parser.includes("hint\\s*:\\s*([^}]+)"));
  assert.ok(runner.includes("(?:::[^}|]+)?"));
 });
+
+
+test("nested Anki template filters are normalized through repeated passes",()=>{
+ const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
+ assert.match(parser,/pass<6/);
+ assert.ok(parser.includes("cloze|text|hint|type|field"));
+});
