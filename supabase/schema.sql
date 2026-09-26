@@ -302,6 +302,8 @@ create table if not exists public.import_jobs (
  completed_at timestamptz
 );
 create index if not exists import_jobs_user_idx on public.import_jobs(user_id,created_at desc);
+create index if not exists import_jobs_workspace_idx on public.import_jobs(workspace_id);
+create index if not exists import_jobs_deck_idx on public.import_jobs(deck_id);
 create table if not exists public.backup_schedules (
  id uuid primary key default gen_random_uuid(),
  user_id uuid not null references auth.users(id) on delete cascade,
