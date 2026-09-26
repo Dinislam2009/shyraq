@@ -56,6 +56,6 @@ test("CardEditor uses component-level translations for core editor UI",()=>{
 test("client i18n hydration prioritizes the server locale cookie over stale storage",()=>{
  const source=readFileSync(new URL("../src/components/i18n-provider.tsx",import.meta.url),"utf8");
  assert.match(source,/document\.cookie\.match/);
- assert.match(source,/if\\(cookieLocale\\)return cookieLocale/);
+ assert.match(source,/if\(cookieLocale\)return cookieLocale/);
  assert.match(source,/localStorage\.getItem\("shyraq-locale"\)/);
 });
