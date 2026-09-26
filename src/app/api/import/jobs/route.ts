@@ -13,7 +13,7 @@ export async function POST(request:Request){
  const filename=file.name.toLowerCase();
  if(filename.endsWith(".zip")||filename.endsWith(".apkg"))return NextResponse.json({error:"Resumable jobs support CSV, TSV, TXT and standard JSON imports."},{status:400});
  const raw=String(form.get("duplicate_mode")||"skip");
- const duplicateMode: "create"|"skip"|"replace" = raw==="create"||raw==="replace"?raw:"skip";
+ const duplicateMode: "create"|"skip"|"replace" = raw==="create"?"create":raw==="replace"?"replace":"skip";
  const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
  if(!workspace)return NextResponse.json({error:"Personal workspace not found."},{status:400});
  const text=await file.text();
