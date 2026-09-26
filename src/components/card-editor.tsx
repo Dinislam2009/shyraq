@@ -316,7 +316,7 @@ export function CardEditor({
           <input name="continue" value="1" type="checkbox" className="h-4 w-4 rounded border-slate-300" />
           {t("saveAndAddNextCard")}
         </label>
-        <button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">{t(submitLabel)}</button>
+        <button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">{submitLabel}</button>
       </div>
     </form>
   );
