@@ -19,33 +19,46 @@ async function withMediaUrl(supabase:any,card:any){
 export async function getCurrentUser(){const supabase=await createClient();const {data,error}=await supabase.auth.getUser();return error||!data.user?null:data.user;}
 export async function getSelectedWorkspace(){
  const supabase=await createClient();
- const {data:{user}}=await supabase.auth.getUser();
- if(!user)return null;
- const {data:profile}=await supabase.from("profiles").select("selected_workspace_id").eq("id",user.id).maybeSingle();
+ const {data:{user},error:userError}=await supabase.auth.getUser();
+ if(userError||!user)return null;
+
+ const {data:profile,error:profileError}=await supabase.from("profiles").select("selected_workspace_id").eq("id",user.id).maybeSingle();
+ if(profileError)return null;
+
  if(profile?.selected_workspace_id){
-  const {data:member}=await supabase.from("workspace_members").select("workspace_id").eq("workspace_id",profile.selected_workspace_id).eq("user_id",user.id).maybeSingle();
-  if(member){
-   const {data:workspace}=await supabase.from("workspaces").select("*").eq("id",profile.selected_workspace_id).maybeSingle();
-   if(workspace)return workspace;
+  const {data:member,error:memberError}=await supabase.from("workspace_members").select("workspace_id,role").eq("workspace_id",profile.selected_workspace_id).eq("user_id",user.id).maybeSingle();
+  if(!memberError&&member){
+   const {data:workspace,error:workspaceError}=await supabase.from("workspaces").select("*").eq("id",profile.selected_workspace_id).maybeSingle();
+   if(!workspaceError&&workspace)return workspace;
   }
  }
- let {data:personal}=await supabase.from("workspaces").select("*").eq("owner_id",user.id).eq("kind","personal").order("created_at").limit(1).maybeSingle();
+
+ let {data:personal,error:personalError}=await supabase.from("workspaces").select("*").eq("owner_id",user.id).eq("kind","personal").order("created_at").limit(1).maybeSingle();
+ if(personalError)return null;
+
  if(!personal){
-  const {data:created}=await supabase.from("workspaces").upsert({
+  const {data:created,error:createError}=await supabase.from("workspaces").upsert({
    owner_id:user.id,
    kind:"personal",
    name:"Personal workspace",
    slug:"personal",
   },{onConflict:"owner_id,slug"}).select("*").single();
+  if(createError||!created)return null;
   personal=created;
-  if(personal){
-   await supabase.from("workspace_members").upsert({
-    workspace_id:personal.id,
-    user_id:user.id,
-    role:"owner",
-   },{onConflict:"workspace_id,user_id"});
-  }
  }
+
+ const {data:membership,error:membershipReadError}=await supabase.from("workspace_members").select("role").eq("workspace_id",personal.id).eq("user_id",user.id).maybeSingle();
+ if(membershipReadError)return null;
+
+ if(!membership||membership.role!=="owner"){
+  const {error:membershipWriteError}=await supabase.from("workspace_members").upsert({
+   workspace_id:personal.id,
+   user_id:user.id,
+   role:"owner",
+  },{onConflict:"workspace_id,user_id"});
+  if(membershipWriteError)return null;
+ }
+
  return personal;
 }
 
