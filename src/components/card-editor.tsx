@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { offlineStore, queueMutation } from "@/lib/offline/store";
 import { parseCardFormData } from "@/lib/offline/form-payload";
@@ -8,6 +8,7 @@ import { RichContent } from "@/components/rich-content";
 import { BlockEditor } from "@/components/block-editor";
 import { OcclusionEditor, type OcclusionRect } from "@/components/image-occlusion";
 import { CompressedImageInput } from "@/components/compressed-image-input";
+import {useCardDraftChannel} from "@/lib/collaboration/draft";
 
 type CardAction = (formData: FormData) => void | Promise<void>;
 type Template = { id: string; name: string; front_template: string; back_template: string; css?: string };
@@ -74,6 +75,22 @@ export function CardEditor({
   const backRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [offlineError,setOfflineError] = useState("");
+  const draftEnabled=Boolean(offlineContext?.userId&&offlineContext?.deckId&&offlineContext?.existing?.id);
+  const suppressDraftRef=useRef(false);
+  const {remoteDraft,publish,dismissRemote}=useCardDraftChannel(offlineContext?.deckId||"",offlineContext?.existing?.id,offlineContext?.userId);
+
+  useEffect(()=>{
+   if(!remoteDraft||suppressDraftRef.current)return;
+   suppressDraftRef.current=true;
+   setFront(remoteDraft.front);setBack(remoteDraft.back);setTags(remoteDraft.tags);setMarkers(remoteDraft.markers);setStatus(remoteDraft.status);
+   setOptions(remoteDraft.options);setAnswer(remoteDraft.answer);setImageUrl(remoteDraft.imageUrl);setFields(remoteDraft.fields);setReviewPreferences(remoteDraft.reviewPreferences as typeof reviewPreferences);
+   dismissRemote();
+  },[dismissRemote,remoteDraft]);
+
+  useEffect(()=>{
+   if(!draftEnabled||suppressDraftRef.current){suppressDraftRef.current=false;return;}
+   publish({front,back,tags,markers,status,options,answer,imageUrl,fields,reviewPreferences});
+  },[answer,back,draftEnabled,fields,front,imageUrl,markers,options,publish,reviewPreferences,status,tags]);
 
   const selectedTemplate = templates.find(template => template.id === templateId);
   const imageSrc = imageUrl || imagePreview;
@@ -138,6 +155,7 @@ export function CardEditor({
       <input type="hidden" name="fields" value={JSON.stringify(fields)} />
       <input type="hidden" name="review_preferences" value={JSON.stringify(reviewPreferences)} />
       {offlineError?<div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{offlineError}</div>:null}
+      {draftEnabled?<div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Live draft collaboration is enabled for this card.</div>:null}
       <input type="hidden" name="media_items" value={JSON.stringify(mediaItems.map(item => ({ path: item.path, mimeType: item.mimeType, name: item.name })))} />
       <div className="grid gap-4 sm:grid-cols-6">
         <label className="block text-sm font-medium sm:col-span-1">
