@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
 const schema=readFileSync(new URL("../supabase/schema.sql",import.meta.url),"utf8");
+const syncRoute=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
+const notificationHelper=readFileSync(new URL("../src/lib/supabase/notifications.ts",import.meta.url),"utf8");
 
 function tableBlock(name:string){
  const match=schema.match(new RegExp("create table if not exists public\\."+name+" \\(([\\s\\S]*?)\\n\\);"));
@@ -42,4 +44,23 @@ test("Realtime and cross-table foreign keys are idempotent",()=>{
  assert.match(schema,/pg_publication_tables/);
  assert.match(schema,/sync_conflicts_event_key_fkey/);
  assert.match(schema,/pg_constraint/);
+});
+
+
+test("schema dollar-quote blocks are syntactically paired",()=>{
+ assert.doesNotMatch(schema,/^\s*do \$\s*$/m);
+ assert.match(schema,/do \$shyraq\$[\s\S]*?end \$shyraq\$;/);
+ assert.match(schema,/as \$shyraq\$[\s\S]*?end;\s*\$shyraq\$;/);
+});
+
+test("server notification writes use the RLS-safe RPC",()=>{
+ assert.match(syncRoute,/rpc\("create_notification"/);
+ assert.doesNotMatch(syncRoute,/from\("notifications"\)\.insert/);
+ assert.match(notificationHelper,/rpc\("create_notification"/);
+});
+
+test("collaboration member/comment policies enforce resource workspace relationships",()=>{
+ assert.match(schema,/d\.id=deck_members\.deck_id[\s\S]*d\.workspace_id=deck_members\.workspace_id/);
+ assert.match(schema,/c\.id=collection_members\.collection_id[\s\S]*c\.workspace_id=collection_members\.workspace_id/);
+ assert.match(schema,/d\.id=comments\.deck_id[\s\S]*d\.workspace_id=comments\.workspace_id/);
 });
