@@ -958,8 +958,8 @@ Legacy tables from the old project must remain isolated from the Shyraq applicat
 - [ ] Full page performance audit
 - [x] Bundle-size audit
 - [x] Image optimization
-- [ ] Large-deck virtualization
-- [ ] Large-card-list virtualization
+- [x] Large-deck virtualization
+- [x] Large-card-list virtualization
 - [x] Large Anki import optimization
 - [x] Large media backup optimization
 - [x] Cold-start optimization
