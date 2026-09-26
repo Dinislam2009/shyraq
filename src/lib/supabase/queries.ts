@@ -200,18 +200,23 @@ export async function getReviewStats(workspaceId?:string){
    if(member){
     const {data:workspaceDecks}=await supabase.from("decks").select("id").eq("workspace_id",workspaceId).is("deleted_at",null);
     const deckIds=(workspaceDecks??[]).map((row:any)=>row.id);
-    const {data:workspaceCards}=deckIds.length?await supabase.from("cards").select("id").in("deck_id",deckIds).limit(20000):{data:[]};
-    workspaceCardIds=(workspaceCards??[]).map((row:any)=>row.id);
+    const workspaceCardsResult=deckIds.length
+     ? await fetchAllRows<{id:string}>((from,to)=>supabase.from("cards").select("id").in("deck_id",deckIds).range(from,to))
+     : {data:[],error:null};
+    if(workspaceCardsResult.error)throw workspaceCardsResult.error;
+    workspaceCardIds=workspaceCardsResult.data.map(row=>row.id);
    }
   }
  }
- const [{data:events},{data:states}]=await Promise.all([
-  supabase.from("review_events").select("id,card_id,rating,elapsed_ms,reviewed_at,metadata,next_state").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").order("reviewed_at",{ascending:true}).limit(50000),
-  supabase.from("review_states").select("card_id,state_data,due_at,stability,difficulty,queue").eq("user_id",user.id).limit(50000)
+ const [eventsResult,statesResult]=await Promise.all([
+  fetchAllRows<any>((from,to)=>supabase.from("review_events").select("id,card_id,rating,elapsed_ms,reviewed_at,metadata,next_state").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").order("reviewed_at",{ascending:true}).range(from,to)),
+  fetchAllRows<any>((from,to)=>supabase.from("review_states").select("card_id,state_data,due_at,stability,difficulty,queue").eq("user_id",user.id).order("card_id",{ascending:true}).range(from,to))
  ]);
- let list=events??[];
+ if(eventsResult.error)throw eventsResult.error;
+ if(statesResult.error)throw statesResult.error;
+ let list=eventsResult.data;
  if(workspaceCardIds)list=list.filter((event:any)=>workspaceCardIds!.includes(String(event.card_id)));
- const stateList=states??[];
+ const stateList=statesResult.data;
  const cardIds=[...new Set(list.map((event:any)=>event.card_id).filter(Boolean))];
  const {data:cards}=cardIds.length
   ? await supabase.from("cards").select("id,deck_id,content,decks(id,name)").in("id",cardIds)
@@ -295,10 +300,11 @@ export async function getDashboardStats(){
   ? await supabase.from("decks").select("id").eq("workspace_id",workspaceId).is("deleted_at",null)
   : {data:[]};
  const workspaceDeckIds=(workspaceDecks??[]).map((row:any)=>row.id).filter(Boolean);
- const {data:workspaceCards}=workspaceDeckIds.length
-  ? await supabase.from("cards").select("id").eq("is_suspended",false).in("deck_id",workspaceDeckIds).limit(20000)
-  : {data:[]};
- const cardIds=(workspaceCards??[]).map((row:any)=>row.id);
+ const workspaceCardsResult=workspaceDeckIds.length
+  ? await fetchAllRows<{id:string}>((from,to)=>supabase.from("cards").select("id").eq("is_suspended",false).in("deck_id",workspaceDeckIds).range(from,to))
+  : {data:[],error:null};
+ if(workspaceCardsResult.error)throw workspaceCardsResult.error;
+ const cardIds=workspaceCardsResult.data.map(row=>row.id);
 
  const start=new Date();start.setHours(0,0,0,0);
  const tomorrow=new Date(start);tomorrow.setDate(tomorrow.getDate()+1);
@@ -309,25 +315,27 @@ export async function getDashboardStats(){
   dueCount=count??0;
  }
 
- let todayQuery=supabase.from("review_events").select("rating,elapsed_ms,metadata").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").gte("reviewed_at",start.toISOString()).lt("reviewed_at",tomorrow.toISOString());
- if(cardIds.length)todayQuery=todayQuery.in("card_id",cardIds); else todayQuery=todayQuery.limit(0);
- const {data:todayEvents}=await todayQuery;
-
- const today=todayEvents??[];
+ const todayEventsResult=cardIds.length
+  ? await fetchAllRows<any>((from,to)=>supabase.from("review_events").select("rating,elapsed_ms,metadata").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").gte("reviewed_at",start.toISOString()).lt("reviewed_at",tomorrow.toISOString()).in("card_id",cardIds).order("reviewed_at",{ascending:true}).range(from,to))
+  : {data:[],error:null};
+ if(todayEventsResult.error)throw todayEventsResult.error;
+ const today=todayEventsResult.data;
  const reviewsToday=today.length;
  const newToday=today.filter((event:any)=>event.metadata?.event_kind==="new-card").length;
  const goodToday=today.filter((event:any)=>event.rating!=="again").length;
  const studyMinutesToday=Math.round(today.reduce((sum:number,event:any)=>sum+Number(event.elapsed_ms||0),0)/60000);
  const accuracyToday=reviewsToday?Math.round(goodToday/reviewsToday*100):null;
 
- let eventQuery=supabase.from("review_events").select("reviewed_at").eq("user_id",user.id).order("reviewed_at",{ascending:false}).limit(5000);
- if(cardIds.length)eventQuery=eventQuery.in("card_id",cardIds); else eventQuery=eventQuery.limit(0);
- const {data:events}=await eventQuery;
- const dates=new Set((events??[]).map((e:any)=>new Date(e.reviewed_at).toISOString().slice(0,10)));
+ const eventsResult=cardIds.length
+  ? await fetchAllRows<any>((from,to)=>supabase.from("review_events").select("reviewed_at").eq("user_id",user.id).order("reviewed_at",{ascending:false}).in("card_id",cardIds).range(from,to))
+  : {data:[],error:null};
+ if(eventsResult.error)throw eventsResult.error;
+ const dates=new Set(eventsResult.data.map((e:any)=>new Date(e.reviewed_at).toISOString().slice(0,10)));
  let streak=0;
  for(let i=0;;i++){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);if(dates.has(d.toISOString().slice(0,10)))streak++;else break;}
- const {data:recentEvents}=await supabase.from("review_events").select("elapsed_ms,reviewed_at,rating").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").gte("reviewed_at",new Date(Date.now()-7*24*60*60*1000).toISOString()).limit(5000);
- const recent=recentEvents??[];
+ const recentEventsResult=await fetchAllRows<any>((from,to)=>supabase.from("review_events").select("elapsed_ms,reviewed_at,rating").eq("user_id",user.id).neq("metadata->>event_kind","review-undo").gte("reviewed_at",new Date(Date.now()-7*24*60*60*1000).toISOString()).order("reviewed_at",{ascending:true}).range(from,to));
+ if(recentEventsResult.error)throw recentEventsResult.error;
+ const recent=recentEventsResult.data;
  const avgSeconds=recent.length?recent.reduce((sum:number,event:any)=>sum+Number(event.elapsed_ms||0),0)/recent.length/1000:30;
  const pref=(await supabase.from("review_preferences").select("reviews_per_day").eq("user_id",user.id).maybeSingle()).data;
  const plannedReviews=Math.min(dueCount,Math.max(10,Number(pref?.reviews_per_day??20)));
