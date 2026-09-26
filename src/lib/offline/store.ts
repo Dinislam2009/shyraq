@@ -52,6 +52,7 @@ class OfflineStore extends Dexie{
  reviewCache!:Table<CachedReviewSession,string>;
  decks!:Table<OfflineDeck,string>;
  cards!:Table<OfflineCard,string>;
+ cardTemplates!:Table<OfflineCardTemplate,string>;
  mutations!:Table<OfflineMutation,string>;
  mediaCache!:Table<OfflineMediaCache,string>;
  syncMeta!:Table<OfflineSyncMeta,string>;
@@ -64,6 +65,16 @@ class OfflineStore extends Dexie{
    reviewCache:"key,userId,savedAt",
    decks:"id,userId,workspaceId,updatedAt",
    cards:"id,userId,deckId,updatedAt,sortOrder",
+   mutations:"id,userId,entityType,operation,status,createdAt",
+   mediaCache:"path,userId,savedAt",
+   syncMeta:"key,userId,cursor,lastSyncAt"
+  });
+  this.version(4).stores({
+   reviews:"id,userId,cardId,deviceId,sequence,status,reviewedAt",
+   reviewCache:"key,userId,savedAt",
+   decks:"id,userId,workspaceId,updatedAt",
+   cards:"id,userId,deckId,updatedAt,sortOrder",
+   cardTemplates:"id,userId,deckId,updatedAt",
    mutations:"id,userId,entityType,operation,status,createdAt",
    mediaCache:"path,userId,savedAt",
    syncMeta:"key,userId,cursor,lastSyncAt"
@@ -92,12 +103,14 @@ export async function cacheMirror(
  await offlineStore.transaction("rw",[offlineStore.decks,offlineStore.cards],async()=>{
   if(decks.length)await offlineStore.decks.bulkPut(decks);
   if(cards.length)await offlineStore.cards.bulkPut(cards);
+  if(templates.length)await offlineStore.cardTemplates.bulkPut(templates);
  });
 }
 
 export async function removeMirroredEntity(entityType:string,entityId:string){
  if(entityType==="decks")await offlineStore.decks.delete(entityId);
  if(entityType==="cards")await offlineStore.cards.delete(entityId);
+ if(entityType==="card_templates")await offlineStore.cardTemplates.delete(entityId);
 }
 
 export async function getSyncMeta(userId:string){
@@ -135,7 +148,7 @@ export async function getOfflineStorageUsage(){
   offlineStore.cards.count(),offlineStore.mutations.count(),offlineStore.mediaCache.toArray()
  ]);
  return {
-  reviews,reviewCache,decks,cards,mutations,mediaFiles:media.length,
+  reviews,reviewCache,decks,cards,cardTemplates,mutations,mediaFiles:media.length,
   mediaBytes:media.reduce((sum,item)=>sum+item.byteSize,0)
  };
 }
