@@ -418,6 +418,8 @@ end;
 $$;
 revoke all on function private.is_workspace_member(uuid,public.workspace_role) from public,anon,authenticated;
 revoke all on function private.is_workspace_owner(uuid) from public,anon,authenticated;
+grant execute on function private.is_workspace_member(uuid,public.workspace_role) to authenticated;
+grant execute on function private.is_workspace_owner(uuid) to authenticated;
 revoke all on function private.handle_new_user() from public,anon,authenticated;
 revoke all on function private.touch_updated_at() from public,anon,authenticated;
 drop trigger if exists on_auth_user_created on auth.users;
