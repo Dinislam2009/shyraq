@@ -104,7 +104,7 @@ create table if not exists public.sync_conflicts (
  id uuid primary key default gen_random_uuid(),
  user_id uuid not null references auth.users(id) on delete cascade,
  card_id uuid not null references public.cards(id) on delete cascade,
- event_key uuid not null unique references public.review_events(event_key) on delete cascade,
+ event_key uuid not null unique,
  detected_at timestamptz not null default now(),
  incoming_state jsonb not null default '{}'::jsonb,
  current_state jsonb not null default '{}'::jsonb,
@@ -121,6 +121,8 @@ create table if not exists public.review_events (
  elapsed_ms integer, previous_state jsonb not null default '{}'::jsonb, next_state jsonb not null default '{}'::jsonb,
  metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), unique(device_id,client_sequence)
 );
+alter table public.sync_conflicts add constraint sync_conflicts_event_key_fkey foreign key(event_key) references public.review_events(event_key) on delete cascade;
+
 create table if not exists public.media (
  id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
  owner_id uuid not null references auth.users(id) on delete cascade, storage_path text not null unique,
