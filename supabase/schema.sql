@@ -23,7 +23,10 @@ create table if not exists public.workspaces (
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
  unique(owner_id,slug)
 );
+alter table public.profiles add column if not exists show_activity boolean not null default true;
+alter table public.profiles add column if not exists show_followers boolean not null default true;
 alter table public.profiles add column if not exists selected_workspace_id uuid references public.workspaces(id) on delete set null;
+
 create table if not exists public.workspace_members (
  workspace_id uuid not null references public.workspaces(id) on delete cascade,
  user_id uuid not null references auth.users(id) on delete cascade,
@@ -38,6 +41,9 @@ create table if not exists public.decks (
  deleted_at timestamptz, source_deck_id uuid references public.decks(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
+alter table public.decks add column if not exists sort_order integer not null default 0;
+alter table public.decks add column if not exists deleted_at timestamptz;
+
 create table if not exists public.card_templates (
  id uuid primary key default gen_random_uuid(), deck_id uuid not null references public.decks(id) on delete cascade,
  name text not null default 'Basic', front_template text not null default '{{front}}',
@@ -67,6 +73,12 @@ create table if not exists public.collections (
  is_public boolean not null default false, is_featured boolean not null default false,
  created_at timestamptz not null default now()
 );
+alter table public.collections add column if not exists description text not null default '';
+alter table public.collections add column if not exists rule jsonb not null default '{}'::jsonb;
+alter table public.collections add column if not exists sort_mode text not null default 'manual';
+alter table public.collections add column if not exists is_public boolean not null default false;
+alter table public.collections add column if not exists is_featured boolean not null default false;
+
 create table if not exists public.collection_cards (
  collection_id uuid not null references public.collections(id) on delete cascade,
  card_id uuid not null references public.cards(id) on delete cascade, created_at timestamptz not null default now(),
@@ -92,6 +104,11 @@ create table if not exists public.review_preferences (
  scheduler_profiles jsonb not null default '[]'::jsonb,
  updated_at timestamptz not null default now()
 );
+
+alter table public.review_preferences add column if not exists rating_styles jsonb not null default '{}'::jsonb;
+alter table public.review_preferences add column if not exists accessibility jsonb not null default '{}'::jsonb;
+alter table public.review_preferences add column if not exists session_defaults jsonb not null default '{}'::jsonb;
+alter table public.review_preferences add column if not exists scheduler_profiles jsonb not null default '[]'::jsonb;
 
 create table if not exists public.review_states (
  user_id uuid not null references auth.users(id) on delete cascade, card_id uuid not null references public.cards(id) on delete cascade,
