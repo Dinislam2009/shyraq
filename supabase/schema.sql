@@ -827,6 +827,11 @@ drop policy if exists creator_relations_self_delete on public.creator_relations;
 create policy creator_relations_self_delete on public.creator_relations for delete to authenticated
 using(user_id=(select auth.uid()));
 
+drop policy if exists creator_relations_self_update on public.creator_relations;
+create policy creator_relations_self_update on public.creator_relations for update to authenticated
+using(user_id=(select auth.uid()))
+with check(user_id=(select auth.uid()) and creator_id<>(select auth.uid()));
+
 drop policy if exists follows_self on public.public_deck_follows;
 create policy follows_self on public.public_deck_follows for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 drop policy if exists copies_self on public.deck_copies;
