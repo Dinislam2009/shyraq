@@ -38,6 +38,7 @@ export default async function CreatorPage({params,searchParams}:{params:Promise<
  const publicActivity=(activities??[]).filter((entry:any)=>deckMap.has(entry.entity_id)).slice(0,10);
 
  return <AppShell><div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+  {error?<div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>:null}
   <Link href="/explore" className="text-sm text-slate-400">← Public decks</Link>
   <div className="mt-6 rounded-3xl border border-black/[0.06] bg-white p-8">
    <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
