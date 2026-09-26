@@ -8,8 +8,8 @@ export type AnkiTemplate={
 };
 
 type ParsedCard={
- front:string;back:string;fields:Record<string,string>;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;
- sourceCardId:number;modelId:number;mediaNames:string[];kind:"basic"|"cloze";
+ front:string;back:string;fields:Record<string,string>;rawFields:Record<string,string>;tags:string[];ord:number;due:number;interval:number;reps:number;lapses:number;factor:number;queue:number;type:number;flags:number;
+ sourceCardId:number;modelId:number;modelName:string;deckName:string;mediaNames:string[];kind:"basic"|"cloze";
 };
 
 export type ParsedAnki={
@@ -57,7 +57,7 @@ function parseField(value:string,media:Record<string,string>){
  html=html.replace(/\[sound:([^\]]+)\]/gi,(_,name:string)=>{
   const resolved=media[name]||name;mediaNames.push(resolved);return "__SHYRAQ_MEDIA__"+encodeURIComponent(resolved);
  });
- return {text:normalizeHtml(html),mediaNames:[...new Set(mediaNames)]};
+ return {text:normalizeHtml(html),html,mediaNames:[...new Set(mediaNames)]};
 }
 
 export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
@@ -115,7 +115,7 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
   notes.set(Number(row[0]),{fields:String(row[3]||"").split("\x1f"),tags:String(row[2]||"").trim().split(/\s+/).filter(Boolean),mid:Number(row[1])});
  }
 
- const cardValues=db.exec("select id,nid,did,ord,due,ivl,factor,reps,lapses from cards")[0]?.values||[];
+ const cardValues=db.exec("select id,nid,did,ord,due,ivl,factor,reps,lapses,queue,type,flags from cards")[0]?.values||[];
  for(const row of cardValues){
   const note=notes.get(Number(row[1]));if(!note)continue;
   let deck=deckMap.get(Number(row[2]));
@@ -123,14 +123,19 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
   const template=templateMeta.get(String(note.mid)+":"+String(Number(row[3])))||templateMeta.get(String(note.mid)+":0");
   const fieldNames=modelFields.get(note.mid)??template?.fields??[];
   const fields:Record<string,string>={};
-  fieldNames.forEach((name,index)=>{fields[name]=parseField(note.fields[index]||"",media).text;});
+  const rawFields:Record<string,string>={};
+  fieldNames.forEach((name,index)=>{
+   const parsedField=parseField(note.fields[index]||"",media);
+   fields[name]=parsedField.text;
+   rawFields[name]=parsedField.html;
+  });
   const front=parseField(note.fields[0]||"",media);
   const back=parseField(note.fields[1]||"",media);
   const mediaNames=[...new Set([...Object.values(fields).flatMap(value=>parseField(value,media).mediaNames),...front.mediaNames,...back.mediaNames])];
   const kind=template?.cloze||/\{\{c\d+::/i.test(Object.values(fields).join(" "))?"cloze":"basic";
   deck.cards.push({
-   front:front.text,back:back.text,fields,tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),
-   factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),sourceCardId:Number(row[0]),modelId:note.mid,mediaNames,kind
+   front:front.text,back:back.text,fields,rawFields,tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),
+   factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),queue:Number(row[9]),type:Number(row[10]),flags:Number(row[11]),sourceCardId:Number(row[0]),modelId:note.mid,modelName:String((modelsRaw[String(note.mid)] as any)?.name||"Anki card"),deckName:deck.name,mediaNames,kind
   });
  }
 
