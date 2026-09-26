@@ -311,5 +311,6 @@ export const extendedTranslations = {
   "Ask before updates": {"kk":"Жаңартудан бұрын сұрау","ru":"Спрашивать перед обновлением","en":"Ask before updates"},
   "Accept future updates": {"kk":"Болашақ жаңартуларды қабылдау","ru":"Принимать будущие обновления","en":"Accept future updates"},
   "Accept all updates": {"kk":"Барлық жаңартуды қабылдау","ru":"Принимать все обновления","en":"Accept all updates"},
+  "Decks": { kk:"Колодалар", ru:"Колоды", en:"Decks" },
 } as const satisfies Record<string, Record<SupportedLocale, string>>;
 
