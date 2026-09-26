@@ -248,5 +248,5 @@ export const extendedTranslations = {
   "Invite link": { kk: "Шақыру сілтемесі", ru: "Ссылка-приглашение", en: "Invite link" },
   "Copy link": { kk: "Сілтемені көшіру", ru: "Копировать ссылку", en: "Copy link" },
   "Admin": { kk: "Әкімші", ru: "Администратор", en: "Admin" },
-};
+} as const satisfies Record<string, Record<SupportedLocale, string>>;
 
