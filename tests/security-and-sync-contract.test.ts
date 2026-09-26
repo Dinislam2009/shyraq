@@ -10,7 +10,7 @@ const creatorPage=readFileSync(new URL("../src/app/u/[username]/page.tsx",import
 test("profiles expose private fields only to the owner and use a public projection for shared identity",()=>{
  assert.match(schema,/create policy profiles_self_select on public\.profiles for select to authenticated using\(id=\(select auth\.uid\(\)\)\);/);
  assert.doesNotMatch(schema,/create policy profiles_public_select on public\.profiles for select to authenticated using\(true\);/);
- assert.ok(schema.includes("create or replace view public.public_profiles with (security_barrier=true) as"));
+ assert.ok(schema.includes("create table if not exists public.public_profiles"));
  assert.ok(schema.includes("select id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers"));
  assert.match(workspacePage,/from\("public_profiles"\)/);
  assert.match(creatorPage,/from\("public_profiles"\)/);
