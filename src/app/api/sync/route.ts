@@ -247,6 +247,20 @@ export async function POST(request:NextRequest){
     const {error}=await supabase.from("collections").upsert(row,{onConflict:"id"});
     if(error)throw new Error(error.message);
    }
+  }else if(entityType==="collection_cards"){
+   const collectionId=String(payload.collection_id??payload.collectionId??"");
+   const cardId=String(payload.card_id??payload.cardId??"");
+   const {data:collection}=collectionId?await supabase.from("collections").select("id,workspace_id").eq("id",collectionId).maybeSingle():{data:null};
+   const {data:card}=cardId?await supabase.from("cards").select("id,deck_id").eq("id",cardId).maybeSingle():{data:null};
+   const {data:deck}=card?.deck_id?await supabase.from("decks").select("id,workspace_id").eq("id",card.deck_id).maybeSingle():{data:null};
+   if(!collection||!card||!deck||String(collection.workspace_id)!==String(deck.workspace_id)||!(await canEditWorkspace(supabase,user.id,String(collection.workspace_id))))throw new Error("Workspace edit permission required.");
+   if(operation==="delete"){
+    const {error}=await supabase.from("collection_cards").delete().eq("collection_id",collectionId).eq("card_id",cardId);
+    if(error)throw new Error(error.message);
+   }else{
+    const {error}=await supabase.from("collection_cards").upsert({collection_id:collectionId,card_id:cardId},{onConflict:"collection_id,card_id"});
+    if(error)throw new Error(error.message);
+   }
   }else if(entityType==="card_templates"){
    const {data:existingTemplate}=await supabase.from("card_templates").select("id,deck_id").eq("id",entityId).maybeSingle();
    const deckId=String(payload.deck_id??payload.deckId??existingTemplate?.deck_id??"");
