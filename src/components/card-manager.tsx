@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { deleteCard, setCardFlag, updateCard, bulkDeleteCards, bulkSetCardFlag, bulkEditCards, reorderCards } from "@/app/decks/[id]/cards/actions";
 import { toggleFavorite } from "@/app/collections/actions";
 import { useI18n } from "@/components/i18n-provider";
+import { OptimisticToggleForm } from "@/components/optimistic-toggle-form";
 
 type CardColumnKey="front"|"back"|"kind"|"status"|"tags"|"markers"|"updated";
 const DEFAULT_COLUMNS:CardColumnKey[]=["front","back","kind","status","tags","markers","updated"];
