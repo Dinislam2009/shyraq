@@ -4,6 +4,7 @@ import {join} from "node:path";
 
 export type AnkiTemplate={
  id:string;name:string;frontTemplate:string;backTemplate:string;css:string;fields:string[];cloze:boolean;
+ sourceModelId:number;ord:number;
 };
 
 type ParsedCard={
@@ -71,22 +72,33 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
 
  const templates:AnkiTemplate[]=[];
  const warnings:string[]=[];
- const modelMeta=new Map<number,AnkiTemplate>();
+ const modelFields=new Map<number,string[]>();
+ const templateMeta=new Map<string,AnkiTemplate>();
 
  for(const [id,modelValue] of Object.entries(modelsRaw)){
   const model:any=modelValue;
+  const modelId=Number(id);
   const fieldNames=Array.isArray(model?.flds)?model.flds.map((field:any)=>String(field?.name||"Field")).filter(Boolean):[];
-  const firstTemplate=model?.tmpls?.[0]||{};
-  const frontTemplate=convertAnkiTemplate(String(firstTemplate?.qfmt||"{{front}}"));
-  const backTemplate=convertAnkiTemplate(String(firstTemplate?.afmt||"{{back}}"));
+  modelFields.set(modelId,fieldNames);
+  const sourceTemplates=Array.isArray(model?.tmpls)&&model.tmpls.length?model.tmpls:[{}];
   const css=String(model?.css||"");
-  const cloze=model?.type===1||/\{\{\s*cloze\s*:/i.test(String(firstTemplate?.qfmt||"")+" "+String(firstTemplate?.afmt||""));
-  const template={id:String(id),name:String(model?.name||"Anki template"),frontTemplate,backTemplate,css,fields:fieldNames,cloze};
-  templates.push(template);
-  modelMeta.set(Number(id),template);
-  if(css)warnings.push("Template "+template.name+" includes Anki CSS; Shyraq preserves it, but CSS parity may differ.");
-  if(/\{\{\s*[#^]/.test(String(firstTemplate?.qfmt||"")+" "+String(firstTemplate?.afmt||"")))warnings.push("Template "+template.name+" uses conditional sections that require compatibility review.");
-  if(/\{\{\s*[^}:]+\s*:\s*(?:text|cloze|hint)/i.test(String(firstTemplate?.qfmt||"")+" "+String(firstTemplate?.afmt||"")))warnings.push("Template "+template.name+" uses Anki filters; common text/cloze/hint filters are normalized.");
+  if(css)warnings.push("Template "+String(model?.name||"Anki template")+" includes Anki CSS; Shyraq preserves it, but CSS parity may differ.");
+
+  sourceTemplates.forEach((sourceTemplate:any,index:number)=>{
+   const ord=Number.isFinite(Number(sourceTemplate?.ord))?Number(sourceTemplate.ord):index;
+   const suffix=sourceTemplates.length>1?" • "+String(sourceTemplate?.name||("Template "+String(ord+1))):"";
+   const name=String(sourceTemplate?.name||String(model?.name||"Anki template")+suffix);
+   const frontRaw=String(sourceTemplate?.qfmt||"{{front}}");
+   const backRaw=String(sourceTemplate?.afmt||"{{back}}");
+   const frontTemplate=convertAnkiTemplate(frontRaw);
+   const backTemplate=convertAnkiTemplate(backRaw);
+   const cloze=model?.type===1||/\{\{\s*cloze\s*:/i.test(frontRaw+" "+backRaw);
+   const template={id:String(id)+":"+String(ord),name,frontTemplate,backTemplate,css,fields:fieldNames,cloze,sourceModelId:modelId,ord};
+   templates.push(template);
+   templateMeta.set(String(id)+":"+String(ord),template);
+   if(/\{\{\s*[#^]/.test(frontRaw+" "+backRaw))warnings.push("Template "+template.name+" uses conditional sections that require compatibility review.");
+   if(/\{\{\s*[^}:]+\s*:\s*(?:text|cloze|hint)/i.test(frontRaw+" "+backRaw))warnings.push("Template "+template.name+" uses Anki filters; common text/cloze/hint filters are normalized.");
+  });
  }
 
  const deckMap=new Map<number,{id:string;name:string;description:string;cards:ParsedCard[]}>();
@@ -105,14 +117,14 @@ export async function parseAnkiPackage(bytes:Uint8Array):Promise<ParsedAnki>{
   const note=notes.get(Number(row[1]));if(!note)continue;
   let deck=deckMap.get(Number(row[2]));
   if(!deck){deck={id:String(row[2]),name:"Imported deck",description:"Imported from Anki",cards:[]};deckMap.set(Number(row[2]),deck);}
-  const model=modelMeta.get(note.mid);
-  const fieldNames=model?.fields??[];
+  const template=templateMeta.get(String(note.mid)+":"+String(Number(row[3])))||templateMeta.get(String(note.mid)+":0");
+  const fieldNames=modelFields.get(note.mid)??template?.fields??[];
   const fields:Record<string,string>={};
   fieldNames.forEach((name,index)=>{fields[name]=parseField(note.fields[index]||"",media).text;});
   const front=parseField(note.fields[0]||"",media);
   const back=parseField(note.fields[1]||"",media);
   const mediaNames=[...new Set([...Object.values(fields).flatMap(value=>parseField(value,media).mediaNames),...front.mediaNames,...back.mediaNames])];
-  const kind=model?.cloze||/\{\{c\d+::/i.test(Object.values(fields).join(" "))?"cloze":"basic";
+  const kind=template?.cloze||/\{\{c\d+::/i.test(Object.values(fields).join(" "))?"cloze":"basic";
   deck.cards.push({
    front:front.text,back:back.text,fields,tags:note.tags,ord:Number(row[3]),due:Number(row[4]),interval:Number(row[5]),
    factor:Number(row[6]),reps:Number(row[7]),lapses:Number(row[8]),sourceCardId:Number(row[0]),modelId:note.mid,mediaNames,kind
