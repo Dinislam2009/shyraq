@@ -74,6 +74,11 @@ export async function GET(request:NextRequest){
    supabase.from("media").select("storage_path,mime_type,byte_size,created_at").eq("owner_id",user.id).order("created_at",{ascending:false}).limit(200)
   ]);
   if(deckError||cardError||templateError||tagError||collectionError)return NextResponse.json({error:deckError?.message||cardError?.message||templateError?.message||tagError?.message||collectionError?.message||"Bootstrap failed."},{status:500});
+  const reviewCardIds=(cards??[]).map(card=>card.id).filter(Boolean);
+  const {data:reviewStates,error:reviewStateError}=reviewCardIds.length?await supabase.from("review_states").select("id,user_id,card_id,queue,state_data,due_at,last_reviewed_at,reps,lapses,stability,difficulty,scheduled_days").eq("user_id",user.id).in("card_id",reviewCardIds):{data:[],error:null};
+  if(reviewStateError)return NextResponse.json({error:reviewStateError.message},{status:500});
+  const {data:reviewPreferences,error:reviewPreferencesError}=await supabase.from("review_preferences").select("desired_retention,maximum_interval,learning_steps,relearning_steps,enable_fuzz,enable_short_term,rating_labels,rating_order,show_keyboard_hints,swipe_enabled,rating_styles,accessibility,session_defaults,scheduler_profiles").eq("user_id",user.id).maybeSingle();
+  if(reviewPreferencesError)return NextResponse.json({error:reviewPreferencesError.message},{status:500});
   const collectionIds=(collections??[]).map(collection=>collection.id).filter(Boolean);
   let collectionCardRows:{collection_id:string;card_id:string;created_at:string}[]=[];
   if(collectionIds.length){
@@ -85,7 +90,7 @@ export async function GET(request:NextRequest){
    const {data}=await supabase.storage.from("user-media").createSignedUrl(item.storage_path,900);
    return {...item,signed_url:data?.signedUrl||null};
   }));
-  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],templates:templates??[],tags:tags??[],collections:collections??[],collectionCards:collectionCardRows,media:mediaWithUrls});
+  return NextResponse.json({user_id:user.id,decks:decks??[],cards:cards??[],templates:templates??[],tags:tags??[],collections:collections??[],collectionCards:collectionCardRows,reviewStates:reviewStates??[],reviewPreferences:reviewPreferences??null,media:mediaWithUrls});
  }
  const {data,error}=await supabase.from("sync_changes").select("cursor,event_key,entity_type,entity_id,operation,payload,occurred_at").eq("user_id",user.id).gt("cursor",since).order("cursor",{ascending:true}).limit(500);
  if(error)return NextResponse.json({error:error.message},{status:500});
