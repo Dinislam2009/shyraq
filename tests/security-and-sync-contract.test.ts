@@ -47,3 +47,26 @@ test("all SECURITY DEFINER functions pin search_path and deny public/anonymous e
   assert.match(schema,new RegExp("revoke all on function "+name.replace(/\\./g,"\\\\.")+"\\\\([^;]*\\) from public,anon","i"));
  }
 });
+
+test("API routes keep an explicit authentication gate unless intentionally public",()=>{
+ const apiRoot=new URL("../src/app/api",import.meta.url);
+ const publicRoutes=new Set(["auth/login/route.ts","auth/signup/route.ts","auth/oauth/[provider]/route.ts","health/route.ts","telemetry/client-error/route.ts"]);
+ const secretProtectedRoutes=new Set(["cron/backups/route.ts"]);
+ const walk=(prefix=""):string[]=>{
+  const url=new URL(prefix?`../src/app/api/${prefix}`:"../src/app/api",import.meta.url);
+  const out:string[]=[];
+  for(const entry of readdirSync(url,{withFileTypes:true})){
+   const next=prefix?prefix+"/"+entry.name:entry.name;
+   if(entry.isDirectory())out.push(...walk(next));
+   else if(entry.isFile()&&entry.name==="route.ts")out.push(next);
+  }
+  return out;
+ };
+ for(const route of walk()){
+  if(publicRoutes.has(route)||secretProtectedRoutes.has(route))continue;
+  const source=readFileSync(new URL("../src/app/api/"+route,import.meta.url),"utf8");
+  assert.match(source,/auth\.getUser\(\)|getCurrentUser\(\)/,route+" must authenticate the caller");
+ }
+ const cron=readFileSync(new URL("../src/app/api/cron/backups/route.ts",import.meta.url),"utf8");
+ assert.match(cron,/authorization/i);
+});
