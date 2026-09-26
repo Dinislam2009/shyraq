@@ -3,6 +3,8 @@
 **Shyraq** — modern, universal, offline-first flashcard and spaced-repetition platform for students, university learners, language learners, exam preparation, professionals, and anyone who learns through repetition.
 
 The product is designed around one principle: **the complete product is available to every user**. There is no AI, no subscription, no Premium/Pro tier, no artificial feature lock, and no gamification requirement.
+> **Status note (source-audited):** A checked item means the feature has a working implementation in the repository at a functional/foundation level. An unchecked item means the feature is not fully implemented or still needs production hardening. The repository source code, not this README, is the source of truth.
+
 
 ---
 
@@ -73,7 +75,7 @@ Create a stable technical foundation before adding advanced product features.
 - [x] GitHub source control
 - [x] GitHub Actions CI
 - [x] Vercel deployment integration
-- [x] Generated database types
+- [ ] Generated database types fully synchronized with the current schema (legacy generated models remain; application code does not depend on this file)
 - [x] Database schema kept in the repository
 - [x] RLS-based database security
 - [x] Private media bucket
@@ -149,7 +151,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Invite cancellation/revocation UI
 - [x] Workspace activity/audit log
 - [x] Workspace-level settings
-- [x] Workspace member search/filter
+- [ ] Workspace member search/filter
 - [x] Fine-grained per-deck permissions UI
 
 ## Workspace switching
@@ -200,11 +202,11 @@ Shyraq supports both individual and collaborative learning.
 - [x] Favorites
 - [x] Marked cards
 - [x] Suspended cards
-- [x] Nested/tag hierarchy
+- [ ] Nested/tag hierarchy
 - [x] Saved filters
 - [x] Smart collections
 - [x] Custom deck sorting
-- [x] Drag-and-drop organization
+- [ ] Drag-and-drop deck/card organization (block-level drag-and-drop editing is implemented)
 
 ---
 
@@ -389,7 +391,7 @@ Offline functionality is a core requirement, not an optional enhancement.
 - [x] Cached review sessions
 - [x] Device ID
 - [x] Pending event status
-- [x] Full local mirror of decks/cards
+- [ ] Full local mirror of decks/cards across personal and shared workspaces (current mirror covers the main offline paths but is not fully bidirectional/shared-workspace complete)
 - [ ] Full cold-start offline application
 - [x] Offline card creation
 - [x] Offline card editing
@@ -495,7 +497,7 @@ Target:
 - [ ] Cloze/template edge-case compatibility
 - [x] Import validation/diff report
 - [x] Large collection performance optimization
-- [x] Import progress UI
+- [ ] Server-backed import progress UI for long-running imports
 - [ ] Import recovery after interrupted upload
 
 Shyraq should maximize Anki compatibility while explicitly avoiding the claim that every internal Anki implementation detail is identical to FSRS/Shyraq.
@@ -528,7 +530,7 @@ Shyraq should maximize Anki compatibility while explicitly avoiding the claim th
 - [ ] Scheduled automatic backup versions
 - [x] Backup history UI
 - [x] One-click restore
-- [x] Restore preview
+- [ ] Restore preview with a complete pre-restore change summary
 - [x] Restore conflict detection
 - [x] Selective restore
 - [x] Backup integrity checksum
@@ -590,7 +592,7 @@ Target principle:
 - [x] Tag display
 - [x] Tag manager
 - [x] Rename tag globally
-- [x] Merge tags
+- [ ] Merge tags
 - [x] Delete tags
 - [x] Tag hierarchy
 - [x] Tag usage statistics
@@ -637,7 +639,7 @@ Public sharing is a major Shyraq feature.
 - [x] Sort by recent
 - [x] Sort by popularity
 - [x] Search ranking
-- [x] Featured collections
+- [ ] Featured public collection discovery/curation workflow
 
 ## Public deck actions
 
@@ -684,7 +686,7 @@ If a local edit conflicts with an author update:
 - [x] Creator statistics
 - [x] Creator collections
 - [x] Creator activity controls
-- [x] Block/mute creator
+- [ ] Block/mute creator
 - [x] Community moderation/report history
 
 ---
