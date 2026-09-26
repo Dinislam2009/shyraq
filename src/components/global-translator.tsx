@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import { useI18n } from "@/components/i18n-provider";
 
 import {extendedTranslations} from "@/lib/i18n-catalog";
+
+type TranslationLookup=Record<string,{kk:string;ru:string;en:string}>;
+const translationLookup=extendedTranslations as TranslationLookup;
 function normalize(s: string) { return s.replace(/\s+/g, " ").trim(); }
 
 function dynamicTranslation(raw: string, locale: "kk" | "ru" | "en") {
@@ -32,28 +35,28 @@ export function GlobalTranslator() {
       const raw = normalize(node.textContent || "");
       if (!raw) return;
       const key = reverse.get(raw);
-      const next = key ? extendedTranslations[key][locale] : dynamicTranslation(raw, locale);
+      const next = key ? translationLookup[key][locale] : dynamicTranslation(raw, locale);
       if (next && node.textContent !== next) node.textContent = next;
     };
 
     const translateRoot = (root: ParentNode) => {
       if (typeof Element !== "undefined" && (root as unknown) instanceof Element) { const rootElement = root as Element;
         const key = rootElement.getAttribute("data-shyraq-i18n");
-        if (key && extendedTranslations[key]) rootElement.textContent = extendedTranslations[key][locale];
+        if (key && translationLookup[key]) rootElement.textContent = translationLookup[key][locale];
       }
       const selector = "[data-shyraq-i18n],input[placeholder],textarea[placeholder]";
       root.querySelectorAll?.(selector).forEach(node => {
         const element = node as HTMLElement & HTMLInputElement;
         if (element.hasAttribute("data-shyraq-i18n")) {
           const key = element.getAttribute("data-shyraq-i18n");
-          if (key && extendedTranslations[key]) element.textContent = extendedTranslations[key][locale];
+          if (key && translationLookup[key]) element.textContent = translationLookup[key][locale];
         }
         if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
           const raw = element.getAttribute("data-shyraq-placeholder") || element.getAttribute("placeholder") || "";
           const key = reverse.get(raw);
           if (key) {
             element.setAttribute("data-shyraq-placeholder", key);
-            element.setAttribute("placeholder", extendedTranslations[key][locale]);
+            element.setAttribute("placeholder", translationLookup[key][locale]);
           }
         }
       });
