@@ -19,7 +19,7 @@ test("SM-2 scheduler creates interval/ease state",()=>{
 });
 
 test("SM-2 easy advances faster than good",()=>{
- const card=createSchedulerCard("sm2");
+ const card=createSchedulerCard("sm2") as unknown as Record<string,unknown>;
  const good=scheduleReview(card,"good",{engine:"sm2"});
  const easy=scheduleReview(card,"easy",{engine:"sm2"});
  assert.ok(Number(easy.card.intervalDays)>Number(good.card.intervalDays));
