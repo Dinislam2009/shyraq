@@ -494,7 +494,7 @@ Target:
 - [ ] Exact Anki template engine compatibility
 - [ ] Exact Anki card styling compatibility
 - [ ] Exact Anki scheduling-state compatibility
-- [ ] Cloze/template edge-case compatibility
+- [x] Cloze/template edge-case compatibility (renderer/import contract and edge-case tests covered; exact Anki parity remains separate)
 - [x] Import validation/diff report
 - [x] Large collection performance optimization
 - [x] Server-backed import progress UI for long-running imports
@@ -843,6 +843,8 @@ Target supported languages:
 - [x] Persistent language preference across devices
 - [x] Locale-aware dates/numbers
 - [ ] Translation QA
+
+> Translation coverage is partially hardened: shared server/client catalogs now cover core navigation, auth headings, and CardEditor UI directly; the legacy DOM translation bridge remains for broader legacy UI coverage, so full production translation QA is still open.
 
 ---
 
