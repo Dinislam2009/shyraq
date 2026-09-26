@@ -261,3 +261,22 @@ Final sign-off тек:
 - Source-та бірнеше silent DB error handling мәселесі табылып түзетілді.
 - Сол fixes-ке regression tests қосылды.
 
+
+## 10. MEDIUM — Review queue fixed 5000-row cap
+
+**Status:** OPEN — FIX IN PROGRESS  
+**Priority:** MEDIUM  
+**Detected:** 2026-09-26
+
+### Мәселе
+`src/lib/supabase/queries.ts` ішінде `getReviewBatch()` және `getReviewCard()` `review_states` үшін тек алғашқы 5000 `card_id`-ді алады.
+
+5000-нан көп review state болған жағдайда бұдан кейінгі бұрын-reviewed cards жаңа card ретінде қайта таңдалуы мүмкін.
+
+### Қажет әрекет
+Review state IDs pagination арқылы толық оқылып, fixed 5000 cap алынып тасталуы керек.
+
+### Қайта тексеру
+- unit/contract test;
+- CI;
+- large-deck review smoke test.
