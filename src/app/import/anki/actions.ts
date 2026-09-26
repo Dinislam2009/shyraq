@@ -73,7 +73,7 @@ export async function importAnki(formData:FormData):Promise<void>{
  try{
   const mediaPaths=await uploadImportedMedia(supabase,user.id,workspace.id,parsed.mediaFiles,uploadedPaths);
   const sourceToImported=new Map<number,string>();
-  const templateIdsByModel=new Map<string,string>();
+  const templateIdsByKey=new Map<string,string>();
   let imported=0;
 
   for(const sourceDeck of parsed.decks){
@@ -84,12 +84,12 @@ export async function importAnki(formData:FormData):Promise<void>{
    if(deckError||!deck)throw new Error(deckError?.message||"Unable to create imported deck.");
    createdDeckIds.push(deck.id);
 
-   const modelIds=[...new Set(sourceDeck.cards.map(card=>String(card.modelId)))];
-   const relevantTemplates=parsed.templates.filter(template=>modelIds.includes(template.id));
+   const modelIds=[...new Set(sourceDeck.cards.map(card=>String(card.modelId))];
+   const relevantTemplates=parsed.templates.filter(template=>modelIds.includes(String(template.sourceModelId)));
    for(const sourceTemplate of relevantTemplates){
     const {data:template,error:templateError}=await supabase.from("card_templates").insert(templateRecord(sourceTemplate,deck.id)).select("id").single();
     if(templateError||!template)throw new Error(templateError?.message||"Unable to create imported card template.");
-    templateIdsByModel.set(deck.id+":"+sourceTemplate.id,template.id);
+    templateIdsByKey.set(deck.id+":"+String(sourceTemplate.sourceModelId)+":"+String(sourceTemplate.ord),template.id);
    }
 
    const rows=sourceDeck.cards.map((card,index)=>{
@@ -105,7 +105,7 @@ export async function importAnki(formData:FormData):Promise<void>{
     return {
      deck_id:deck.id,owner_id:user.id,kind:card.kind,
      content:{front,back,tags:card.tags,fields,mediaItems,anki:{sourceCardId:card.sourceCardId,sourceModelId:card.modelId,ord:card.ord,due:card.due,interval:card.interval,reps:card.reps,lapses:card.lapses,factor:card.factor}},
-     template_id:templateIdsByModel.get(deck.id+":"+String(card.modelId))||null,
+     template_id:templateIdsByKey.get(deck.id+":"+String(card.modelId)+":"+String(card.ord))||templateIdsByKey.get(deck.id+":"+String(card.modelId)+":0")||null,
      sort_order:index
     };
    });
