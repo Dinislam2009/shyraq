@@ -79,3 +79,13 @@ test("collection-card relations are mirrored with a stable composite key",()=>{
  assert.match(sync,/function mapCollectionCard/);
  assert.match(sync,/collectionId\+":\"\+cardId/);
 });
+
+
+test("large image uploads use client-side compression",()=>{
+ const editor=readFileSync(new URL("../src/components/card-editor.tsx",import.meta.url),"utf8");
+ const input=readFileSync(new URL("../src/components/compressed-image-input.tsx",import.meta.url),"utf8");
+ assert.match(editor,/CompressedImageInput/);
+ assert.match(input,/image\/webp/);
+ assert.match(input,/1024\*1024/);
+ assert.match(input,/DataTransfer/);
+});
