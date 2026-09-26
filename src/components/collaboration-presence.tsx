@@ -22,7 +22,6 @@ const normalizeRole=(value:unknown):PresenceEntry["role"]=>{
 
 export function CollaborationPresence({deckId,userId,displayName,role}:{deckId:string;userId:string;displayName:string;role:string}){
  const [members,setMembers]=useState<PresenceEntry[]>([]);
- const channelRef=useRef<ReturnType<ReturnType<typeof createClient>["channel"]>|null>(null);
  const localPresence=useRef<PresenceEntry>({userId,displayName:displayName||"Member",role:normalizeRole(role),joinedAt:Date.now()});
  const {t}=useI18n();
 
@@ -33,10 +32,9 @@ export function CollaborationPresence({deckId,userId,displayName,role}:{deckId:s
  useEffect(()=>{
   const supabase=createClient();
   const channel=supabase.channel("shyraq-presence-"+deckId,{config:{presence:{key:userId}}});
-  channelRef.current=channel;
 
   const sync=()=>{
-   const state=channel.presenceState<PresenceEntry>();
+   const state=channel.presenceState() as Record<string,PresenceEntry[]>;
    const next=Object.values(state).flatMap(entries=>entries.map(entry=>({
     userId:String(entry.userId||""),
     displayName:String(entry.displayName||"Member"),
@@ -70,7 +68,6 @@ export function CollaborationPresence({deckId,userId,displayName,role}:{deckId:s
   window.addEventListener("shyraq:editor-presence",onEditorPresence);
   return()=>{
    window.removeEventListener("shyraq:editor-presence",onEditorPresence);
-   channelRef.current=null;
    void supabase.removeChannel(channel);
   };
  },[deckId,userId]);
