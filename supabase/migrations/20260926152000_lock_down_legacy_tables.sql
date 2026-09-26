@@ -19,6 +19,10 @@ begin
     'users',
     'sync_operations'
   ] loop
+    if to_regclass(format('public.%I', table_name)) is null then
+      continue;
+    end if;
+
     execute format('alter table public.%I enable row level security', table_name);
     for policy_name in
       select policyname
