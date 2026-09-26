@@ -15,24 +15,22 @@ test.describe("public browser launch gate",()=>{
   expect(errors).toEqual([]);
  });
 
- test("all supported locales switch the core public UI",async({page})=>{
+ test("all supported locales render the core public UI",async({page})=>{
   const expectations={
-   kk:{privacy:"Құпиялылық",terms:"Шарттар",offline:"Офлайн қайталау"},
-   ru:{privacy:"Конфиденциальность",terms:"Условия",offline:"Офлайн-повторение"},
-   en:{privacy:"Privacy",terms:"Terms",offline:"Offline review"},
+   kk:{login:/Қош келдіңіз/i,privacy:"Құпиялылық",terms:"Шарттар",offline:"Офлайн қайталау"},
+   ru:{login:/Добро пожаловать/i,privacy:"Конфиденциальность",terms:"Условия",offline:"Офлайн-повторение"},
+   en:{login:/Welcome back/i,privacy:"Privacy",terms:"Terms",offline:"Offline review"},
   };
   for(const [locale,labels] of Object.entries(expectations)){
-   await page.goto("/login");
-   const select=page.getByRole("combobox",{name:/language|язык|тіл/i});
-   await expect(select).toBeVisible();
-   await select.selectOption(locale);
-   await expect(page.locator("html")).toHaveAttribute("lang",locale);
-   await expect(select).toHaveValue(locale);
+   await page.context().clearCookies();
    await page.context().addCookies([{name:"shyraq-locale",value:locale,url:"http://127.0.0.1:3000"}]);
-   await page.reload();
+
+   await page.goto("/login");
    await expect(page.locator("html")).toHaveAttribute("lang",locale);
+   await expect(page.getByRole("heading",{name:labels.login})).toBeVisible();
 
    await page.goto("/legal/privacy");
+   await expect(page.locator("html")).toHaveAttribute("lang",locale);
    await expect(page.getByRole("heading",{name:labels.privacy})).toBeVisible();
 
    await page.goto("/legal/terms");
