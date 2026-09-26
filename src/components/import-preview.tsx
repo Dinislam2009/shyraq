@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { unzipSync } from "fflate";
 import { importCards } from "@/app/import/actions";
+import { ImportJobProgress } from "@/components/import-job-progress";
 import { duplicateKey, parseStandardText, validateImportRows, type ImportRow } from "@/lib/import/standard";
 
 export function ImportPreview({ initialError }: { initialError?: string }) {
@@ -15,6 +16,9 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
   const [backupDecks, setBackupDecks] = useState<Array<{id:string;name:string;cards:number}>>([]);
   const [selectedDecks, setSelectedDecks] = useState<string[]>([]);
   const [conflictMode, setConflictMode] = useState<"duplicate"|"skip">("duplicate");
+  const [largeStandard, setLargeStandard] = useState(false);
+  const [jobStarting,setJobStarting]=useState(false);
+  const [jobError,setJobError]=useState("");
 
   const duplicates = useMemo(() => {
     const seen = new Set<string>();
@@ -39,6 +43,16 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
     if (!next) return;
     const lower = next.name.toLowerCase();
     try {
+      setLargeStandard(false);
+      const isZip=lower.endsWith(".zip");
+      if(!isZip&&next.size>5*1024*1024){
+        const head=await next.slice(0,64*1024).text();
+        if(!head.includes("shyraq-backup-v2")){
+          setLargeStandard(true);
+          setReady(true);
+          return;
+        }
+      }
       let sourceText = "";
       if (lower.endsWith(".zip")) {
         const archive = unzipSync(new Uint8Array(await next.arrayBuffer()));
@@ -79,7 +93,7 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
   return (
     <div className="space-y-6">
       {initialError && <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">{initialError}</div>}
-      <form action={importCards} className="rounded-2xl border border-black/[0.06] bg-white p-6">
+      <ImportJobProgress />\n      <form action={importCards} onSubmit={async event=>{\n        if(largeStandard || rows.length>500){\n          event.preventDefault();\n          setJobStarting(true);setJobError("");\n          try{\n            const formData=new FormData(event.currentTarget);\n            const response=await fetch("/api/import/jobs",{method:"POST",body:formData});\n            const data=await response.json() as {jobId?:string;error?:string};\n            if(!response.ok||!data.jobId)throw new Error(data.error||"Unable to start import job.");\n            localStorage.setItem("shyraq:import-job",data.jobId);\n            window.location.reload();\n          }catch(error){setJobError(error instanceof Error?error.message:"Unable to start import job.");}finally{setJobStarting(false);}\n        }\n      }} className="rounded-2xl border border-black/[0.06] bg-white p-6">
         <label className="block">
           <span className="text-sm font-semibold">Choose import file</span>
           <input name="file" required type="file" accept=".json,.csv,.tsv,.txt,.zip,text/csv,application/json,application/zip,text/plain" onChange={event => void selectFile(event.target.files?.[0] || null)} className="mt-3 block w-full rounded-xl border border-slate-200 p-3 text-sm"/>
@@ -133,7 +147,7 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
         {backupDecks.length > 0 && <div className="mt-4 rounded-2xl border border-slate-200 p-4"><p className="text-sm font-semibold">Deck name conflicts</p><p className="mt-1 text-xs text-slate-500">If a restored deck has the same name as an existing deck, choose whether to keep it as a separate restored copy or skip that deck.</p><select value={conflictMode} onChange={event => setConflictMode(event.target.value as "duplicate"|"skip")} className="mt-3 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="duplicate">Create separate restored copy</option><option value="skip">Skip conflicting deck</option></select></div>}
         <input type="hidden" name="conflict_mode" value={conflictMode} />
         {file && file.name.toLowerCase().endsWith(".zip") && <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">ZIP integrity is checksum-verified on the server and restore rolls back newly created data if an import step fails.</div>}
-        {parseError && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{parseError}</div>}
+        {parseError && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{parseError}</div>}{jobError && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{jobError}</div>}
 
         <div className="mt-5 rounded-2xl border border-slate-200 p-4">
           <p className="text-sm font-semibold">Duplicate handling</p>
@@ -151,8 +165,8 @@ export function ImportPreview({ initialError }: { initialError?: string }) {
 
         <input type="hidden" name="duplicate_mode" value={mode} />
         <input type="hidden" name="preview_confirmed" value={ready ? "1" : "0"} />
-        <button disabled={disabled} className="mt-5 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
-          {file?.name.toLowerCase().endsWith(".zip") ? "Restore backup" : "Import cards"}
+        <button disabled={disabled||jobStarting} className="mt-5 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+          {file?.name.toLowerCase().endsWith(".zip") ? "Restore backup" : (largeStandard||rows.length>500 ? (jobStarting?"Starting server job…":"Start resumable import") : "Import cards")}
         </button>
       </form>
     </div>
