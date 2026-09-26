@@ -561,6 +561,38 @@ returns boolean language sql security definer set search_path=public,private as 
 $$;
 
 create or replace function private.touch_deck_updated_at() returns trigger language plpgsql set search_path=public,private as $shyraq$ begin update public.decks set updated_at=now() where id=coalesce(new.deck_id,old.deck_id); return coalesce(new,old); end $shyraq$;
+create or replace function private.sync_public_profile() returns trigger
+language plpgsql
+security definer
+set search_path=public,private
+as $shyraq$
+begin
+ if tg_op='DELETE' then
+  delete from public.public_profiles where id=old.id;
+  return old;
+ end if;
+ insert into public.public_profiles(
+  id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers
+ ) values (
+  new.id,new.username,new.display_name,new.bio,new.avatar_url,new.created_at,new.show_activity,new.show_followers
+ )
+ on conflict(id) do update set
+  username=excluded.username,
+  display_name=excluded.display_name,
+  bio=excluded.bio,
+  avatar_url=excluded.avatar_url,
+  created_at=excluded.created_at,
+  show_activity=excluded.show_activity,
+  show_followers=excluded.show_followers;
+ return new;
+end;
+$shyraq$;
+revoke all on function private.sync_public_profile() from public,anon,authenticated;
+drop trigger if exists sync_public_profile on public.profiles;
+create trigger sync_public_profile
+after insert or update or delete on public.profiles
+for each row execute function private.sync_public_profile();
+
 
 create or replace function private.touch_updated_at() returns trigger language plpgsql set search_path=public,private as $shyraq$ begin new.updated_at=now(); return new; end $shyraq$;
 do $$ declare t text; begin
@@ -703,14 +735,24 @@ create policy profiles_self_insert on public.profiles for insert to authenticate
 create policy profiles_self_update on public.profiles for update to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
 create policy profiles_self_delete on public.profiles for delete to authenticated using(id=(select auth.uid()));
 
--- Public creator identity is exposed through a dedicated view so private account
--- settings stay inaccessible to other callers. The view deliberately projects
--- only fields intended to be public; private profile columns remain excluded.
-create or replace view public.public_profiles with (security_barrier=true) as
-select id,username,display_name,bio,avatar_url,created_at,show_activity,show_followers
-from public.profiles;
+-- Public creator identity is stored in a dedicated projection table so only
+-- explicitly public profile fields are exposed to anon/authenticated callers.
+create table if not exists public.public_profiles (
+ id uuid primary key references public.profiles(id) on delete cascade,
+ username text unique,
+ display_name text,
+ bio text,
+ avatar_url text,
+ created_at timestamptz not null,
+ show_activity boolean not null default true,
+ show_followers boolean not null default true
+);
+alter table public.public_profiles enable row level security;
 revoke all on public.public_profiles from anon,authenticated;
 grant select on public.public_profiles to anon,authenticated;
+drop policy if exists public_profiles_public_select on public.public_profiles;
+create policy public_profiles_public_select on public.public_profiles
+for select to anon,authenticated using (true);
 
 
 drop policy if exists workspace_member_read on public.workspaces;
