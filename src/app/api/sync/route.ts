@@ -74,7 +74,7 @@ export async function GET(request:NextRequest){
   if(!workspaceIds.length)return NextResponse.json({decks:[],cards:[],media:[]});
   let decks:Record<string,unknown>[]=[];
   try{
-   decks=await fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).range(...rangeFrom));
+   decks=await fetchAll<Record<string,unknown>>((from,to)=>supabase.from("decks").select("id,workspace_id,owner_id,name,description,visibility,settings,created_at,updated_at").in("workspace_id",workspaceIds).order("updated_at",{ascending:false}).range(from,to));
   }catch(error){
    return NextResponse.json({error:error instanceof Error?error.message:"Bootstrap failed."},{status:500});
   }
@@ -82,28 +82,28 @@ export async function GET(request:NextRequest){
   try{
    const [cards,templates,tags,collections,media]=await Promise.all([
     deckIds.length
-     ? fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).range(...rangeFrom))
+     ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("cards").select("id,deck_id,template_id,owner_id,kind,content,sort_order,is_suspended,is_marked,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).range(from,to))
      : Promise.resolve([]),
     deckIds.length
-     ? fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("card_templates").select("id,deck_id,name,front_template,back_template,css,field_schema,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).range(...rangeFrom))
+     ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("card_templates").select("id,deck_id,name,front_template,back_template,css,field_schema,created_at,updated_at").in("deck_id",deckIds).order("updated_at",{ascending:false}).range(from,to))
      : Promise.resolve([]),
     workspaceIds.length
-     ? fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("tags").select("id,workspace_id,name").in("workspace_id",workspaceIds).order("name").range(...rangeFrom))
+     ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("tags").select("id,workspace_id,name").in("workspace_id",workspaceIds).order("name").range(from,to))
      : Promise.resolve([]),
     workspaceIds.length
-     ? fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("collections").select("id,workspace_id,owner_id,name,description,kind,rule,sort_mode,is_public,is_featured,created_at").in("workspace_id",workspaceIds).order("created_at",{ascending:false}).range(...rangeFrom))
+     ? fetchAll<Record<string,unknown>>((from,to)=>supabase.from("collections").select("id,workspace_id,owner_id,name,description,kind,rule,sort_mode,is_public,is_featured,created_at").in("workspace_id",workspaceIds).order("created_at",{ascending:false}).range(from,to))
      : Promise.resolve([]),
-    fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("media").select("workspace_id,owner_id,storage_path,mime_type,byte_size,created_at").in("workspace_id",workspaceIds).order("created_at",{ascending:false}).range(...rangeFrom))
+    fetchAll<Record<string,unknown>>((from,to)=>supabase.from("media").select("workspace_id,owner_id,storage_path,mime_type,byte_size,created_at").in("workspace_id",workspaceIds).order("created_at",{ascending:false}).range(from,to))
    ]);
    const reviewCardIds=cards.map(card=>card.id).filter(Boolean);
    const reviewStates=reviewCardIds.length
-    ? await fetchAll<Record<string,unknown>>(rangeFrom=>supabase.from("review_states").select("id,user_id,card_id,queue,state_data,due_at,last_reviewed_at,reps,lapses,stability,difficulty,scheduled_days").eq("user_id",user.id).in("card_id",reviewCardIds).range(...rangeFrom))
+    ? await fetchAll<Record<string,unknown>>((from,to)=>supabase.from("review_states").select("id,user_id,card_id,queue,state_data,due_at,last_reviewed_at,reps,lapses,stability,difficulty,scheduled_days").eq("user_id",user.id).in("card_id",reviewCardIds).range(from,to))
     : [];
    const {data:reviewPreferences,error:reviewPreferencesError}=await supabase.from("review_preferences").select("desired_retention,maximum_interval,learning_steps,relearning_steps,enable_fuzz,enable_short_term,rating_labels,rating_order,show_keyboard_hints,swipe_enabled,rating_styles,accessibility,session_defaults,scheduler_profiles").eq("user_id",user.id).maybeSingle();
    if(reviewPreferencesError)throw new Error(reviewPreferencesError.message);
    const collectionIds=collections.map(collection=>collection.id).filter(Boolean);
    const collectionCardRows=collectionIds.length
-    ? await fetchAll<{collection_id:string;card_id:string;created_at:string}>(rangeFrom=>supabase.from("collection_cards").select("collection_id,card_id,created_at").in("collection_id",collectionIds).range(...rangeFrom))
+    ? await fetchAll<{collection_id:string;card_id:string;created_at:string}>((from,to)=>supabase.from("collection_cards").select("collection_id,card_id,created_at").in("collection_id",collectionIds).range(from,to))
     : [];
    const mediaWithUrls=await Promise.all(media.map(async item=>{
     const {data}=await supabase.storage.from("user-media").createSignedUrl(String(item.storage_path),900);
