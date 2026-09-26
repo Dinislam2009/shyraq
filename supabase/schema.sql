@@ -302,6 +302,19 @@ create table if not exists public.import_jobs (
  completed_at timestamptz
 );
 create index if not exists import_jobs_user_idx on public.import_jobs(user_id,created_at desc);
+create table if not exists public.backup_schedules (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references auth.users(id) on delete cascade,
+ frequency text not null default 'weekly' check(frequency in ('daily','weekly','monthly')),
+ enabled boolean not null default false,
+ next_run_at timestamptz,
+ last_run_at timestamptz,
+ last_error text,
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now(),
+ unique(user_id)
+);
+create index if not exists backup_schedules_due_idx on public.backup_schedules(enabled,next_run_at);
 create table if not exists public.backup_versions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -649,6 +662,7 @@ alter table public.creator_relations enable row level security;
 alter table public.deck_copies enable row level security;
 alter table public.deck_copy_update_history enable row level security;
 alter table public.backup_versions enable row level security;
+alter table public.backup_schedules enable row level security;
 alter table public.import_jobs enable row level security;
 
 alter table public.workspace_invitations enable row level security;
@@ -840,6 +854,10 @@ using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 drop policy if exists backup_versions_self on public.backup_versions;
 drop policy if exists import_jobs_self on public.import_jobs;
 create policy import_jobs_self on public.import_jobs for all to authenticated
+using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
+drop policy if exists backup_schedules_self on public.backup_schedules;
+create policy backup_schedules_self on public.backup_schedules for all to authenticated
 using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
 create policy backup_versions_self on public.backup_versions for all to authenticated
