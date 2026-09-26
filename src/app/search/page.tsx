@@ -25,7 +25,7 @@ export default async function SearchPage({searchParams}:{searchParams:Promise<Se
   query&&user&&type!=="decks"?supabase.from("cards").select("id,deck_id,kind,content").or("content->>front.ilike."+like+",content->>back.ilike."+like).limit(50):Promise.resolve({data:[]}),
   query&&user&&type!=="decks"?supabase.from("tags").select("id,name,workspace_id").ilike("name",like).limit(30):Promise.resolve({data:[]}),
   query&&user&&type!=="decks"?supabase.from("collections").select("id,name,kind,workspace_id").ilike("name",like).limit(30):Promise.resolve({data:[]}),
-  query&&type!=="decks"?supabase.from("profiles").select("id,username,display_name,bio").or("username.ilike."+like+",display_name.ilike."+like+",bio.ilike."+like).limit(30):Promise.resolve({data:[]}),
+  query&&type!=="decks"?supabase.from("public_profiles").select("id,username,display_name,bio").or("username.ilike."+like+",display_name.ilike."+like+",bio.ilike."+like).limit(30):Promise.resolve({data:[]}),
   user?supabase.from("saved_searches").select("id,name,query,filters,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(20):Promise.resolve({data:[]})
  ]);
  const visibleDecks=(decks??[]).filter((deck:any)=>(visibility==="all"||String(deck.visibility)===visibility)&&(!workspaceId||String(deck.workspace_id)===workspaceId));
