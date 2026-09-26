@@ -206,7 +206,7 @@ Shyraq supports both individual and collaborative learning.
 - [x] Saved filters
 - [x] Smart collections
 - [x] Custom deck sorting
-- [ ] Drag-and-drop deck/card organization (block-level drag-and-drop editing is implemented)
+- [x] Drag-and-drop deck/card organization (block-level and card/deck reordering are implemented)
 
 ---
 
@@ -299,7 +299,7 @@ Target editor:
 - [x] Saved table views
 - [x] Advanced filter builder
 - [x] Keyboard navigation
-- [ ] Bulk edit modal with all card fields
+- [x] Bulk edit modal with all card fields
 
 ## Card state
 
@@ -497,8 +497,8 @@ Target:
 - [ ] Cloze/template edge-case compatibility
 - [x] Import validation/diff report
 - [x] Large collection performance optimization
-- [ ] Server-backed import progress UI for long-running imports
-- [ ] Import recovery after interrupted upload
+- [x] Server-backed import progress UI for long-running imports
+- [x] Import recovery after interrupted upload
 
 Shyraq should maximize Anki compatibility while explicitly avoiding the claim that every internal Anki implementation detail is identical to FSRS/Shyraq.
 
