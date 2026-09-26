@@ -1,4 +1,4 @@
-import {createEmptyCard,fsrs,Rating,type Card as FsrsCard} from "ts-fsrs";
+import {createEmptyCard,fsrs,Rating,type Card as FsrsCard,type StepUnit} from "ts-fsrs";
 
 export type SchedulerEngine="fsrs"|"sm2";
 export type SchedulerPreferences={
@@ -18,6 +18,15 @@ export type ScheduledReview={
 };
 
 const ratingMap={again:Rating.Again,hard:Rating.Hard,good:Rating.Good,easy:Rating.Easy} as const;
+
+const DEFAULT_LEARNING_STEPS=["1m","10m"] as const satisfies readonly StepUnit[];
+const DEFAULT_RELEARNING_STEPS=["10m"] as const satisfies readonly StepUnit[];
+
+function normalizeSteps(values:string[]|undefined,fallback:readonly StepUnit[]):readonly StepUnit[]{
+ const valid=(values??[]).filter((step):step is StepUnit=>/^\\d+(?:m|h|d)$/.test(step));
+ return valid.length?valid:fallback;
+}
+
 
 function fsrsSchedule(card:FsrsCard,rating:keyof typeof ratingMap,now:Date,prefs:SchedulerPreferences):ScheduledReview{
  const scheduler=fsrs({
