@@ -1163,7 +1163,7 @@ begin
   if new.role='owner'::workspace_role and new.user_id is distinct from workspace_owner then
     raise exception 'only the workspace owner may have the owner role';
   end if;
-  if old.role='owner'::workspace_role and (new.user_id is distinct from old.user_id or new.role is distinct from old.role) then
+  if tg_op='UPDATE' and old.role='owner'::workspace_role and (new.user_id is distinct from old.user_id or new.role is distinct from old.role) then
     raise exception 'workspace owner role cannot be changed';
   end if;
   return new;
@@ -1173,7 +1173,7 @@ $shyraq$;
 revoke all on function private.prevent_workspace_owner_role_change() from public,anon,authenticated;
 drop trigger if exists workspace_owner_role_immutable on public.workspace_members;
 create trigger workspace_owner_role_immutable
-before update on public.workspace_members
+before insert or update on public.workspace_members
 for each row execute function private.prevent_workspace_owner_role_change();
 
 -- Shyraq collaboration realtime
