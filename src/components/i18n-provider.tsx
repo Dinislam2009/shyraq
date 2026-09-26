@@ -1,7 +1,7 @@
 "use client";
 
 import {createContext,useContext,useEffect,useMemo,useState,type ReactNode} from "react";
-import {dictionaries,type Locale,type TranslationKey} from "@/lib/i18n";
+import {type Locale,type TranslationKey,translateKey} from "@/lib/i18n";
 import {formatDate,formatDateTime,formatNumber} from "@/lib/i18n-format";
 
 type I18nContextValue={locale:Locale;setLocale:(locale:Locale)=>void;t:(key:TranslationKey)=>string;formatNumber:(value:number,options?:Intl.NumberFormatOptions)=>string;formatDate:(value:string|number|Date,options?:Intl.DateTimeFormatOptions)=>string;formatDateTime:(value:string|number|Date)=>string};
@@ -36,7 +36,7 @@ export function I18nProvider({children,initialLocale="en"}:{children:ReactNode;i
    })
    .then(remote=>{if(remote){setLocaleState(remote);window.localStorage.setItem("shyraq-locale",remote);}})
    .catch(()=>undefined);
- },[]);
+ },[initialLocale]);
 
  useEffect(()=>{
   window.localStorage.setItem("shyraq-locale",locale);
@@ -47,7 +47,7 @@ export function I18nProvider({children,initialLocale="en"}:{children:ReactNode;i
  const value=useMemo(()=>({
   locale,
   setLocale:(next:Locale)=>setLocaleState(next),
-  t:(key:TranslationKey)=>dictionaries[locale][key]??dictionaries.en[key],
+  t:(key:TranslationKey)=>translateKey(locale,key),
   formatNumber:(value:number,options?:Intl.NumberFormatOptions)=>formatNumber(value,locale,options),
   formatDate:(value:string|number|Date,options?:Intl.DateTimeFormatOptions)=>formatDate(value,locale,options),
   formatDateTime:(value:string|number|Date)=>formatDateTime(value,locale),
