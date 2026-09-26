@@ -3,7 +3,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {createSchedulerCard,scheduleReview,type SchedulerEngine} from "@/lib/scheduler";
 import {queueReview,syncReviews} from "@/lib/sync/client";
 import {undoReview} from "@/app/review/actions";
-import {getDeviceId,cacheReviewSession} from "@/lib/offline/store";
+import {getDeviceId,cacheReviewSession,upsertOfflineReviewState} from "@/lib/offline/store";
 import {useRouter} from "next/navigation";
 import {RichContent} from "@/components/rich-content";
 import {OccludedImage} from "@/components/image-occlusion";
@@ -72,6 +72,20 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
     relearningSteps:preferences.relearning_steps
    });
    const elapsedMs=Math.max(0,Date.now()-startedAt.current);
+   await upsertOfflineReviewState({
+    id:userId+":"+card.id,
+    userId,
+    cardId:card.id,
+    queue:String(result.card.state??"review"),
+    stateData:result.card as Record<string,unknown>,
+    dueAt:result.card.due?new Date(result.card.due).toISOString():null,
+    lastReviewedAt:new Date().toISOString(),
+    reps:Number(result.card.reps??0),
+    lapses:Number(result.card.lapses??0),
+    stability:result.card.stability===undefined?null:Number(result.card.stability),
+    difficulty:result.card.difficulty===undefined?null:Number(result.card.difficulty),
+    scheduledDays:Number(result.card.scheduled_days??0)
+   });
    await queueReview({
      id:crypto.randomUUID(),userId,cardId:card.id,deviceId:getDeviceId(),sequence:Date.now(),rating,
      elapsedMs,reviewedAt:new Date().toISOString(),previousState:previous as unknown as Record<string,unknown>,
