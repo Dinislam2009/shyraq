@@ -957,7 +957,7 @@ Legacy tables from the old project must remain isolated from the Shyraq applicat
 - [x] CI build verification
 - [ ] Full page performance audit
 - [ ] Bundle-size audit
-- [ ] Image optimization
+- [x] Image optimization
 - [ ] Large-deck virtualization
 - [ ] Large-card-list virtualization
 - [x] Large Anki import optimization
