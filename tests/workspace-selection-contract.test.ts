@@ -14,8 +14,9 @@ test("selected workspace repairs missing personal owner membership and surfaces 
 test("selected workspace fails closed on workspace/profile database errors",()=>{
  assert.match(source,/const \{data:profile,error:profileError\}=await supabase\.from\("profiles"\)/);
  assert.match(source,/if\(profileError\)return null/);
- assert.match(source,/const \{data:personal,error:personalError\}=await supabase\.from\("workspaces"\)/);
- assert.match(source,/if\(personalError\)return null/);
+ assert.match(source,/const personalResult=await supabase\.from\("workspaces"\)/);
+ assert.match(source,/if\(personalResult\.error\)return null/);
+ assert.match(source,/let personal=personalResult\.data/);
  assert.match(source,/const \{data:created,error:createError\}=await supabase\.from\("workspaces"\)\.upsert/);
  assert.match(source,/if\(createError\|\|!created\)return null/);
 });
