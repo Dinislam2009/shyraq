@@ -152,6 +152,51 @@ export async function createBulkCards(deckId:string,formData:FormData):Promise<v
  redirect("/decks/"+deckId+"?bulk_created="+toInsert.length+"&bulk_skipped="+skipped);
 }
 
+export async function bulkEditCards(deckId:string,cardIds:string[],formData:FormData):Promise<void>{
+ const supabase=await createClient();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect("/login");
+ const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
+ if(!deck)fail("/decks/"+deckId,"Deck not found.");
+ const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
+ if(!["owner","admin","editor"].includes(String(member?.role||"")))fail("/decks/"+deckId,"You do not have permission to edit this deck.");
+
+ const ids=[...new Set(cardIds)].filter(Boolean).slice(0,500);
+ if(!ids.length)fail("/decks/"+deckId,"Select at least one card.");
+
+ const {data:cards}=await supabase.from("cards").select("id,content").eq("deck_id",deckId).in("id",ids);
+ if(!cards?.length)fail("/decks/"+deckId,"Selected cards were not found.");
+
+ const applyFront=formData.get("apply_front")==="on";
+ const applyBack=formData.get("apply_back")==="on";
+ const applyTags=formData.get("apply_tags")==="on";
+ const applyMarkers=formData.get("apply_markers")==="on";
+ const applyStatus=formData.get("apply_status")==="on";
+ const front=String(formData.get("front")||"").slice(0,20000);
+ const back=String(formData.get("back")||"").slice(0,20000);
+ const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
+ const markers=String(formData.get("markers")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
+ const status=String(formData.get("status")||"").trim().slice(0,60);
+
+ if(!applyFront&&!applyBack&&!applyTags&&!applyMarkers&&!applyStatus)fail("/decks/"+deckId,"Choose at least one field to update.");
+
+ for(const card of cards){
+  const next={...(card.content&&typeof card.content==="object"?card.content:{})} as Record<string,unknown>;
+  if(applyFront)next.front=front;
+  if(applyBack)next.back=back;
+  if(applyTags)next.tags=tags;
+  if(applyMarkers)next.markers=markers;
+  if(applyStatus){
+   if(status)next.status=status;
+   else delete next.status;
+  }
+  const {error}=await supabase.from("cards").update({content:next}).eq("id",card.id).eq("deck_id",deckId);
+  if(error)fail("/decks/"+deckId,error.message);
+ }
+ revalidatePath("/decks/"+deckId);
+ redirect("/decks/"+deckId);
+}
+
 export async function createCard(deckId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();if(!deck)fail("/decks/"+deckId,"Deck not found.");
