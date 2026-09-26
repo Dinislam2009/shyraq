@@ -39,7 +39,7 @@ test("offline mirror includes card templates",()=>{
 
 test("offline storage usage counts templates independently",()=>{
  const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
- assert.match(store,/offlineStore\.cardTemplates\.count\(\),offlineStore\.tags\.count\(\),offlineStore\.collections\.count\(\),offlineStore\.collectionCards\.count\(\),offlineStore\.mutations\.count\(\)/);
+ assert.match(store,/offlineStore\.cardTemplates\.count\(\),offlineStore\.tags\.count\(\),offlineStore\.collections\.count\(\),offlineStore\.collectionCards\.count\(\),reviewStates,mutations/);
 });
 
 
@@ -48,7 +48,7 @@ test("offline bootstrap keeps templates in the local mirror",()=>{
  assert.ok(sync.includes("templates?:Record<string,unknown>[]"));
  assert.ok(sync.includes("(data.templates??[]).map(item=>mapTemplate(item,userId))"));
  assert.ok(sync.includes("data.collectionCards??[]"));
- assert.ok(sync.includes("return {userId,decks:data.decks??[],cards:data.cards??[],templates:data.templates??[],tags:data.tags??[],collections:data.collections??[],collectionCards:data.collectionCards??[]}"));
+ assert.ok(sync.includes("reviewStates:data.reviewStates??[]"));
 });
 
 
