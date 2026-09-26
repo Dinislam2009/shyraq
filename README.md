@@ -961,7 +961,7 @@ Legacy tables from the old project must remain isolated from the Shyraq applicat
 - [ ] Large-deck virtualization
 - [ ] Large-card-list virtualization
 - [ ] Large Anki import optimization
-- [ ] Large media backup optimization
+- [x] Large media backup optimization
 - [ ] Cold-start optimization
 - [ ] Offline cache optimization
 
@@ -1006,7 +1006,7 @@ Target:
 - [x] Unit tests for sync conflict logic
 - [x] Unit tests for permission logic
 - [x] Unit tests for deck update reconciliation
-- [ ] Database/RLS integration tests
+- [x] Database/RLS integration tests (env-gated Supabase integration suite)
 - [x] API tests
 
 ## End-to-end
