@@ -14,7 +14,7 @@ function dynamicTranslation(raw: string, locale: "kk" | "ru" | "en") {
   m = raw.match(/^(\d+) (reviews|қайталау|повторений)$/); if (m) return `${m[1]} ${locale === "kk" ? "қайталау" : locale === "ru" ? "повторений" : "reviews"}`;
   m = raw.match(/^(\d+) (responses recorded|жауап тіркелді|ответов записано)$/); if (m) return `${m[1]} ${locale === "kk" ? "жауап тіркелді" : locale === "ru" ? "ответов записано" : "responses recorded"}`;
   m = raw.match(/^(\d+) (min|мин)$/); if (m) return `${m[1]} ${locale === "kk" || locale === "ru" ? "мин" : "min"}`;
-  m = raw.match(/^(\d+) visible of (\d+)\\. Search, filter and edit without leaving the deck\\.$/); if (m) return locale === "kk" ? `${m[1]} көрінуде, барлығы ${m[2]}. Колодадан шықпай іздеңіз, сүзіңіз және өңдеңіз.` : locale === "ru" ? `${m[1]} отображается из ${m[2]}. Ищите, фильтруйте и редактируйте, не покидая колоду.` : raw;
+  m = raw.match(/^(\d+) visible of (\d+)\. Search, filter and edit without leaving the deck\.$/); if (m) return locale === "kk" ? `${m[1]} көрінуде, барлығы ${m[2]}. Колодадан шықпай іздеңіз, сүзіңіз және өңдеңіз.` : locale === "ru" ? `${m[1]} отображается из ${m[2]}. Ищите, фильтруйте и редактируйте, не покидая колоду.` : raw;
   return null;
 }
 
