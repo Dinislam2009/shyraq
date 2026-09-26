@@ -36,7 +36,17 @@ export async function createComment(deckId:string,formData:FormData){
   if(rows.length){
    await supabase.from("comment_mentions").upsert(rows,{onConflict:"comment_id,mentioned_user_id"});
    for(const row of rows){
-    await supabase.rpc("create_notification",{target_user:row.mentioned_user_id,notification_kind:"comment_mention",notification_title:"You were mentioned in a deck comment",notification_body:String(body).slice(0,300),notification_href:"/decks/"+deckId+"/collaboration",source_comment_id:comment.id});
+    const {error:notificationError}=await supabase.rpc("create_notification",{
+     target_user:row.mentioned_user_id,
+     notification_kind:"comment_mention",
+     notification_title:"You were mentioned in a deck comment",
+     notification_body:String(body).slice(0,300),
+     notification_href:"/decks/"+deckId+"/collaboration",
+     source_comment_id:comment.id
+    });
+    if(notificationError){
+     redirect("/decks/"+deckId+"/collaboration?error="+encodeURIComponent("Mention notification failed: "+notificationError.message));
+    }
    }
   }
  }
