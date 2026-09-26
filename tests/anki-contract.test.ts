@@ -31,10 +31,13 @@ test("Anki cloze imports preserve the card deletion index",()=>{
 
 
 test("Anki cloze hint and type filters are normalized consistently",()=>{
- const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
+ const engine=readFileSync(new URL("../src/lib/anki/template-engine.ts",import.meta.url),"utf8");
  const runner=readFileSync(new URL("../src/components/review-runner.tsx",import.meta.url),"utf8");
- assert.ok(parser.includes("cloze|text|hint|type|field"));
- assert.ok(runner.includes("(?:::[^}|]+)?"));
+ assert.ok(engine.includes('case "cloze"'));
+ assert.ok(engine.includes('case "hint"'));
+ assert.ok(engine.includes('case "type"'));
+ assert.ok(engine.includes("renderCloze"));
+ assert.ok(runner.includes('renderAnkiTemplate'));
 });
 
 
