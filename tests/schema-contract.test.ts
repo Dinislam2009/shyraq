@@ -5,6 +5,7 @@ import {readFileSync} from "node:fs";
 const schema=readFileSync(new URL("../supabase/schema.sql",import.meta.url),"utf8");
 const syncRoute=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
 const notificationHelper=readFileSync(new URL("../src/lib/supabase/notifications.ts",import.meta.url),"utf8");
+const collaborationActions=readFileSync(new URL("../src/app/decks/[id]/collaboration/actions.ts",import.meta.url),"utf8");
 
 function tableBlock(name:string){
  const match=schema.match(new RegExp("create table if not exists public\\."+name+" \\(([\\s\\S]*?)\\n\\);"));
@@ -74,4 +75,16 @@ test("backup restore stays inside current schema enums and collection metadata",
  assert.match(restore,/description:String\(collection\.description\|\|"\)/);
  assert.match(restore,/rule:collection\.rule/);
  assert.match(restore,/sort_mode:String\(collection\.sort_mode/);
+});
+
+
+test("public collections and their links have public read RLS",()=>{
+ assert.match(schema,/create policy collections_read[\s\S]*using\(is_public or private\.is_workspace_member/);
+ assert.match(schema,/create policy collection_cards_select[\s\S]*c\.is_public or private\.is_workspace_member/);
+ assert.match(schema,/create policy collection_cards_write[\s\S]*private\.is_workspace_member\(c\.workspace_id,'editor'\)/);
+});
+
+test("comment mention notifications surface RPC failures",()=>{
+ assert.match(collaborationActions,/const \{error:notificationError\}=await supabase\.rpc\("create_notification"/);
+ assert.match(collaborationActions,/if\(notificationError\)[\s\S]*Mention notification failed/);
 });
