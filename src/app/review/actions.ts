@@ -13,10 +13,10 @@ export async function submitReview(cardId:string,rating:(typeof ratingNames)[num
  const engine:"fsrs"|"sm2"=sessionDefaults.schedulerEngine==="sm2"?"sm2":"fsrs";
  const previous=revive(existing?.state_data);
  const result=scheduleReview(previous,rating,{engine,desiredRetention:Number(prefs?.desired_retention)||0.9,maximumInterval:Number(prefs?.maximum_interval)||36500,enableFuzz:prefs?.enable_fuzz!==false,enableShortTerm:prefs?.enable_short_term!==false,learningSteps:Array.isArray(prefs?.learning_steps)?prefs.learning_steps:["1m","10m"],relearningSteps:Array.isArray(prefs?.relearning_steps)?prefs.relearning_steps:["10m"]});
- const next=result.card; const eventKey=crypto.randomUUID();
+ const next=result.card; const due=next.due instanceof Date?next.due:new Date(String(next.due)); const eventKey=crypto.randomUUID();
  const {error:eventError}=await supabase.from("review_events").insert({event_key:eventKey,user_id:user.id,card_id:cardId,device_id:crypto.randomUUID(),reviewed_at:new Date().toISOString(),rating,elapsed_ms:elapsedMs,previous_state:previous,next_state:next,metadata:{scheduler:result.scheduler}});
  if(eventError)return {error:eventError.message};
- const {error:stateError}=await supabase.from("review_states").upsert({user_id:user.id,card_id:cardId,queue:Number(next.state||2)===2?"review":"learning",state_data:next,due_at:next.due.toISOString(),last_reviewed_at:new Date().toISOString(),reps:next.reps,lapses:next.lapses,stability:next.stability,difficulty:next.difficulty,scheduled_days:next.scheduled_days});
+ const {error:stateError}=await supabase.from("review_states").upsert({user_id:user.id,card_id:cardId,queue:Number(next.state||2)===2?"review":"learning",state_data:next,due_at:due.toISOString(),last_reviewed_at:new Date().toISOString(),reps:next.reps,lapses:next.lapses,stability:next.stability,difficulty:next.difficulty,scheduled_days:next.scheduled_days});
  if(stateError)return {error:stateError.message};
  revalidatePath("/review"); revalidatePath("/dashboard"); revalidatePath("/statistics"); return {ok:true};
 }
