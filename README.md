@@ -391,7 +391,7 @@ Offline functionality is a core requirement, not an optional enhancement.
 - [x] Cached review sessions
 - [x] Device ID
 - [x] Pending event status
-- [x] Full local mirror of decks/cards across personal and shared workspaces
+- [x] Full paginated local mirror of decks/cards across personal and shared workspaces
 - [x] Full cold-start offline application
 - [x] Offline card creation
 - [x] Offline card editing
@@ -413,7 +413,7 @@ Offline functionality is a core requirement, not an optional enhancement.
 - [x] Local pending event protection
 - [x] Retry behavior
 - [x] Background sync refinement
-- [x] Full bidirectional local database synchronization
+- [x] Full bidirectional local database synchronization (bootstrap is paginated to avoid fixed row caps)
 - [x] Better sync progress UI
 - [x] Sync health indicator
 - [x] Per-device sync history
@@ -1009,7 +1009,9 @@ Target:
 - [x] Database/RLS integration tests (env-gated Supabase integration suite)
 - [x] API tests
 
-## End-to-end
+## Functional flow coverage (implementation/integration)
+
+The checklist below records implemented product flows and automated contract/integration coverage. It is not a browser E2E suite; real browser/device E2E remains an explicit launch gate.
 
 - [x] Signup
 - [x] Login
@@ -1039,6 +1041,7 @@ Target:
 - [x] Dark mode verification
 - [ ] All three language verification
 - [ ] Console-error audit (browser execution required)
+- [ ] Browser E2E suite (Playwright or equivalent)
 - [x] Accessibility audit (AST-based CI audit)
 
 ---
@@ -1201,7 +1204,7 @@ Before calling Shyraq production-ready:
 - [x] Data deletion verified
 
 ### Security
-- [x] RLS audit complete
+- [x] RLS audit complete (source-level schema/policy hardening)
 - [x] Storage policy audit complete
 - [ ] Auth security audit complete (requires live Supabase Auth configuration review)
 - [ ] Leaked-password protection enabled (requires live Supabase Auth setting)
