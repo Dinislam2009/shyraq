@@ -297,7 +297,7 @@ export function GlobalTranslator() {
           const key = element.getAttribute("data-shyraq-i18n");
           if (key && translations[key]) element.textContent = translations[key][locale];
         }
-        if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+        if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
           const raw = element.getAttribute("data-shyraq-placeholder") || element.getAttribute("placeholder") || "";
           const key = reverse.get(raw);
           if (key) {
