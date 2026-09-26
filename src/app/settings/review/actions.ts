@@ -28,7 +28,9 @@ export async function updateReviewPreferences(formData:FormData):Promise<void>{
   reducedMotion:formData.get("reduced_motion")==="on",
   focusRing:formData.get("focus_ring")!=="off"
  };
+ const engine=String(formData.get("scheduler_engine")||"fsrs")==="sm2"?"sm2":"fsrs";
  const sessionDefaults={
+  schedulerEngine:engine,
   batchSize:Math.min(100,Math.max(1,Number(formData.get("session_batch")||20))),
   shuffle:formData.get("session_shuffle")==="on",
   autoRevealSeconds:Math.min(60,Math.max(0,Number(formData.get("auto_reveal_seconds")||0)))
@@ -36,7 +38,7 @@ export async function updateReviewPreferences(formData:FormData):Promise<void>{
  const profileName=String(formData.get("profile_name")||"").trim().slice(0,50);
  const {data:current}=await supabase.from("review_preferences").select("scheduler_profiles").eq("user_id",user.id).maybeSingle();
  const existingProfiles=Array.isArray(current?.scheduler_profiles)?current.scheduler_profiles:[];
- const profile={id:crypto.randomUUID(),name:profileName||"FSRS profile",engine:"fsrs",desired_retention:desiredRetention,maximum_interval:maximumInterval,learning_steps:steps(String(formData.get("learning_steps")||""),["1m","10m"]),relearning_steps:steps(String(formData.get("relearning_steps")||""),["10m"]),enable_fuzz:formData.get("enable_fuzz")==="on",enable_short_term:formData.get("enable_short_term")==="on"};
+ const profile={id:crypto.randomUUID(),name:profileName||(engine==="sm2"?"SM-2 profile":"FSRS profile"),engine,desired_retention:desiredRetention,maximum_interval:maximumInterval,learning_steps:steps(String(formData.get("learning_steps")||""),["1m","10m"]),relearning_steps:steps(String(formData.get("relearning_steps")||""),["10m"]),enable_fuzz:formData.get("enable_fuzz")==="on",enable_short_term:formData.get("enable_short_term")==="on"};
  const profileList=[...existingProfiles.filter((item:any)=>String(item?.name||"")!==profile.name).slice(-9),profile];
  const {error}=await supabase.from("review_preferences").upsert({
   user_id:user.id,
