@@ -1,7 +1,8 @@
 import {spawn} from "node:child_process";
 
 const port=process.env.SHYRAQ_SMOKE_PORT||"3100";
-const child=spawn(process.platform==="win32"?"npm.cmd":"npm",["start","--","-p",port],{stdio:["ignore","pipe","pipe"],env:{...process.env,NODE_ENV:"production"}});
+const nextBin=new URL("../node_modules/next/dist/bin/next",import.meta.url);
+const child=spawn(process.execPath,[nextBin.pathname,"start","-p",port],{stdio:["ignore","pipe","pipe"],env:{...process.env,NODE_ENV:"production"}});
 let output="";
 child.stdout.on("data",chunk=>{output+=String(chunk);});
 child.stderr.on("data",chunk=>{output+=String(chunk);});
@@ -27,7 +28,7 @@ try{
  if(response.status!==200&&response.status!==503)throw new Error("Unexpected health status "+response.status+": "+JSON.stringify(body));
  console.log("API smoke passed:",response.status,JSON.stringify(body));
 }finally{
- child.kill("SIGTERM");
- await sleep(300);
+ if(!child.killed)child.kill("SIGTERM");
+ await sleep(500);
  if(!child.killed)child.kill("SIGKILL");
 }
