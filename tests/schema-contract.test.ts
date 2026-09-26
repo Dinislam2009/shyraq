@@ -127,3 +127,15 @@ test("backup restore preserves extended review preferences",()=>{
  assert.ok(restore.includes("session_defaults:preferences.session_defaults"));
  assert.ok(restore.includes("scheduler_profiles:Array.isArray(preferences.scheduler_profiles)?preferences.scheduler_profiles:[]"));
 });
+
+
+test("shared offline sync fans out deck/card/template changes to workspace members",()=>{
+ assert.match(schema,/workspace_id_value uuid/);
+ assert.match(schema,/tg_table_name in \('decks','cards','card_templates'\)/);
+ assert.match(schema,/from public\.workspace_members wm/);
+ assert.match(schema,/wm\.workspace_id=workspace_id_value/);
+ const syncRoute=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
+ assert.doesNotMatch(syncRoute,/from\("cards"\)\.select\([^\n]*\)\.eq\("owner_id",user\.id\)/);
+ assert.match(syncRoute,/const deckIds=\(decks\?\?\[\]\)\.map\(deck=>deck\.id\)/);
+ assert.match(syncRoute,/from\("card_templates"\)/);
+});
