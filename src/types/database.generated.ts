@@ -277,6 +277,7 @@ export type Database = {
           content: Json
           created_at: string
           deck_id: string
+          duplicate_fingerprint: string | null
           id: string
           is_marked: boolean
           is_suspended: boolean
@@ -290,6 +291,7 @@ export type Database = {
           content?: Json
           created_at?: string
           deck_id: string
+          duplicate_fingerprint?: string | null
           id?: string
           is_marked?: boolean
           is_suspended?: boolean
@@ -303,6 +305,7 @@ export type Database = {
           content?: Json
           created_at?: string
           deck_id?: string
+          duplicate_fingerprint?: string | null
           id?: string
           is_marked?: boolean
           is_suspended?: boolean
@@ -1532,6 +1535,47 @@ export type Database = {
           },
         ]
       }
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          show_activity: boolean
+          show_followers: boolean
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at: string
+          display_name?: string | null
+          id: string
+          show_activity?: boolean
+          show_followers?: boolean
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          show_activity?: boolean
+          show_followers?: boolean
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_devices: {
         Row: {
           created_at: string
@@ -2196,39 +2240,6 @@ export type Database = {
         Relationships: []
       }
     }
-      public_profiles: {
-        Row: {
-          id: string
-          username: string | null
-          display_name: string | null
-          bio: string | null
-          avatar_url: string | null
-          created_at: string
-          show_activity: boolean
-          show_followers: boolean
-        }
-        Insert: {
-          id: string
-          username?: string | null
-          display_name?: string | null
-          bio?: string | null
-          avatar_url?: string | null
-          created_at: string
-          show_activity?: boolean
-          show_followers?: boolean
-        }
-        Update: {
-          id?: string
-          username?: string | null
-          display_name?: string | null
-          bio?: string | null
-          avatar_url?: string | null
-          created_at?: string
-          show_activity?: boolean
-          show_followers?: boolean
-        }
-        Relationships: []
-      }
     Views: {
       [_ in never]: never
     }
