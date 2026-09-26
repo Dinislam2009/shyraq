@@ -19,7 +19,7 @@ export default async function WorkspacePage({searchParams}:{searchParams:Promise
  if(!selected)return <AppShell><div className="mx-auto max-w-4xl px-5 py-10">No workspace found.</div></AppShell>;
  const [{data:members},{data:invites},{data:audit}]=await Promise.all([supabase.from("workspace_members").select("user_id,role,created_at").eq("workspace_id",selected.id).order("created_at"),supabase.from("workspace_invitations").select("id,email,role,expires_at,created_at").eq("workspace_id",selected.id).is("accepted_at",null).order("created_at",{ascending:false}),supabase.from("workspace_audit_logs").select("id,actor_id,event_type,metadata,created_at").eq("workspace_id",selected.id).order("created_at",{ascending:false}).limit(30)]);
  const memberIds=(members??[]).map(m=>m.user_id).filter(Boolean);
- const {data:profiles}=memberIds.length?await supabase.from("profiles").select("id,username,display_name,avatar_url").in("id",memberIds):{data:[]};
+ const {data:profiles}=memberIds.length?await supabase.from("public_profiles").select("id,username,display_name,avatar_url").in("id",memberIds):{data:[]};
  const profileMap=new Map((profiles??[]).map((profile:any)=>[profile.id,profile]));
  const myMember=(members??[]).find(m=>m.user_id===user.id);
  const canAdmin=["owner","admin"].includes(String(myMember?.role||""));
