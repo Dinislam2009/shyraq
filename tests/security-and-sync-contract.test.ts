@@ -78,3 +78,11 @@ test("API routes keep an explicit authentication gate unless intentionally publi
  const cron=readFileSync(new URL("../src/app/api/cron/backups/route.ts",import.meta.url),"utf8");
  assert.match(cron,/authorization/i);
 });
+
+
+test("review history export paginates instead of using a fixed row cap",()=>{
+ const source=readFileSync(new URL("../src/app/api/export/history/route.ts",import.meta.url),"utf8");
+ assert.match(source,/range\(from,from\+999\)/);
+ assert.doesNotMatch(source,/\.limit\(10000\)/);
+ assert.match(source,/order\("id",\{ascending:true\}\)/);
+});
