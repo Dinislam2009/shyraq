@@ -17,7 +17,7 @@ async function requireDeckAdmin(deckId:string){
 async function resolveUser(supabase:any,username:string){
  const normalized=username.trim().replace(/^@/,"").toLowerCase();
  if(!normalized)return null;
- const {data}=await supabase.from("profiles").select("id,username,display_name").eq("username",normalized).maybeSingle();
+ const {data}=await supabase.from("public_profiles").select("id,username,display_name").eq("username",normalized).maybeSingle();
  return data;
 }
 
