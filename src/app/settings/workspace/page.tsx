@@ -1,5 +1,7 @@
 import {AppShell} from "@/components/app-shell";
 import {createClient} from "@/lib/supabase/server";
+import {getRequestLocale} from "@/lib/i18n-server";
+import {formatDate,formatDateTime} from "@/lib/i18n-format";
 import {WorkspaceInviteForm} from "@/components/workspace-invite-form";
 import {createTeamWorkspace,updateMemberRole,removeMember,updateWorkspaceSettings,selectWorkspace,cancelWorkspaceInvite} from "@/app/settings/workspace/actions";
 import {WorkspaceRealtime} from "@/components/workspace-realtime";
@@ -7,6 +9,7 @@ import {WorkspaceRealtime} from "@/components/workspace-realtime";
 export default async function WorkspacePage({searchParams}:{searchParams:Promise<{workspace?:string;member?:string;error?:string;saved?:string}>}){
  const {workspace:workspaceParam,member:memberQuery,error,saved}=await searchParams;
  const supabase=await createClient();
+ const locale=await getRequestLocale();
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return null;
  const {data:workspaces}=await supabase.from("workspaces").select("id,name,kind,description,owner_id,slug").order("kind").order("created_at");
@@ -45,7 +48,7 @@ export default async function WorkspacePage({searchParams}:{searchParams:Promise
 
   <WorkspaceInviteForm workspaceId={selected.id}/>
   <section className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold">Workspace settings</h2><p className="mt-1 text-xs text-slate-400">Your role: {myMember?.role??"member"}</p></div></div>{canAdmin?<form action={updateWorkspaceSettings.bind(null,selected.id)} className="mt-4 grid gap-3 md:grid-cols-3"><input name="name" defaultValue={selected.name} className="h-10 rounded-xl border border-slate-200 px-3 text-sm"/><input name="slug" defaultValue={selected.slug||""} className="h-10 rounded-xl border border-slate-200 px-3 text-sm"/><input name="description" defaultValue={selected.description||""} className="h-10 rounded-xl border border-slate-200 px-3 text-sm md:col-span-3"/><button className="md:col-span-3 justify-self-end rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Save workspace</button></form>:null}</section>
-  {canAdmin?<section className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-6"><h2 className="font-semibold">Pending invitations</h2><div className="mt-4 space-y-2">{(invites??[]).map((invite:any)=><div key={invite.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3"><div><p className="text-sm font-medium">{invite.email||"Open invitation"} · {invite.role}</p><p className="text-xs text-slate-400">Expires {new Date(invite.expires_at).toLocaleString()}</p></div><form action={cancelWorkspaceInvite.bind(null,invite.id)}><button className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600">Revoke</button></form></div>)}{!(invites??[]).length?<p className="text-sm text-slate-400">No pending invitations.</p>:null}</div></section>:null}
+  {canAdmin?<section className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-6"><h2 className="font-semibold">Pending invitations</h2><div className="mt-4 space-y-2">{(invites??[]).map((invite:any)=><div key={invite.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3"><div><p className="text-sm font-medium">{invite.email||"Open invitation"} · {invite.role}</p><p className="text-xs text-slate-400">Expires {formatDateTime(invite.expires_at,locale)}</p></div><form action={cancelWorkspaceInvite.bind(null,invite.id)}><button className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600">Revoke</button></form></div>)}{!(invites??[]).length?<p className="text-sm text-slate-400">No pending invitations.</p>:null}</div></section>:null}
 
   <div className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-6">
    <div className="flex items-center justify-between"><div><h2 className="font-semibold">{selected.name} members</h2><p className="mt-1 text-xs text-slate-400">Your role: {myMember?.role??"member"}</p></div></div>
@@ -62,7 +65,7 @@ export default async function WorkspacePage({searchParams}:{searchParams:Promise
       <div key={m.user_id} className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
        <div>
         <p className="text-sm font-medium">{profile?.display_name||profile?.username||"Member"}</p>
-        <p className="mt-1 text-xs text-slate-400">{profile?.username?"@"+profile.username+" · ":""}{m.user_id.slice(0,8)}… · {m.created_at?new Date(m.created_at).toLocaleDateString():""}</p>
+        <p className="mt-1 text-xs text-slate-400">{profile?.username?"@"+profile.username+" · ":""}{m.user_id.slice(0,8)}… · {m.created_at?formatDate(m.created_at,locale):""}</p>
        </div>
        {isOwner ? (
         <span className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Owner</span>
@@ -87,6 +90,6 @@ export default async function WorkspacePage({searchParams}:{searchParams:Promise
     })}
    </div>
   </div>
-   <section className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-6"><h2 className="font-semibold">Workspace audit log</h2><div className="mt-4 space-y-2">{(audit??[]).map((entry:any)=><div key={entry.id} className="rounded-xl bg-slate-50 p-3 text-xs"><span className="font-semibold">{entry.event_type}</span><span className="ml-2 text-slate-400">{new Date(entry.created_at).toLocaleString()}</span></div>)}{!(audit??[]).length?<p className="text-sm text-slate-400">No audit events yet.</p>:null}</div></section>
+   <section className="mt-6 rounded-2xl border border-black/[0.06] bg-white p-6"><h2 className="font-semibold">Workspace audit log</h2><div className="mt-4 space-y-2">{(audit??[]).map((entry:any)=><div key={entry.id} className="rounded-xl bg-slate-50 p-3 text-xs"><span className="font-semibold">{entry.event_type}</span><span className="ml-2 text-slate-400">{formatDateTime(entry.created_at,locale)}</span></div>)}{!(audit??[]).length?<p className="text-sm text-slate-400">No audit events yet.</p>:null}</div></section>
  </div></AppShell>;
 }
