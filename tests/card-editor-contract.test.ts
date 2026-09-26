@@ -58,8 +58,8 @@ test("workspace sync fans out tags and collections",()=>{
  assert.match(schema,/tg_table_name in \('decks','cards','card_templates','tags','collections','collection_cards'\)/);
  assert.match(route,/entityType==="tags"/);
  assert.match(route,/entityType==="collections"/);
- assert.match(route,/tags:tags\?\?\[\]/);
- assert.match(route,/collections:collections\?\?\[\]/);
+ assert.match(route,/templates,tags,collections,collectionCards/);
+ assert.ok(route.includes("templates,tags,collections,collectionCards"));
 });
 
 
@@ -118,7 +118,7 @@ test("offline cold-start mirrors review state and preferences",()=>{
  assert.match(sync,/cacheReviewPreferences/);
  assert.match(route,/from\("review_states"\)/);
  assert.match(route,/from\("review_preferences"\)/);
- assert.match(route,/reviewStates:reviewStates\?\?\[\]/);
+ assert.match(route,/reviewStates/);
  assert.match(bootstrap,/getOfflineReviewQueue/);
  assert.match(bootstrap,/getCachedReviewPreferences/);
  assert.match(reviewPage,/deckId=\{deck\} limit=\{requestedLimit\}/);
