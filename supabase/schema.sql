@@ -322,7 +322,7 @@ create table if not exists public.moderators (
 );
 
 create or replace function public.is_platform_moderator()
-returns boolean language sql security definer set search_path=public,private as $
+returns boolean language sql security definer set search_path=public,private as $shyraq$
  select exists(select 1 from public.moderators m where m.user_id=(select auth.uid()) and m.enabled);
 $shyraq$;
 revoke all on function public.is_platform_moderator() from public,anon;
