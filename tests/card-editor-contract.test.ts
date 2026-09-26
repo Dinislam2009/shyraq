@@ -100,3 +100,24 @@ test("offline service worker is registered and avoids protected-route precache",
  assert.ok(layout.includes("<ServiceWorkerRegistration/>"));
  assert.match(reg,/serviceWorker\.register\("\/sw\.js"/);
 });
+
+
+test("offline cold-start mirrors review state and preferences",()=>{
+ const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
+ const sync=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
+ const route=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
+ const bootstrap=readFileSync(new URL("../src/components/review-bootstrap.tsx",import.meta.url),"utf8");
+ const reviewPage=readFileSync(new URL("../src/app/review/page.tsx",import.meta.url),"utf8");
+ assert.match(store,/reviewStates!:Table<OfflineReviewState,string>/);
+ assert.match(store,/this\.version\(6\)\.stores/);
+ assert.match(store,/getOfflineReviewQueue/);
+ assert.match(sync,/function mapReviewState/);
+ assert.match(sync,/data\.reviewStates/);
+ assert.match(sync,/cacheReviewPreferences/);
+ assert.match(route,/from\("review_states"\)/);
+ assert.match(route,/from\("review_preferences"\)/);
+ assert.match(route,/reviewStates:reviewStates\?\?\[\]/);
+ assert.match(bootstrap,/getOfflineReviewQueue/);
+ assert.match(bootstrap,/getCachedReviewPreferences/);
+ assert.match(reviewPage,/deckId=\{deck\} limit=\{requestedLimit\}/);
+});
