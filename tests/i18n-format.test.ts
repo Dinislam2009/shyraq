@@ -1,3 +1,4 @@
+import {readFileSync} from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {formatDate,formatDateTime,formatNumber} from "../src/lib/i18n-format.ts";
