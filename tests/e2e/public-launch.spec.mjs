@@ -28,7 +28,7 @@ test.describe("public browser launch gate",()=>{
    await select.selectOption(locale);
    await expect(page.locator("html")).toHaveAttribute("lang",locale);
    await expect(select).toHaveValue(locale);
-   await page.context().addCookies([{name:"shyraq-locale",value:locale,url:"http://127.0.0.1:3000",path:"/"}]);
+   await page.context().addCookies([{name:"shyraq-locale",value:locale,url:"http://127.0.0.1:3000"}]);
    await page.reload();
    await expect(page.locator("html")).toHaveAttribute("lang",locale);
 
