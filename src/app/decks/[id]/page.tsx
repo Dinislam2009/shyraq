@@ -124,7 +124,7 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
         </form>
         <form action={setDeckUpdatePolicy.bind(null,id,sourceUpdate.update_policy==="accept_all"?"ask":"accept_all")}>
          <button className="rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-900">
-          {sourceUpdate.update_policy==="accept_all"?"Ask before updates":"Accept future updates"}
+          {sourceUpdate.update_policy==="accept_all"?t("Ask before updates"):t("Accept future updates")}
          </button>
         </form>
        </div>
