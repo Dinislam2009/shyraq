@@ -22,11 +22,15 @@ self.addEventListener("fetch",event=>{
  const url=new URL(request.url);
  if(url.origin!==self.location.origin)return;
 
- if(url.pathname.startsWith("/_next/")||request.destination==="style"||request.destination==="script"||request.destination==="font"||request.destination==="image"){
-  event.respondWith(caches.match(request).then(hit=>hit||fetch(request).then(response=>{
-   if(response.ok){const copy=response.clone();void caches.open(RUNTIME_CACHE).then(cache=>cache.put(request,copy));}
-   return response;
-  })));
+ const isRsc=request.headers.get("accept")?.includes("text/x-component")||url.searchParams.has("_rsc");
+ if(url.pathname.startsWith("/_next/")||request.destination==="style"||request.destination==="script"||request.destination==="font"||request.destination==="image"||isRsc){
+  event.respondWith(caches.match(request).then(hit=>{
+   const network=fetch(request).then(response=>{
+    if(response.ok){const copy=response.clone();void caches.open(RUNTIME_CACHE).then(cache=>cache.put(request,copy));}
+    return response;
+   }).catch(()=>hit||new Response("",{status:503}));
+   return hit||network;
+  }));
   return;
  }
 
