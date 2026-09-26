@@ -542,6 +542,8 @@ drop policy if exists collections_update on public.collections;
 create policy collections_update on public.collections for update to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor')) with check(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
 drop policy if exists collections_delete on public.collections;
 create policy collections_delete on public.collections for delete to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
+drop policy if exists collections_feature_moderator_update on public.collections;
+create policy collections_feature_moderator_update on public.collections for update to authenticated using(public.is_platform_moderator()) with check(public.is_platform_moderator());
 drop policy if exists collection_cards_member on public.collection_cards;
 create policy collection_cards_member on public.collection_cards for all to authenticated using(exists(select 1 from public.collections c where c.id=collection_id and private.is_workspace_member(c.workspace_id,'editor'))) with check(exists(select 1 from public.collections c where c.id=collection_id and private.is_workspace_member(c.workspace_id,'editor')));
 
@@ -566,11 +568,11 @@ create policy media_update on public.media for update to authenticated using(own
 drop policy if exists media_delete on public.media;
 create policy media_delete on public.media for delete to authenticated using(owner_id=(select auth.uid()) and private.is_workspace_member(workspace_id,'editor'));
 
-drop policy if not exists deck_reports_insert on public.deck_reports;
+drop policy if exists deck_reports_insert on public.deck_reports;
 create policy deck_reports_insert on public.deck_reports for insert to authenticated with check(reporter_id=(select auth.uid()) and exists(select 1 from public.decks d where d.id=deck_id and d.visibility='public'));
-drop policy if not exists deck_reports_read on public.deck_reports;
+drop policy if exists deck_reports_read on public.deck_reports;
 create policy deck_reports_read on public.deck_reports for select to authenticated using(reporter_id=(select auth.uid()) or exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid())));
-drop policy if not exists deck_reports_update on public.deck_reports;
+drop policy if exists deck_reports_update on public.deck_reports;
 create policy deck_reports_update on public.deck_reports for update to authenticated using(exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid()))) with check(exists(select 1 from public.decks d where d.id=deck_id and d.owner_id=(select auth.uid())));
 
 drop policy if exists follows_self on public.public_deck_follows;
@@ -662,7 +664,27 @@ grant select,insert,update on public.workspace_invitations to authenticated;
 
 
 -- Shyraq collaboration realtime
-alter publication supabase_realtime add table public.decks, public.cards, public.card_templates, public.workspace_members;
+do $
+begin
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='decks') then
+    alter publication supabase_realtime add table public.decks;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='cards') then
+    alter publication supabase_realtime add table public.cards;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='card_templates') then
+    alter publication supabase_realtime add table public.card_templates;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='workspace_members') then
+    alter publication supabase_realtime add table public.workspace_members;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='comments') then
+    alter publication supabase_realtime add table public.comments;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='activity_feed') then
+    alter publication supabase_realtime add table public.activity_feed;
+  end if;
+end $;
 
 
 -- Collaboration hardening: editors may update shared cards, ownership remains immutable.
