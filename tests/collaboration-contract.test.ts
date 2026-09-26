@@ -49,3 +49,13 @@ test("card editor uses realtime draft broadcast for existing collaborative cards
  assert.ok(editor.includes("useCardDraftChannel"));
  assert.ok(editor.includes("Live draft collaboration is enabled"));
 });
+
+
+test("deck settings uses realtime form drafts without auto-saving remote changes",()=>{
+ const draft=readFileSync(new URL("../src/lib/collaboration/draft.ts",import.meta.url),"utf8");
+ const form=readFileSync(new URL("../src/components/offline-deck-form.tsx",import.meta.url),"utf8");
+ assert.ok(draft.includes('event:"form-draft"'));
+ assert.ok(form.includes("useFormDraftChannel"));
+ assert.ok(form.includes("Live draft collaboration is enabled for this deck"));
+ assert.ok(form.includes("publishDraft"));
+});
