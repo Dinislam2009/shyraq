@@ -10,11 +10,11 @@ const translationLookup=extendedTranslations as TranslationLookup;
 function normalize(s: string) { return s.replace(/\s+/g, " ").trim(); }
 
 function dynamicTranslation(raw: string, locale: "kk" | "ru" | "en") {
-  let m = raw.match(/^(\\d+) (cards|карта|карточек|карт)$/); if (m) return `${m[1]} ${locale === "kk" ? "карта" : locale === "ru" ? "карточек" : "cards"}`;
-  m = raw.match(/^(\\d+) (reviews|қайталау|повторений)$/); if (m) return `${m[1]} ${locale === "kk" ? "қайталау" : locale === "ru" ? "повторений" : "reviews"}`;
-  m = raw.match(/^(\\d+) (responses recorded|жауап тіркелді|ответов записано)$/); if (m) return `${m[1]} ${locale === "kk" ? "жауап тіркелді" : locale === "ru" ? "ответов записано" : "responses recorded"}`;
-  m = raw.match(/^(\\d+) (min|мин)$/); if (m) return `${m[1]} ${locale === "kk" || locale === "ru" ? "мин" : "min"}`;
-  m = raw.match(/^(\\d+) visible of (\\d+)\\. Search, filter and edit without leaving the deck\\.$/); if (m) return locale === "kk" ? `${m[1]} көрінуде, барлығы ${m[2]}. Колодадан шықпай іздеңіз, сүзіңіз және өңдеңіз.` : locale === "ru" ? `${m[1]} отображается из ${m[2]}. Ищите, фильтруйте и редактируйте, не покидая колоду.` : raw;
+  let m = raw.match(/^(\d+) (cards|карта|карточек|карт)$/); if (m) return `${m[1]} ${locale === "kk" ? "карта" : locale === "ru" ? "карточек" : "cards"}`;
+  m = raw.match(/^(\d+) (reviews|қайталау|повторений)$/); if (m) return `${m[1]} ${locale === "kk" ? "қайталау" : locale === "ru" ? "повторений" : "reviews"}`;
+  m = raw.match(/^(\d+) (responses recorded|жауап тіркелді|ответов записано)$/); if (m) return `${m[1]} ${locale === "kk" ? "жауап тіркелді" : locale === "ru" ? "ответов записано" : "responses recorded"}`;
+  m = raw.match(/^(\d+) (min|мин)$/); if (m) return `${m[1]} ${locale === "kk" || locale === "ru" ? "мин" : "min"}`;
+  m = raw.match(/^(\d+) visible of (\d+)\\. Search, filter and edit without leaving the deck\\.$/); if (m) return locale === "kk" ? `${m[1]} көрінуде, барлығы ${m[2]}. Колодадан шықпай іздеңіз, сүзіңіз және өңдеңіз.` : locale === "ru" ? `${m[1]} отображается из ${m[2]}. Ищите, фильтруйте и редактируйте, не покидая колоду.` : raw;
   return null;
 }
 
@@ -31,6 +31,12 @@ export function GlobalTranslator() {
 
     const translateTextNode = (node: Node) => {
       if (!node.parentElement) return;
+      const parent = node.parentElement;
+      if (
+        parent.closest(
+          'input,textarea,pre,code,[contenteditable="true"],[data-shyraq-i18n-ignore],.shyraq-anki-template'
+        )
+      ) return;
       const raw = normalize(node.textContent || "");
       if (!raw) return;
       const key = reverse.get(raw);
