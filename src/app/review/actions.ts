@@ -8,7 +8,7 @@ function revive(value:any){return value?{...value,due:value.due?new Date(value.d
 export async function submitReview(cardId:string,rating:(typeof ratingNames)[number],elapsedMs:number){
  const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)return {error:"Authentication required."};
  if(!ratingNames.includes(rating))return {error:"Invalid rating."};
- const safeElapsed=Math.max(0,Math.min(15*60*1000,Number.isFinite(Number(elapsedMs))?Math.round(Number(elapsedMs)):0)};
+ const safeElapsed=Math.max(0,Math.min(15*60*1000,Number.isFinite(Number(elapsedMs))?Math.round(Number(elapsedMs)):0));
  const {data:existing}=await supabase.from("review_states").select("*").eq("user_id",user.id).eq("card_id",cardId).maybeSingle();
  const {data:prefs}=await supabase.from("review_preferences").select("desired_retention,maximum_interval,enable_fuzz,enable_short_term,learning_steps,relearning_steps,session_defaults").eq("user_id",user.id).maybeSingle();
  const sessionDefaults=prefs?.session_defaults&&typeof prefs.session_defaults==="object"&&!Array.isArray(prefs.session_defaults)?prefs.session_defaults as Record<string,unknown>:{};
