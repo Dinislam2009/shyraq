@@ -1381,3 +1381,11 @@ begin
   end loop;
 end
 $shyraq$;
+
+-- RLS helper functions are SECURITY DEFINER and intentionally live in the
+-- private schema; authenticated users need EXECUTE to evaluate exposed-table
+-- policies that call them.
+grant execute on function private.effective_collection_role(uuid) to authenticated;
+grant execute on function private.effective_deck_role(uuid) to authenticated;
+grant execute on function private.is_workspace_member(uuid,public.workspace_role) to authenticated;
+grant execute on function private.is_workspace_owner(uuid) to authenticated;
