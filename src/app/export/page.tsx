@@ -5,7 +5,7 @@ import {createBackupVersion,deleteBackupVersion,restoreBackupVersion} from "@/ap
 import {summarizeBackupPayload} from "@/lib/backup/summary";
 import {createHash} from "node:crypto";
 
-export default async function ExportPage({searchParams}:{searchParams?:Promise<{error?:string;backup?:string;restored?:string}>}){
+export default async function ExportPage({searchParams}:{searchParams?:Promise<{error?:string;backup?:string;restored?:string;preview?:string}>}){
  const params=searchParams?await searchParams:{};
  const supabase=await createClient();
  const {data:{user}}=await supabase.auth.getUser();
@@ -25,7 +25,11 @@ export default async function ExportPage({searchParams}:{searchParams?:Promise<{
      const payload=JSON.parse(new TextDecoder().decode(bytes));
      if(payload?.format!=="shyraq-backup-v2")throw new Error("Unsupported Shyraq backup format.");
      const summary=summarizeBackupPayload(payload);
-     const names=Array.from(new Set((Array.isArray(payload.decks)?payload.decks:[]).map((deck:any)=>String(deck?.name||"")).filter(Boolean)));
+     const names:string[]=[];
+     for(const deck of Array.isArray(payload.decks)?payload.decks:[]){
+      const name=typeof deck==="object"&&deck?String((deck as {name?:unknown}).name||""):"";
+      if(name&&!names.includes(name))names.push(name);
+     }
      const {data:workspace}=await supabase.from("workspaces").select("id").eq("owner_id",user.id).eq("kind","personal").limit(1).maybeSingle();
      if(!workspace)throw new Error("Personal workspace not found.");
      const {data:existingDecks}=names.length?await supabase.from("decks").select("name").eq("owner_id",user.id).eq("workspace_id",workspace.id).in("name",names):{data:[]};
