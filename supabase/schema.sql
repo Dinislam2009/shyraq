@@ -341,6 +341,51 @@ $shyraq$;
 revoke all on function public.is_platform_moderator() from public,anon;
 grant execute on function public.is_platform_moderator() to authenticated;
 
+create or replace function public.create_notification(
+ target_user uuid,
+ notification_kind text,
+ notification_title text,
+ notification_body text default '',
+ notification_href text default null,
+ source_comment_id uuid default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path=public,private
+as $shyraq$
+declare
+ new_id uuid;
+ caller uuid := (select auth.uid());
+begin
+ if caller is null then
+   raise exception 'authentication required';
+ end if;
+ if target_user <> caller and not (
+   notification_kind='comment_mention'
+   and source_comment_id is not null
+   and exists(
+     select 1
+     from public.comment_mentions cm
+     join public.comments c on c.id=cm.comment_id
+     where cm.comment_id=source_comment_id
+       and cm.mentioned_user_id=target_user
+       and c.author_id=caller
+   )
+ ) then
+   raise exception 'notification target is not allowed';
+ end if;
+
+ insert into public.notifications(user_id,kind,title,body,href)
+ values(target_user,notification_kind,notification_title,notification_body,notification_href)
+ returning id into new_id;
+ return new_id;
+end
+$shyraq$;
+
+revoke all on function public.create_notification(uuid,text,text,text,text,uuid) from public,anon;
+grant execute on function public.create_notification(uuid,text,text,text,text,uuid) to authenticated;
+
 create table if not exists public.notification_preferences (
  user_id uuid primary key references auth.users(id) on delete cascade,
  sync_conflicts boolean not null default true,
@@ -607,7 +652,10 @@ create policy invitations_admin_update on public.workspace_invitations for updat
 
 -- Collaboration and user-owned utility policies.
 drop policy if exists notifications_self on public.notifications;
-create policy notifications_self on public.notifications for all to authenticated
+drop policy if exists notifications_self on public.notifications;
+create policy notifications_self on public.notifications for select to authenticated
+using(user_id=(select auth.uid()));
+create policy notifications_update_self on public.notifications for update to authenticated
 using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
 drop policy if exists review_devices_self on public.review_devices;
