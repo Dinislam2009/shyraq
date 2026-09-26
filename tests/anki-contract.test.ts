@@ -18,3 +18,13 @@ test("Anki cards resolve their template by model and ordinal",()=>{
  assert.ok(importer.includes('templateIdsByKey.set(deck.id+":"+String(sourceTemplate.sourceModelId)+":"+String(sourceTemplate.ord),template.id)'));
  assert.ok(importer.includes('templateIdsByKey.get(deck.id+":"+String(card.modelId)+":"+String(card.ord))'));
 });
+
+
+test("Anki cloze imports preserve the card deletion index",()=>{
+ const actions=readFileSync(new URL("../src/app/import/anki/actions.ts",import.meta.url),"utf8");
+ const runner=readFileSync(new URL("../src/components/review-runner.tsx",import.meta.url),"utf8");
+ const rich=readFileSync(new URL("../src/components/rich-content.tsx",import.meta.url),"utf8");
+ assert.match(actions,/clozeIndex:card\.kind==="cloze"\?card\.ord\+1/);
+ assert.match(runner,/revealCloze=\{revealed\}/);
+ assert.match(rich,/renderClozes/);
+});
