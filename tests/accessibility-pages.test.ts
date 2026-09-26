@@ -2,7 +2,8 @@ import {readFileSync} from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const standalonePages=new Set(["src/app/login/page.tsx","src/app/signup/page.tsx"]);\nconst redirectOnlyPages=new Set(["src/app/page.tsx"]);
+const standalonePages=new Set(["src/app/login/page.tsx","src/app/signup/page.tsx"]);
+const redirectOnlyPages=new Set(["src/app/page.tsx"]);
 
 const pageFiles=[
   "src/app/collections/[id]/page.tsx",
