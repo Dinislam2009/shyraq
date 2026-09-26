@@ -114,3 +114,10 @@ test("secondary RLS policies use direct membership checks instead of helper-poli
  assert.doesNotMatch(schema,/create policy tags_member[\\s\\S]*private\.is_workspace_member/);
  assert.doesNotMatch(schema,/create policy card_tags_member[\\s\\S]*private\./);
 });
+test("review sync exposes failed event IDs and the client preserves them as failed",()=>{
+ assert.match(syncRoute,/failedEvents/);
+ assert.match(syncRoute,/review_events.*delete/);
+ const client=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
+ assert.match(client,/failedEvents/);
+ assert.match(client,/failedSet/);
+});
