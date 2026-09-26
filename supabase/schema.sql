@@ -1354,16 +1354,8 @@ alter function private.prevent_card_owner_change() set search_path = pg_catalog;
 alter function private.prevent_deck_owner_change() set search_path = pg_catalog;
 
 -- Lock down legacy tables that are not part of Shyraq.
-alter table public.flashcards enable row level security;
-alter table public.card_states enable row level security;
-alter table public.flashcard_reviews enable row level security;
-alter table public.focus_sessions enable row level security;
-alter table public.flashcard_decks enable row level security;
-alter table public.projects enable row level security;
-alter table public._prisma_migrations enable row level security;
-
-
--- Legacy project tables are intentionally isolated from the Shyraq application.
+-- Fresh Supabase projects do not contain these old tables, so only harden
+-- them when they actually exist.
 do $shyraq$
 declare
   table_name text;
@@ -1372,12 +1364,24 @@ begin
   foreach table_name in array[
     '_prisma_migrations','card_states','flashcard_decks','flashcard_reviews','flashcards','focus_sessions','projects','habits','habit_completions','tasks','users','sync_operations'
   ] loop
+    if to_regclass(format('public.%I', table_name)) is null then
+      continue;
+    end if;
+
     execute format('alter table public.%I enable row level security', table_name);
-    for policy_name in select policyname from pg_policies where schemaname='public' and tablename=table_name loop
+    for policy_name in
+      select policyname
+      from pg_policies
+      where schemaname='public' and tablename=table_name
+    loop
       execute format('drop policy if exists %I on public.%I', policy_name, table_name);
     end loop;
     execute format('drop policy if exists %I on public.%I', 'shyraq_legacy_deny_all', table_name);
-    execute format('create policy %I on public.%I for all to public using (false) with check (false)', 'shyraq_legacy_deny_all', table_name);
+    execute format(
+      'create policy %I on public.%I for all to public using (false) with check (false)',
+      'shyraq_legacy_deny_all',
+      table_name
+    );
   end loop;
 end
 $shyraq$;
