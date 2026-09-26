@@ -23,7 +23,7 @@ test("schema contains application-level tables used by server actions",()=>{
 
 test("schema contains columns required by current deck and collection flows",()=>{
  for(const column of ["sort_order","deleted_at"]) assert.match(tableBlock("decks"),new RegExp("\\b"+column+"\\b"));
- for(const column of ["rule","sort_mode","is_public","is_featured"]) assert.match(tableBlock("collections"),new RegExp("\\b"+column+"\\b"));
+ for(const column of ["description","rule","sort_mode","is_public","is_featured"]) assert.match(tableBlock("collections"),new RegExp("\\b"+column+"\\b"));
  for(const column of ["rating_styles","accessibility","session_defaults","scheduler_profiles"]) assert.match(tableBlock("review_preferences"),new RegExp("\\b"+column+"\\b"));
 });
 
@@ -63,4 +63,15 @@ test("collaboration member/comment policies enforce resource workspace relations
  assert.match(schema,/d\.id=deck_members\.deck_id[\s\S]*d\.workspace_id=deck_members\.workspace_id/);
  assert.match(schema,/c\.id=collection_members\.collection_id[\s\S]*c\.workspace_id=collection_members\.workspace_id/);
  assert.match(schema,/d\.id=comments\.deck_id[\s\S]*d\.workspace_id=comments\.workspace_id/);
+});
+
+
+test("backup restore stays inside current schema enums and collection metadata",()=>{
+ const restore=readFileSync(new URL("../src/app/import/actions.ts",import.meta.url),"utf8");
+ assert.match(restore,/\["private","workspace","public"\]/);
+ assert.doesNotMatch(restore,/\["private","public","unlisted"\]/);
+ assert.match(restore,/value==="favorites"\|\|value==="smart"\?value:"custom"/);
+ assert.match(restore,/description:String\(collection\.description\|\|"\)/);
+ assert.match(restore,/rule:collection\.rule/);
+ assert.match(restore,/sort_mode:String\(collection\.sort_mode/);
 });
