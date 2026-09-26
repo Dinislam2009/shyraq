@@ -196,3 +196,13 @@ test("resumable import jobs have owner-scoped persistence and progress endpoints
  assert.match(ui,/shyraq:import-job/);
  assert.match(panel,/Resume import/);
 });
+
+
+test("initial locale is rendered server-side from the locale cookie",()=>{
+ const layout=readFileSync(new URL("../src/app/layout.tsx",import.meta.url),"utf8");
+ const provider=readFileSync(new URL("../src/components/i18n-provider.tsx",import.meta.url),"utf8");
+ assert.match(layout,/cookies\(\)/);
+ assert.match(layout,/shyraq-locale/);
+ assert.match(layout,/I18nProvider initialLocale=\{initialLocale\}/);
+ assert.match(provider,/initialLocale="en"/);
+});
