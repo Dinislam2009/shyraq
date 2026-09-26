@@ -2197,7 +2197,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          id: string
+          username: string | null
+          display_name: string | null
+          bio: string | null
+          avatar_url: string | null
+          created_at: string
+          show_activity: boolean
+          show_followers: boolean
+        }
+      }
     }
     Functions: {
       is_platform_moderator: { Args: never; Returns: boolean }
