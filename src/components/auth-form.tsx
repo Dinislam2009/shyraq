@@ -23,11 +23,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     try{
       const response=await fetch(signup?"/api/auth/signup":"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(signup?{email,password,name}:{email,password})});
       const result=await response.json() as {ok?:boolean;session?:boolean;error?:string};
-      if(!response.ok){setError(result.error||"Authentication failed.");return;}
+      if(!response.ok){setError(result.error||t("authenticationFailed"));return;}
       if(signup&&!result.session){setError(t("accountCreated"));return;}
       router.replace("/dashboard");
       router.refresh();
-    }catch{setError("Authentication service is temporarily unavailable.");}
+    }catch{setError(t("authenticationUnavailable"));}
     finally{setBusy(false);}
   }
 
@@ -40,7 +40,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       </div>
       <LanguageSwitcher />
     </div>
-    <div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={()=>router.push("/api/auth/oauth/google?next=%2Fdashboard")} className="h-10 rounded-xl border border-slate-200 bg-white text-sm font-semibold">Continue with Google</button><button type="button" onClick={()=>router.push("/api/auth/oauth/apple?next=%2Fdashboard")} className="h-10 rounded-xl border border-slate-200 bg-white text-sm font-semibold">Continue with Apple</button></div><div className="my-5 flex items-center gap-3 text-[11px] text-slate-400"><span className="h-px flex-1 bg-slate-100"/><span>or</span><span className="h-px flex-1 bg-slate-100"/></div><form onSubmit={submit} className="space-y-4">
+    <div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={()=>router.push("/api/auth/oauth/google?next=%2Fdashboard")} className="h-10 rounded-xl border border-slate-200 bg-white text-sm font-semibold">{t("continueWithGoogle")}</button><button type="button" onClick={()=>router.push("/api/auth/oauth/apple?next=%2Fdashboard")} className="h-10 rounded-xl border border-slate-200 bg-white text-sm font-semibold">{t("continueWithApple")}</button></div><div className="my-5 flex items-center gap-3 text-[11px] text-slate-400"><span className="h-px flex-1 bg-slate-100"/><span>{t("orSeparator")}</span><span className="h-px flex-1 bg-slate-100"/></div><form onSubmit={submit} className="space-y-4">
       {signup && <input required placeholder={t("name")} value={name} onChange={e=>setName(e.target.value)} className="h-11 w-full rounded-xl border px-3 text-sm" />}
       <input required type="email" placeholder={t("email")} value={email} onChange={e=>setEmail(e.target.value)} className="h-11 w-full rounded-xl border px-3 text-sm" />
       <input required minLength={6} type="password" placeholder={t("password")} value={password} onChange={e=>setPassword(e.target.value)} className="h-11 w-full rounded-xl border px-3 text-sm" />
