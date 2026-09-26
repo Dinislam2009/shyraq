@@ -39,21 +39,21 @@ export function GlobalTranslator() {
     const translateRoot = (root: ParentNode) => {
       if (typeof Element !== "undefined" && (root as unknown) instanceof Element) { const rootElement = root as Element;
         const key = rootElement.getAttribute("data-shyraq-i18n");
-        if (key && translations[key]) rootElement.textContent = extendedTranslations[key][locale];
+        if (key && extendedTranslations[key]) rootElement.textContent = extendedTranslations[key][locale];
       }
       const selector = "[data-shyraq-i18n],input[placeholder],textarea[placeholder]";
       root.querySelectorAll?.(selector).forEach(node => {
         const element = node as HTMLElement & HTMLInputElement;
         if (element.hasAttribute("data-shyraq-i18n")) {
           const key = element.getAttribute("data-shyraq-i18n");
-          if (key && translations[key]) element.textContent = translations[key][locale];
+          if (key && extendedTranslations[key]) element.textContent = extendedTranslations[key][locale];
         }
         if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
           const raw = element.getAttribute("data-shyraq-placeholder") || element.getAttribute("placeholder") || "";
           const key = reverse.get(raw);
           if (key) {
             element.setAttribute("data-shyraq-placeholder", key);
-            element.setAttribute("placeholder", translations[key][locale]);
+            element.setAttribute("placeholder", extendedTranslations[key][locale]);
           }
         }
       });
