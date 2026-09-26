@@ -121,3 +121,15 @@ test("offline cold-start mirrors review state and preferences",()=>{
  assert.match(bootstrap,/getCachedReviewPreferences/);
  assert.match(reviewPage,/deckId=\{deck\} limit=\{requestedLimit\}/);
 });
+
+test("offline mirror keeps review states for cold-start review",()=>{
+ const store=readFileSync(new URL("../src/lib/offline/store.ts",import.meta.url),"utf8");
+ const sync=readFileSync(new URL("../src/lib/sync/client.ts",import.meta.url),"utf8");
+ const route=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
+ assert.match(store,/reviewStates!:Table<OfflineReviewState,string>/);
+ assert.match(store,/reviewStates\.bulkPut/);
+ assert.match(store,/getOfflineReviewQueue/);
+ assert.match(sync,/function mapReviewState/);
+ assert.match(sync,/data\.reviewStates\?\?\[\]/);
+ assert.match(route,/from\("review_states"\)/);
+});
