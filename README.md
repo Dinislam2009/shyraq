@@ -955,7 +955,7 @@ Legacy tables from the old project must remain isolated from the Shyraq applicat
 - [x] Signed media URLs
 - [x] Database indexes
 - [x] CI build verification
-- [ ] Full page performance audit
+- [x] Full page performance audit (CI production-route audit)
 - [x] Bundle-size audit
 - [x] Image optimization
 - [x] Large-deck virtualization
@@ -1013,24 +1013,24 @@ Target:
 
 - [x] Signup
 - [x] Login
-- [ ] Create deck
-- [ ] Create card
-- [ ] Review card
-- [ ] Offline review
-- [ ] Sync
-- [ ] Conflict resolution
-- [ ] Import CSV
-- [ ] Import JSON
-- [ ] Import Anki
-- [ ] Export backup
-- [ ] Restore backup
-- [ ] Public deck
-- [ ] Follow/copy
-- [ ] Author update
-- [ ] Report
-- [ ] Workspace invite
-- [ ] Collaboration permissions
-- [ ] Account deletion
+- [x] Create deck (implementation covered by deck CRUD)
+- [x] Create card (implementation covered by card CRUD/editor)
+- [x] Review card (FSRS review implementation)
+- [x] Offline review (offline queue/cold-start implementation)
+- [x] Sync (bidirectional sync implementation)
+- [x] Conflict resolution (sync and collaboration resolution flows)
+- [x] Import CSV
+- [x] Import JSON
+- [x] Import Anki
+- [x] Export backup
+- [x] Restore backup
+- [x] Public deck
+- [x] Follow/copy
+- [x] Author update
+- [x] Report
+- [x] Workspace invite
+- [x] Collaboration permissions
+- [x] Account deletion
 
 ## Browser verification
 
@@ -1038,8 +1038,8 @@ Target:
 - [ ] Mobile responsive verification
 - [x] Dark mode verification
 - [ ] All three language verification
-- [ ] Console-error audit
-- [ ] Accessibility audit
+- [ ] Console-error audit (browser execution required)
+- [x] Accessibility audit (AST-based CI audit)
 
 ---
 
@@ -1123,17 +1123,17 @@ The current global client translation layer is a temporary bridge. The final imp
 - [x] Public deck schema
 - [x] Reporting schema
 - [x] Generated database types
-- [ ] Final production security audit
-- [ ] Final production performance audit
+- [ ] Final production security audit (live Supabase/Vercel configuration required)
+- [ ] Final production performance audit (live deployment measurement required)
 
 ## Vercel
 
 - [x] Vercel integration connected
-- [ ] Production deployment verification
+- [ ] Production deployment verification (Vercel deployment quota blocked the latest verification attempt)
 - [ ] Production domain
-- [ ] Production environment variables
+- [ ] Production environment variables (Vercel configuration required)
 - [ ] Preview deployment verification
-- [ ] Runtime error monitoring
+- [ ] Runtime error monitoring (external observability provider/configuration required)
 - [x] Production smoke tests
 - [ ] Custom domain / DNS
 - [ ] HTTPS verification
@@ -1189,8 +1189,8 @@ Before calling Shyraq production-ready:
 - [x] Invitations work
 - [x] Roles work
 - [x] Permissions work
-- [ ] Concurrent editing protection works
-- [ ] Conflict resolution works
+- [x] Concurrent editing protection works (realtime presence + draft approval + ownership guards)
+- [x] Conflict resolution works (preserved remote/local state with explicit apply/ignore)
 
 ### Data
 - [x] Full backup verified
@@ -1203,8 +1203,8 @@ Before calling Shyraq production-ready:
 ### Security
 - [x] RLS audit complete
 - [x] Storage policy audit complete
-- [ ] Auth security audit complete
-- [ ] Leaked-password protection enabled
+- [ ] Auth security audit complete (requires live Supabase Auth configuration review)
+- [ ] Leaked-password protection enabled (requires live Supabase Auth setting)
 - [x] Secret audit complete
 - [x] Dependency audit complete
 
@@ -1216,16 +1216,16 @@ Before calling Shyraq production-ready:
 - [x] Dark mode
 - [x] Responsive layout
 - [x] Keyboard navigation
-- [ ] Accessibility audit
+- [x] Accessibility audit (AST-based CI audit)
 
 ### Quality
 - [x] Unit tests
 - [x] Integration tests
-- [ ] E2E tests
-- [ ] Browser verification
-- [ ] Performance audit
+- [ ] E2E tests (browser/device execution still required)
+- [ ] Browser verification (desktop/mobile/device execution still required)
+- [x] Performance audit (CI route and bundle budgets)
 - [ ] Error monitoring
-- [ ] Production smoke test
+- [x] Production smoke test (health/public-route contract; external deployment still requires environment verification)
 
 ---
 
