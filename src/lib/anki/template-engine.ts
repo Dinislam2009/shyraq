@@ -54,7 +54,7 @@ function renderConditionals(source:string,fields:Record<string,string>){
 export function renderAnkiTemplate(source:string,fields:Record<string,string>,options:AnkiTemplateOptions={}){
  const clozeIndex=options.clozeIndex;
  const revealCloze=options.revealCloze===true;
- const frontSide=options.frontSide??fields.front??"";
+ const frontSide=options.frontSide??resolveField(fields,"front");
  const merged={...fields,...(options.specialFields||{}),frontSide};
  let output=renderConditionals(String(source||""),merged);
  output=output.replace(/\{\{\s*([^}:]+?)\s*:\s*([^}]+?)\s*\}\}/g,(_,filter:string,key:string)=>{
