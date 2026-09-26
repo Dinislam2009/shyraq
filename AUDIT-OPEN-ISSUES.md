@@ -20,6 +20,11 @@
 Production:
 `https://shyraq-93xj.vercel.app/api/health`
 
+Соңғы READY production deployment:
+- Deployment: `dpl_HgzJFEz5bYuQDGq5sWrrWo8QTrm1`
+- Deployed commit: `a798e7fe553f93027aaceb154361d7b1be3e68ab`
+- Current `main` бұл commitтен әлдеқайда алда.
+
 қайта-қайта:
 
 - HTTP `503`
@@ -69,6 +74,8 @@ Vercel production environment ішіндегі:
 GitHub → Vercel status:
 
 `Deployment rate limited — retry in 24 hours.`
+
+Қазіргі жаңа commit-тер production deployment-ке шықпаған. Соңғы READY production build әлі ескі `a798e7fe...` SHA-да тұр.
 
 Сондықтан жаңа commit-тер production-ға автоматты түрде шығарылмайды.
 
