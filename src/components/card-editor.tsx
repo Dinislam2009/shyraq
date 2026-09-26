@@ -84,10 +84,10 @@ export function CardEditor({
     ...fields
   };
   const previewFront = kind === "cloze"
-    ? front.replace(/\{\{c\d+::([^}]+)\}\}/g, "••••")
+    ? front.replace(/\{\{c\d+::([^}:|]+)(?:::[^}|]+)?(?:\|[^}]+)?\}\}/g, "••••")
     : front;
   const previewBack = kind === "cloze"
-    ? [front.replace(/\{\{c\d+::([^}]+)\}\}/g, "$1"), back].filter(Boolean).join("\n\n")
+    ? [front.replace(/\{\{c\d+::([^}:|]+)(?:::[^}|]+)?(?:\|[^}]+)?\}\}/g, "$1"), back].filter(Boolean).join("\n\n")
     : back;
   const templatePreviewFront = selectedTemplate ? applyTemplatePreview(selectedTemplate.front_template, { ...customValues, front: previewFront, back: previewBack }) : previewFront;
   const templatePreviewBack = selectedTemplate ? applyTemplatePreview(selectedTemplate.back_template, { ...customValues, front: previewFront, back: previewBack }) : previewBack;
