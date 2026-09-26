@@ -8,8 +8,11 @@ function fail(deckId:string,message:string):never{redirect("/decks/"+deckId+"/te
 async function requireTemplateEditor(supabase:any,userId:string,deckId:string){
  const {data:deck}=await supabase.from("decks").select("id,workspace_id").eq("id",deckId).maybeSingle();
  if(!deck)fail(deckId,"Deck not found.");
- const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",userId).maybeSingle();
- if(!["owner","admin","editor"].includes(String(member?.role||"")))fail(deckId,"You do not have permission to edit this deck.");
+ const [{data:member},{data:override}]=await Promise.all([
+  supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",userId).maybeSingle(),
+  supabase.from("deck_members").select("role").eq("deck_id",deckId).eq("user_id",userId).maybeSingle()
+ ]);
+ if(!["owner","admin","editor"].includes(String(member?.role||""))&&String(override?.role||"")!=="editor")fail(deckId,"You do not have permission to edit this deck.");
  return deck;
 }
 
