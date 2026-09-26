@@ -46,3 +46,24 @@ test("nested Anki template filters are normalized through repeated passes",()=>{
  assert.match(parser,/pass<6/);
  assert.ok(parser.includes("cloze|text|hint|type|field"));
 });
+
+
+test("Anki import preserves raw template fields and card special metadata",()=>{
+ const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
+ const importer=readFileSync(new URL("../src/app/import/anki/actions.ts",import.meta.url),"utf8");
+ const runner=readFileSync(new URL("../src/components/review-runner.tsx",import.meta.url),"utf8");
+ const renderer=readFileSync(new URL("../src/components/anki-template-content.tsx",import.meta.url),"utf8");
+ assert.ok(parser.includes("rawFields"));
+ assert.ok(parser.includes("modelName"));
+ assert.ok(parser.includes("deckName"));
+ assert.ok(parser.includes("queue:Number(row[9])"));
+ assert.ok(parser.includes("flags:Number(row[11])"));
+ assert.ok(importer.includes("rawFields"));
+ assert.ok(importer.includes("deckName:card.deckName"));
+ assert.ok(importer.includes("flags:card.flags"));
+ assert.ok(runner.includes("CardSuspended"));
+ assert.ok(runner.includes("CardFlag"));
+ assert.ok(runner.includes("AnkiTemplateContent"));
+ assert.ok(renderer.includes("dangerouslySetInnerHTML"));
+ assert.ok(renderer.includes("javascript\\s*:"));
+});
