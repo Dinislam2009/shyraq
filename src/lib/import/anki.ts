@@ -31,7 +31,8 @@ function convertAnkiTemplate(source:string){
   .replace(/\{\{\s*Back\s*\}\}/gi,"{{back}}")
   .replace(/\{\{\s*cloze\s*:\s*([^}]+)\}\}/gi,"{{$1}}")
   .replace(/\{\{\s*text\s*:\s*([^}]+)\}\}/gi,"{{$1}}")
-  .replace(/\{\{\s*hint\s*:\s*([^}]+)\}\}/gi,"{{$1}}");
+  .replace(/\{\{\s*hint\s*:\s*([^}]+)\}\}/gi,"{{$1}}")
+  .replace(/\{\{\s*type\s*:\s*([^}]+)\}\}/gi,"{{$1}}");
 }
 
 function normalizeHtml(value:string){
