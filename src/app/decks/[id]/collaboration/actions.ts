@@ -35,7 +35,9 @@ export async function createComment(deckId:string,formData:FormData){
   const rows=(profiles??[]).filter((profile:any)=>profile.id!==user.id).map((profile:any)=>({comment_id:comment.id,mentioned_user_id:profile.id}));
   if(rows.length){
    await supabase.from("comment_mentions").upsert(rows,{onConflict:"comment_id,mentioned_user_id"});
-   await supabase.from("notifications").insert(rows.map((row:any)=>({user_id:row.mentioned_user_id,kind:"comment_mention",title:"You were mentioned in a deck comment",body:String(body).slice(0,300),href:"/decks/"+deckId+"/collaboration"})));
+   for(const row of rows){
+    await supabase.rpc("create_notification",{target_user:row.mentioned_user_id,notification_kind:"comment_mention",notification_title:"You were mentioned in a deck comment",notification_body:String(body).slice(0,300),notification_href:"/decks/"+deckId+"/collaboration",source_comment_id:comment.id});
+   }
   }
  }
  await logActivity(supabase,deck.workspace_id,user.id,"comment.created","comment",comment.id,{cardId,parentId});
