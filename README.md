@@ -1134,14 +1134,14 @@ The current global client translation layer remains a compatibility bridge for l
 ## Vercel
 
 - [x] Vercel integration connected
-- [ ] Production deployment verification (Vercel deployment quota blocked the latest verification attempt)
+- [x] Production deployment verification (live Vercel production deployment verified)
 - [ ] Production domain
 - [ ] Production environment variables (Vercel configuration required)
 - [ ] Preview deployment verification
 - [ ] Runtime error monitoring (external observability provider/configuration required)
 - [x] Production smoke tests
 - [ ] Custom domain / DNS
-- [ ] HTTPS verification
+- [x] HTTPS verification (live Vercel HTTPS response verified)
 - [ ] Deployment rollback procedure
 
 Required public environment variables:
