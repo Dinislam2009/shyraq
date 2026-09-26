@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import {ServiceWorkerRegistration} from "@/components/service-worker-registration";
 import { I18nProvider } from "@/components/i18n-provider";
 import { GlobalTranslator } from "@/components/global-translator";
 import { OfflineBootstrap } from "@/components/offline-bootstrap";
