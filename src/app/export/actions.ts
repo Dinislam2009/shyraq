@@ -77,7 +77,7 @@ export async function updateBackupSchedule(formData:FormData):Promise<void>{
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)redirect("/login");
  const frequency=(String(formData.get("frequency")||"weekly") as "daily"|"weekly"|"monthly");
- const safeFrequency: "daily"|"weekly"|"monthly" = frequency==="daily"||frequency==="monthly"?"frequency"==="daily"?"daily":"monthly":"weekly";
+ const safeFrequency: "daily"|"weekly"|"monthly" = frequency==="daily"?"daily":frequency==="monthly"?"monthly":"weekly";
  const enabled=formData.get("enabled")==="on";
  const nextRun=enabled?nextBackupRun(safeFrequency):null;
  const {error}=await supabase.from("backup_schedules").upsert({
