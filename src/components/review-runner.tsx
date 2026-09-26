@@ -9,11 +9,11 @@ import {useRouter} from "next/navigation";
 import {RichContent} from "@/components/rich-content";
 import {OccludedImage} from "@/components/image-occlusion";
 import {DEFAULT_RATING_ORDER,sanitizePerCardPreferences,sanitizeRatingOrder,sanitizeStyles} from "@/lib/review/config";
+import {renderAnkiTemplate} from "@/lib/anki/template-engine";
 
 type Preferences={scheduler_engine?:SchedulerEngine;desired_retention:number;maximum_interval:number;learning_steps:string[];relearning_steps:string[];enable_fuzz:boolean;enable_short_term:boolean;rating_labels?:Record<string,string>;rating_order?:string[];show_keyboard_hints?:boolean;swipe_enabled?:boolean;rating_styles?:Record<string,{background?:string;text?:string}>;accessibility?:{scale?:number;highContrast?:boolean;reducedMotion?:boolean;focusRing?:boolean};session_defaults?:{batchSize?:number;shuffle?:boolean;autoRevealSeconds?:number};};
 type CardContent={front?:string;back?:string;tags?:string[];fields?:Record<string,string>;options?:string[];answer?:number;imageUrl?:string;clozeIndex?:number;occlusions?:Array<{x:number;y:number;w:number;h:number}>;mediaUrl?:string;mediaType?:string;mediaItems?:Array<{name:string;path:string;mime_type:string;url?:string}>;reviewPreferences?:Record<string,unknown>};
 function templateOne(template:QueueItem["card"]["card_templates"]){if(Array.isArray(template))return template[0]||null;return template||null;}
-function applyCardTemplate(source:string,fields:Record<string,string>){let output=String(source||"");const resolve=(key:string)=>{const normalized=String(key).trim();if(/^FrontSide$/i.test(normalized))return fields.front||"";return fields[normalized]??fields[normalized.toLowerCase()]??"";};output=output.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key:string,body:string)=>resolve(key)?body:"");output=output.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g,(_,key:string,body:string)=>resolve(key)?"":body);return output.replace(/\{\{\s*([^}]+?)\s*\}\}/g,(_,key:string)=>resolve(key));}
 type QueueItem={card:{id:string;content:CardContent;kind:string;template_id?:string;card_templates?:{id:string;name:string;front_template:string;back_template:string;css?:string|null}|{id:string;name:string;front_template:string;back_template:string;css?:string|null}[]};stateData:any;isNew:boolean};
 
 type CompletedReview={cardId:string;rating:"again"|"hard"|"good"|"easy";elapsedMs:number;previousState:any;nextState:any;hadPreviousState:boolean;queueIndex:number};
@@ -149,15 +149,17 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
    const templateFields:Record<string,string>={front:rawFront,back:rawBack,...(card.content?.fields||{})};
    if(card.content?.tags?.length){templateFields.Tags=card.content.tags.join(" ");templateFields.tags=card.content.tags.join(" ");}
    const sourceFront=card.kind==="reverse"?rawBack:rawFront,sourceBack=card.kind==="reverse"?rawFront:rawBack;
+   const template=templateOne(card.card_templates);
+   const clozeIndex=Number(card.content?.clozeIndex||1);
+   if(template){
+    const frontRendered=renderAnkiTemplate(template.front_template,{...templateFields,front:sourceFront,back:sourceBack},{side:"front",clozeIndex,revealCloze:false});
+    const backRendered=renderAnkiTemplate(template.back_template,{...templateFields,front:sourceFront,back:sourceBack},{side:"back",frontSide:frontRendered,clozeIndex,revealCloze:true});
+    return {front:frontRendered,back:backRendered,templateCss:template.css||""};
+   }
    const maskedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"••••"):sourceFront;
    const revealedFront=card.kind==="cloze"?sourceFront.replace(/\{\{c\d+::([^}]+)\}\}/g,"$1"):sourceFront;
    const clozeBack=card.kind==="cloze"?[revealedFront,sourceBack].filter(Boolean).join("\n\n"):sourceBack;
-   const template=templateOne(card.card_templates);
-   const frontRendered=template?applyCardTemplate(template.front_template,{...templateFields,front:maskedFront,back:sourceBack}):maskedFront;
-   const backRendered=template?applyCardTemplate(template.back_template,{...templateFields,front:revealedFront,back:clozeBack}):clozeBack;
-   const maskCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}:|]+)(?:::[^}|]+)?(?:\|[^}]+)?\}\}/g,"••••"):value;
-   const revealCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}:|]+)(?:::[^}|]+)?(?:\|[^}]+)?\}\}/g,"$1"):value;
-   return {front:maskCloze(frontRendered),back:revealCloze(backRendered),templateCss:template?.css||""};
+   return {front:maskedFront,back:clozeBack,templateCss:""};
  },[card]);
 
  if(done){
