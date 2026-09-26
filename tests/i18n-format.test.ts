@@ -14,3 +14,13 @@ test("locale-aware dates and date-times format valid timestamps",()=>{
  assert.ok(formatDateTime(value,"ru"));
  assert.equal(formatDate("not-a-date","en"),"—");
 });
+
+
+test("server request locale uses the persisted locale cookie",()=>{
+ const server=readFileSync(new URL("../src/lib/i18n-server.ts",import.meta.url),"utf8");
+ const provider=readFileSync(new URL("../src/components/i18n-provider.tsx",import.meta.url),"utf8");
+ assert.match(server,/shyraq-locale/);
+ assert.match(server,/value==="kk"\|\|value==="ru"\|\|value==="en"/);
+ assert.match(provider,/formatNumber:/);
+ assert.match(provider,/formatDateTime:/);
+});
