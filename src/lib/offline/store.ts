@@ -253,7 +253,7 @@ export async function getOfflineReviewQueue(userId:string,deckId:string|undefine
   .sort((a,b)=>(a.state?1:0)-(b.state?1:0)||(a.due||0)-(b.due||0)||a.card.sortOrder-b.card.sortOrder)
   .slice(0,Math.max(1,Math.min(100,limit)));
  return rows.map(item=>({
-  card:{id:item.card.id,content:item.card.content,kind:item.card.kind,template_id:item.card.templateId,card_templates:templatesByDeck.get(item.card.deckId)||[]},
+  card:{id:item.card.id,content:item.card.content,kind:item.card.kind,isSuspended:item.card.isSuspended,isMarked:item.card.isMarked,template_id:item.card.templateId,card_templates:templatesByDeck.get(item.card.deckId)||[]},
   stateData:item.state?.stateData||null,
   isNew:!item.state
  }));
