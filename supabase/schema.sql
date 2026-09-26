@@ -979,97 +979,31 @@ using(private.is_workspace_member(workspace_id,'admin'));
 
 drop policy if exists deck_members_read on public.deck_members;
 create policy deck_members_read on public.deck_members for select to authenticated
-using (
-  exists (
-    select 1 from public.decks d
-    where d.id=deck_members.deck_id
-      and d.workspace_id=deck_members.workspace_id
-      and private.is_workspace_member(d.workspace_id,'viewer')
-  )
-);
+using(private.is_workspace_member(workspace_id,'viewer'));
 drop policy if exists deck_members_admin_write on public.deck_members;
 create policy deck_members_admin_write on public.deck_members for insert to authenticated
-with check (
-  exists (
-    select 1 from public.decks d
-    where d.id=deck_members.deck_id
-      and d.workspace_id=deck_members.workspace_id
-      and private.is_workspace_member(d.workspace_id,'admin')
-  )
-);
+with check(private.is_workspace_member(workspace_id,'admin'));
+drop policy if exists deck_members_admin_update on public.deck_members;
 create policy deck_members_admin_update on public.deck_members for update to authenticated
-using (
-  exists (
-    select 1 from public.decks d
-    where d.id=deck_members.deck_id
-      and d.workspace_id=deck_members.workspace_id
-      and private.is_workspace_member(d.workspace_id,'admin')
-  )
-)
-with check (
-  exists (
-    select 1 from public.decks d
-    where d.id=deck_members.deck_id
-      and d.workspace_id=deck_members.workspace_id
-      and private.is_workspace_member(d.workspace_id,'admin')
-  )
-);
+using(private.is_workspace_member(workspace_id,'admin'))
+with check(private.is_workspace_member(workspace_id,'admin'));
+drop policy if exists deck_members_admin_delete on public.deck_members;
 create policy deck_members_admin_delete on public.deck_members for delete to authenticated
-using (
-  exists (
-    select 1 from public.decks d
-    where d.id=deck_members.deck_id
-      and d.workspace_id=deck_members.workspace_id
-      and private.is_workspace_member(d.workspace_id,'admin')
-  )
-);
+using(private.is_workspace_member(workspace_id,'admin'));
 
 drop policy if exists collection_members_read on public.collection_members;
 create policy collection_members_read on public.collection_members for select to authenticated
-using (
-  exists (
-    select 1 from public.collections c
-    where c.id=collection_members.collection_id
-      and c.workspace_id=collection_members.workspace_id
-      and private.is_workspace_member(c.workspace_id,'viewer')
-  )
-);
+using(private.is_workspace_member(workspace_id,'viewer'));
 drop policy if exists collection_members_admin_write on public.collection_members;
 create policy collection_members_admin_write on public.collection_members for insert to authenticated
-with check (
-  exists (
-    select 1 from public.collections c
-    where c.id=collection_members.collection_id
-      and c.workspace_id=collection_members.workspace_id
-      and private.is_workspace_member(c.workspace_id,'admin')
-  )
-);
+with check(private.is_workspace_member(workspace_id,'admin'));
+drop policy if exists collection_members_admin_update on public.collection_members;
 create policy collection_members_admin_update on public.collection_members for update to authenticated
-using (
-  exists (
-    select 1 from public.collections c
-    where c.id=collection_members.collection_id
-      and c.workspace_id=collection_members.workspace_id
-      and private.is_workspace_member(c.workspace_id,'admin')
-  )
-)
-with check (
-  exists (
-    select 1 from public.collections c
-    where c.id=collection_members.collection_id
-      and c.workspace_id=collection_members.workspace_id
-      and private.is_workspace_member(c.workspace_id,'admin')
-  )
-);
+using(private.is_workspace_member(workspace_id,'admin'))
+with check(private.is_workspace_member(workspace_id,'admin'));
+drop policy if exists collection_members_admin_delete on public.collection_members;
 create policy collection_members_admin_delete on public.collection_members for delete to authenticated
-using (
-  exists (
-    select 1 from public.collections c
-    where c.id=collection_members.collection_id
-      and c.workspace_id=collection_members.workspace_id
-      and private.is_workspace_member(c.workspace_id,'admin')
-  )
-);
+using(private.is_workspace_member(workspace_id,'admin'));
 
 drop policy if exists comments_read on public.comments;
 create policy comments_read on public.comments for select to authenticated
