@@ -72,13 +72,14 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
     relearningSteps:preferences.relearning_steps
    });
    const elapsedMs=Math.max(0,Date.now()-startedAt.current);
+   const localDue=result.card.due instanceof Date?result.card.due:(result.card.due?new Date(String(result.card.due)):null);
    await upsertOfflineReviewState({
     id:userId+":"+card.id,
     userId,
     cardId:card.id,
     queue:String(result.card.state??"review"),
     stateData:result.card as Record<string,unknown>,
-    dueAt:result.card.due?new Date(result.card.due).toISOString():null,
+    dueAt:localDue?localDue.toISOString():null,
     lastReviewedAt:new Date().toISOString(),
     reps:Number(result.card.reps??0),
     lapses:Number(result.card.lapses??0),
