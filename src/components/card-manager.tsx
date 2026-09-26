@@ -141,6 +141,12 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
   const selectedVisible = filtered.filter(card => selected.includes(card.id));
   const allVisibleSelected = filtered.length > 0 && filtered.every(card => selected.includes(card.id));
 
+  function emitEditorPresence(cardId:string,field:string,element:HTMLTextAreaElement){
+    window.dispatchEvent(new CustomEvent("shyraq:editor-presence",{detail:{
+      cardId,field,selectionStart:element.selectionStart,selectionEnd:element.selectionEnd
+    }}));
+  }
+
   function toggle(id: string) {
     setSelected(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]);
   }
@@ -370,8 +376,8 @@ export function CardManager({ deckId, cards, favoriteIds, canEdit = true }: { de
 
               {canEdit ? <form action={updateCard.bind(null, deckId, card.id)}>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <textarea name="front" defaultValue={card.content?.front || ""} className="min-h-28 rounded-xl border border-slate-200 p-3 font-mono text-sm outline-none focus:border-slate-400" />
-                  <textarea name="back" defaultValue={card.content?.back || ""} className="min-h-28 rounded-xl border border-slate-200 p-3 font-mono text-sm outline-none focus:border-slate-400" />
+                  <textarea name="front" defaultValue={card.content?.front || ""} onFocus={event=>emitEditorPresence(card.id,"front",event.currentTarget)} onSelect={event=>emitEditorPresence(card.id,"front",event.currentTarget)} onKeyUp={event=>emitEditorPresence(card.id,"front",event.currentTarget)} className="min-h-28 rounded-xl border border-slate-200 p-3 font-mono text-sm outline-none focus:border-slate-400" />
+                  <textarea name="back" defaultValue={card.content?.back || ""} onFocus={event=>emitEditorPresence(card.id,"back",event.currentTarget)} onSelect={event=>emitEditorPresence(card.id,"back",event.currentTarget)} onKeyUp={event=>emitEditorPresence(card.id,"back",event.currentTarget)} className="min-h-28 rounded-xl border border-slate-200 p-3 font-mono text-sm outline-none focus:border-slate-400" />
                 </div>
                 <input type="hidden" name="kind" value={card.kind} />
                 <input type="hidden" name="expected_updated_at" value={card.updated_at||""} />
