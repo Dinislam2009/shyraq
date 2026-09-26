@@ -121,7 +121,7 @@ create table if not exists public.review_events (
  elapsed_ms integer, previous_state jsonb not null default '{}'::jsonb, next_state jsonb not null default '{}'::jsonb,
  metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), unique(device_id,client_sequence)
 );
-do $
+do $shyraq$
 begin
   if not exists (
     select 1 from pg_constraint
