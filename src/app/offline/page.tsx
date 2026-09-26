@@ -1,1 +1,5 @@
-export default function OfflinePage(){return <main className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-5"><div className="w-full max-w-md rounded-3xl border border-black/[0.06] bg-white p-8 text-center shadow-sm"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-sm font-bold text-white">S</div><h1 className="mt-6 text-2xl font-semibold tracking-tight">Shyraq is offline</h1><p className="mt-3 text-sm leading-6 text-slate-500">Your saved review session and local data remain available. Reconnect to continue syncing changes with the cloud.</p><a href="/review" className="mt-7 inline-flex rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">Open saved review</a></div></main>}
+import {OfflineReviewApp} from "@/components/offline-review-app";
+
+export default function OfflinePage(){
+ return <OfflineReviewApp/>;
+}
