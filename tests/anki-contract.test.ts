@@ -33,8 +33,7 @@ test("Anki cloze imports preserve the card deletion index",()=>{
 test("Anki cloze hint and type filters are normalized consistently",()=>{
  const parser=readFileSync(new URL("../src/lib/import/anki.ts",import.meta.url),"utf8");
  const runner=readFileSync(new URL("../src/components/review-runner.tsx",import.meta.url),"utf8");
- assert.ok(parser.includes("type\\s*:\\s*([^}]+)"));
- assert.ok(parser.includes("hint\\s*:\\s*([^}]+)"));
+ assert.ok(parser.includes("cloze|text|hint|type|field"));
  assert.ok(runner.includes("(?:::[^}|]+)?"));
 });
 
