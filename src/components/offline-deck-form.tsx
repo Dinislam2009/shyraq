@@ -18,7 +18,7 @@ export function OfflineDeckForm({action,userId,existingId,existing,redirectTo,ch
    const field=formRef.current.elements.namedItem(name);
    if(!field)continue;
    if(field instanceof HTMLInputElement&&field.type==="checkbox")field.checked=Boolean(value);
-   else if("value" in field)(field as HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement).value=String(value??"");
+   else if("value" in field)(field as unknown as HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement).value=String(value??"");
   }
   dismiss();
  },[dismiss,remoteDraft]);
