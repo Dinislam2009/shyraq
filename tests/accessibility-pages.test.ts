@@ -67,6 +67,7 @@ const pageFiles=[
 test("all App Router pages expose a semantic primary heading and no nested main landmark",()=>{
  for(const file of pageFiles){
   const source=readFileSync(new URL("../"+file,import.meta.url),"utf8");
+  if(redirectOnlyPages.has(file)) continue;
   assert.match(source,/<h1(?:\s|>)/,file+" should expose an h1");
   if(!standalonePages.has(file)) assert.doesNotMatch(source,/<main(?:\s|>)/,file+" should rely on the shared AppShell main landmark");
  }
