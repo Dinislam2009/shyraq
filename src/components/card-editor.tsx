@@ -239,7 +239,7 @@ export function CardEditor({
             </div>
             <label className="mt-4 block">
               <span className="text-sm font-medium">Upload new media</span>
-              <input name="media_file" type="file" accept={kind === "image" ? "image/*" : "image/*,audio/*,video/*"} onChange={event => { const file = event.target.files?.[0]; setImagePreview(file && file.type.startsWith("image/") ? URL.createObjectURL(file) : ""); }} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
+              <CompressedImageInput name="media_file" accept={kind === "image" ? "image/*" : "image/*,audio/*,video/*"} className="mt-2 block w-full rounded-xl border border-slate-200 p-3 text-sm" />
               <span className="mt-1 block text-xs text-slate-400">Maximum 25 MB.</span>
             </label>
             {mediaItems.length > 0 && <p className="mt-3 text-xs text-slate-500">{mediaItems.length} media item(s) linked to this card.</p>}
