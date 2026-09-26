@@ -157,6 +157,7 @@ test("creator mute and block relations have secure storage and feed filtering",(
  assert.match(schema,/relation text not null check\(relation in \('mute','block'\)\)/);
  assert.match(schema,/alter table public\.creator_relations enable row level security/);
  assert.match(schema,/create policy creator_relations_self_select[\s\S]*user_id=\(select auth\.uid\(\)\)/);
+ assert.match(schema,/create policy creator_relations_self_update[\s\S]*user_id=\(select auth\.uid\(\)\)/);
  const explore=readFileSync(new URL("../src/app/explore/page.tsx",import.meta.url),"utf8");
  const following=readFileSync(new URL("../src/app/explore/following/page.tsx",import.meta.url),"utf8");
  assert.match(explore,/from\("creator_relations"\)/);
