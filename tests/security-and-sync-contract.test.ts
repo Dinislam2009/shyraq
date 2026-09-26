@@ -34,3 +34,16 @@ test("offline bootstrap uses paginated range queries instead of fixed row caps",
  const bootstrap=syncRoute.split('if(request.nextUrl.searchParams.get("bootstrap")==="1")')[1]?.split('const {data,error}=await supabase.from("sync_changes")')[0]||"";
  assert.doesNotMatch(bootstrap,/\.limit\((?:500|5000|20000)\)/);
 });
+
+
+test("all SECURITY DEFINER functions pin search_path and deny public/anonymous execution",()=>{
+ const securityDefiners=[...schema.matchAll(/create(?:\\s+or\\s+replace)?\\s+function\\s+([a-zA-Z0-9_.]+)\\s*\\([^)]*\\)[\\s\\S]*?security\\s+definer[\\s\\S]*?;/gi)].map(match=>match[0]);
+ assert.ok(securityDefiners.length>=7);
+ for(const statement of securityDefiners){
+  assert.match(statement,/security\\s+definer/i);
+  assert.match(statement,/set\\s+search_path\\s*=/i);
+ }
+ for(const name of ["public.is_platform_moderator","public.create_notification","private.is_workspace_member","private.is_workspace_owner","private.touch_deck_updated_at","private.record_sync_change","private.prevent_workspace_owner_role_change"]){
+  assert.match(schema,new RegExp("revoke all on function "+name.replace(/\\./g,"\\\\.")+"\\\\([^;]*\\) from public,anon","i"));
+ }
+});
