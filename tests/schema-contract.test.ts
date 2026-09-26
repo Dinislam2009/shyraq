@@ -139,3 +139,14 @@ test("shared offline sync fans out deck/card/template changes to workspace membe
  assert.match(syncRoute,/const deckIds=\(decks\?\?\[\]\)\.map\(deck=>deck\.id\)/);
  assert.match(syncRoute,/from\("card_templates"\)/);
 });
+
+
+test("offline mutation API enforces workspace editor permissions for shared resources",()=>{
+ const syncRoute=readFileSync(new URL("../src/app/api/sync/route.ts",import.meta.url),"utf8");
+ assert.match(syncRoute,/async function canEditWorkspace/);
+ assert.match(syncRoute,/\["owner","admin","editor"\]/);
+ assert.match(syncRoute,/if\(!workspaceId\|\|!\(await canEditWorkspace/);
+ assert.match(syncRoute,/if\(!cardDeck\|\|!\(await canEditWorkspace/);
+ assert.match(syncRoute,/if\(!templateDeck\|\|!\(await canEditWorkspace/);
+ assert.match(syncRoute,/if\(existingCard\)row\.owner_id=existingCard\.owner_id/);
+});
