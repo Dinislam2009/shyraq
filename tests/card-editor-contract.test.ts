@@ -58,8 +58,8 @@ test("workspace sync fans out tags and collections",()=>{
  assert.match(schema,/tg_table_name in \('decks','cards','card_templates','tags','collections','collection_cards'\)/);
  assert.match(route,/entityType==="tags"/);
  assert.match(route,/entityType==="collections"/);
- assert.match(route,/tags:\(tags\?\?\[\]\)/);
- assert.match(route,/collections:\(collections\?\?\[\]\)/);
+ assert.match(route,/tags:tags\?\?\[\]/);
+ assert.match(route,/collections:collections\?\?\[\]/);
 });
 
 
