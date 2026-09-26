@@ -211,7 +211,7 @@ export async function restoreBackup(supabase:any,userId:string,workspaceId:strin
   await cleanupRestore(supabase,createdDeckIds,createdCollectionIds,uploadedMediaPaths);
   throw error;
  }
-
+}
 
 async function importStandardRows(supabase:any,userId:string,workspaceId:string,rows:ImportRow[],mode:"create"|"skip"|"replace"){
  const issues=validateImportRows(rows);
