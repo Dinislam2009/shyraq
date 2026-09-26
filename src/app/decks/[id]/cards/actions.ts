@@ -7,6 +7,16 @@ import {duplicateKey} from "@/lib/import/standard";
 import {isStaleVersion} from "@/lib/concurrency";
 
 function fail(path:string,message:string):never{redirect(path+"?error="+encodeURIComponent(message));}
+async function fetchAllRows<T>(queryFactory:(from:number,to:number)=>any,pageSize=1000):Promise<T[]>{
+ const rows:T[]=[];
+ for(let from=0;;from+=pageSize){
+  const {data,error}=await queryFactory(from,from+pageSize-1);
+  if(error)throw new Error(error.message);
+  const batch=(data??[]) as T[];
+  rows.push(...batch);
+  if(batch.length<pageSize)return rows;
+ }
+}
 async function requireDeckEditor(supabase:any,userId:string,deckId:string){
  const {data:deck}=await supabase.from("decks").select("id,workspace_id").eq("id",deckId).maybeSingle();
  if(!deck)fail("/decks/"+deckId,"Deck not found.");
@@ -94,8 +104,10 @@ async function validateLibraryMedia(supabase:any,userId:string,items:Array<{path
 async function cleanupMediaPaths(supabase:any,paths:string[]){
  const unique=[...new Set(paths.filter(Boolean))];
  if(!unique.length)return;
- await supabase.from("media").delete().in("storage_path",unique);
- await supabase.storage.from("user-media").remove(unique);
+ const {error:mediaError}=await supabase.from("media").delete().in("storage_path",unique);
+ if(mediaError)throw new Error(mediaError.message);
+ const {error:storageError}=await supabase.storage.from("user-media").remove(unique);
+ if(storageError)throw new Error(storageError.message);
 }
 async function applyTags(supabase:any,cardId:string,workspaceId:string,names:string[]){
  if(!names.length){await supabase.from("card_tags").delete().eq("card_id",cardId);return;}
@@ -129,8 +141,13 @@ export async function createBulkCards(deckId:string,formData:FormData):Promise<v
   const {data:media}=await supabase.from("media").select("storage_path,mime_type").eq("owner_id",user.id).eq("storage_path",selectedMedia).maybeSingle();
   if(!media)fail("/decks/"+deckId+"/cards/bulk","Selected media is not available.");
  }
- const {data:existing}=await supabase.from("cards").select("id,content").eq("owner_id",user.id).limit(50000);
- const seen=new Set((existing??[]).map((card:any)=>duplicateKey({front:String(card.content?.front||""),back:String(card.content?.back||"")})));
+ let existing:any[];
+ try{
+  existing=await fetchAllRows<any>((from,to)=>supabase.from("cards").select("id,content").eq("owner_id",user.id).order("id",{ascending:true}).range(from,to));
+ }catch(error){
+  fail("/decks/"+deckId+"/cards/bulk",error instanceof Error?error.message:"Unable to inspect existing cards.");
+ }
+ const seen=new Set(existing.map((card:any)=>duplicateKey({front:String(card.content?.front||""),back:String(card.content?.back||"")})));
  const inFile=new Set<string>();
  const toInsert=[];
  let skipped=0;
@@ -156,7 +173,10 @@ export async function createBulkCards(deckId:string,formData:FormData):Promise<v
    const {data:tags,error}=await supabase.from("tags").upsert(tagNames.map(name=>({workspace_id:deck.workspace_id,name})),{onConflict:"workspace_id,name"}).select("id");
    if(error)fail("/decks/"+deckId+"/cards/bulk",error.message);
    const links=(created??[]).flatMap((card:any)=>(tags??[]).map((tag:any)=>({card_id:card.id,tag_id:tag.id})));
-   if(links.length)await supabase.from("card_tags").upsert(links,{onConflict:"card_id,tag_id"});
+   if(links.length){
+    const {error:linkError}=await supabase.from("card_tags").upsert(links,{onConflict:"card_id,tag_id"});
+    if(linkError)fail("/decks/"+deckId+"/cards/bulk",linkError.message);
+   }
   }
  }
  revalidatePath("/decks/"+deckId);

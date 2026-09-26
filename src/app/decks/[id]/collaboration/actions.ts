@@ -17,7 +17,8 @@ async function access(deckId:string,write=false){
 }
 
 async function logActivity(supabase:any,workspaceId:string,userId:string,eventType:string,entityType:string,entityId:string|null,metadata:any={}){
- await supabase.from("activity_feed").insert({workspace_id:workspaceId,actor_id:userId,event_type:eventType,entity_type:entityType,entity_id:entityId,metadata});
+ const {error}=await supabase.from("activity_feed").insert({workspace_id:workspaceId,actor_id:userId,event_type:eventType,entity_type:entityType,entity_id:entityId,metadata});
+ if(error)throw new Error(error.message);
 }
 
 export async function createComment(deckId:string,formData:FormData){
@@ -34,7 +35,8 @@ export async function createComment(deckId:string,formData:FormData){
   const {data:profiles}=await supabase.from("profiles").select("id,username").in("username",mentions);
   const rows=(profiles??[]).filter((profile:any)=>profile.id!==user.id).map((profile:any)=>({comment_id:comment.id,mentioned_user_id:profile.id}));
   if(rows.length){
-   await supabase.from("comment_mentions").upsert(rows,{onConflict:"comment_id,mentioned_user_id"});
+   const {error:mentionError}=await supabase.from("comment_mentions").upsert(rows,{onConflict:"comment_id,mentioned_user_id"});
+   if(mentionError)redirect("/decks/"+deckId+"/collaboration?error="+encodeURIComponent("Mention storage failed: "+mentionError.message));
    for(const row of rows){
     const {error:notificationError}=await supabase.rpc("create_notification",{
      target_user:row.mentioned_user_id,
@@ -99,7 +101,7 @@ export async function restoreDeckVersion(deckId:string,versionId:string){
  const {error:deckError}=await supabase.from("decks").update({name:String(snapshotDeck.name||deck.name),description:String(snapshotDeck.description||""),visibility:String(snapshotDeck.visibility||"private"),settings:snapshotDeck.settings&&typeof snapshotDeck.settings==="object"?snapshotDeck.settings:{}}).eq("id",deckId);
  if(deckError)redirect("/decks/"+deckId+"/collaboration?error="+encodeURIComponent(deckError.message));
  for(const card of Array.isArray(snapshot.cards)?snapshot.cards:[]){
-  await supabase.from("cards").update({
+  const {error:cardError}=await supabase.from("cards").update({
    kind:String(card.kind||"basic"),
    content:card.content&&typeof card.content==="object"?card.content:{},
    template_id:card.template_id?String(card.template_id):null,
@@ -107,6 +109,7 @@ export async function restoreDeckVersion(deckId:string,versionId:string){
    is_suspended:Boolean(card.is_suspended),
    is_marked:Boolean(card.is_marked)
   }).eq("id",String(card.id)).eq("deck_id",deckId);
+  if(cardError)redirect("/decks/"+deckId+"/collaboration?error="+encodeURIComponent("Card restore failed: "+cardError.message));
  }
  await logActivity(supabase,deck.workspace_id,user.id,"deck.version.restored","deck",deckId,{versionNumber:version.version_number});
  revalidatePath("/decks/"+deckId);revalidatePath("/decks/"+deckId+"/collaboration");redirect("/decks/"+deckId+"/collaboration?saved=restore");

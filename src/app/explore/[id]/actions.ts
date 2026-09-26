@@ -70,20 +70,30 @@ export async function acceptDeckUpdate(copiedDeckId:string):Promise<void>{
  for(const sourceCard of sourceCards){
   const local=targetBySourceId.get(String(sourceCard.id));
   const payload={kind:sourceCard.kind,content:{...sourceCard.content,_sourceCardId:sourceCard.id},sort_order:sourceCard.sort_order,is_suspended:sourceCard.is_suspended,is_marked:sourceCard.is_marked};
-  if(local)await supabase.from("cards").update(payload).eq("id",local.id);
-  else await supabase.from("cards").insert({...payload,deck_id:target.id,owner_id:user.id});
+  if(local){
+   const {error}=await supabase.from("cards").update(payload).eq("id",local.id);
+   if(error)fail("/decks/"+copiedDeckId,"Unable to update copied card: "+error.message);
+  }else{
+   const {error}=await supabase.from("cards").insert({...payload,deck_id:target.id,owner_id:user.id});
+   if(error)fail("/decks/"+copiedDeckId,"Unable to create copied card: "+error.message);
+  }
  }
 
  for(const local of targetCards){
   const sourceId=local.content?._sourceCardId;
-  if(sourceId&&!sourceById.has(String(sourceId)))await supabase.from("cards").delete().eq("id",local.id);
+  if(sourceId&&!sourceById.has(String(sourceId))){
+   const {error}=await supabase.from("cards").delete().eq("id",local.id);
+   if(error)fail("/decks/"+copiedDeckId,"Unable to remove obsolete copied card: "+error.message);
+  }
  }
 
  const {error:deckError}=await supabase.from("decks").update({name:source.name+" (copy)",description:source.description,settings:source.settings}).eq("id",target.id);
  if(deckError)fail("/decks/"+copiedDeckId,deckError.message);
 
- await supabase.from("deck_copies").update({source_updated_at:source.updated_at,last_synced_source_updated_at:source.updated_at}).eq("user_id",user.id).eq("copied_deck_id",copiedDeckId);
- await supabase.from("deck_copy_update_history").insert({user_id:user.id,source_deck_id:copy.source_deck_id,copied_deck_id:copiedDeckId,source_updated_at:source.updated_at,card_changes:diff});
+ const {error:copyUpdateError}=await supabase.from("deck_copies").update({source_updated_at:source.updated_at,last_synced_source_updated_at:source.updated_at}).eq("user_id",user.id).eq("copied_deck_id",copiedDeckId);
+ if(copyUpdateError)fail("/decks/"+copiedDeckId,copyUpdateError.message);
+ const {error:historyError}=await supabase.from("deck_copy_update_history").insert({user_id:user.id,source_deck_id:copy.source_deck_id,copied_deck_id:copiedDeckId,source_updated_at:source.updated_at,card_changes:diff});
+ if(historyError)fail("/decks/"+copiedDeckId,historyError.message);
  revalidatePath("/decks/"+copiedDeckId);
  redirect("/decks/"+copiedDeckId);
 }

@@ -30,8 +30,13 @@ export async function toggleFavorite(cardId:string,deckId:string):Promise<void>{
  try{
   const collection=await favoritesCollection(supabase,user.id,workspace.id);
   const {data:existing}=await supabase.from("collection_cards").select("collection_id").eq("collection_id",collection.id).eq("card_id",cardId).maybeSingle();
-  if(existing)await supabase.from("collection_cards").delete().eq("collection_id",collection.id).eq("card_id",cardId);
-  else await supabase.from("collection_cards").insert({collection_id:collection.id,card_id:cardId});
+  if(existing){
+   const {error}=await supabase.from("collection_cards").delete().eq("collection_id",collection.id).eq("card_id",cardId);
+   if(error)throw new Error(error.message);
+  }else{
+   const {error}=await supabase.from("collection_cards").insert({collection_id:collection.id,card_id:cardId});
+   if(error)throw new Error(error.message);
+  }
  }catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to update favorite.");}
  revalidatePath("/decks/"+deckId);revalidatePath("/collections");redirect("/decks/"+deckId);
 }
