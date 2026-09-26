@@ -737,7 +737,7 @@ Collaboration is planned after the public sharing foundation.
 - [x] Presence indicators
 - [x] Active editor indicators
 - [x] Cursor/selection presence where practical
-- [ ] Optimistic updates
+- [x] Optimistic updates
 - [x] Conflict detection
 - [x] Conflict resolution UI
 - [x] Version history
