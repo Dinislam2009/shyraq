@@ -579,7 +579,7 @@ Target principle:
 - [x] Conditional fields
 - [x] Template duplication
 - [x] Template import/export
-- [ ] Template compatibility layer for Anki
+- [x] Template compatibility layer for Anki
 
 ---
 
