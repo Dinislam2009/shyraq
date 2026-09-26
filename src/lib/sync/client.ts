@@ -3,7 +3,7 @@ import {
  cacheMirror,cacheMediaBlob,getCachedReviewSession,getDeviceId,getOfflineStorageUsage,
  getPendingMutations,offlineStore,queueMutation,removeMirroredEntity,setSyncMeta
 } from "@/lib/offline/store";
-import type {OfflineReview} from "@/lib/offline/store";
+import type {OfflineReview,OfflineCardTemplate} from "@/lib/offline/store";
 
 export type SyncOperation={
  id:string;entity_type:"decks"|"cards"|"card_templates";
