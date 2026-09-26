@@ -30,3 +30,15 @@ test("extended translation catalog is complete for every supported locale",()=>{
   }
  }
 });
+
+
+test("core navigation uses the shared i18n API for visible labels",()=>{
+ const sidebar=readFileSync(new URL("../src/components/sidebar.tsx",import.meta.url),"utf8");
+ const mobile=readFileSync(new URL("../src/components/mobile-nav.tsx",import.meta.url),"utf8");
+ const topbar=readFileSync(new URL("../src/components/topbar.tsx",import.meta.url),"utf8");
+ assert.match(sidebar,/useI18n/);
+ assert.match(mobile,/useI18n/);
+ assert.match(topbar,/getServerI18n/);
+ assert.doesNotMatch(mobile,/>More<|>Search<|>Notifications<|>Import<|>Export<|>Settings<|>Health<|>Privacy<|>Terms</);
+ assert.doesNotMatch(topbar,/unread notifications/);
+});
