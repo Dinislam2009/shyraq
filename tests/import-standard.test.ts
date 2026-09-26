@@ -19,7 +19,7 @@ test("invalid multiple choice rows report validation issues",()=>{
  const rows=parseStandardText("front,back,kind,options,answer\nQ,A,multiple_choice,OnlyOne,0","cards.csv");
  assert.equal(validateImportRows(rows).length,1);
 });
-test("duplicate keys are stable",()=>assert.equal(duplicateKey({front:" Hello ",back:"World"}),"hello\u0000world"));
+test("duplicate keys are stable",()=>assert.equal(duplicateKey({front:" Hello ",back:"World"}),"hello␟world"));
 
 
 test("large imports use indexed duplicate fingerprints",()=>{
