@@ -715,6 +715,15 @@ begin
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='activity_feed') then
     alter publication supabase_realtime add table public.activity_feed;
   end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='deck_versions') then
+    alter publication supabase_realtime add table public.deck_versions;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='deck_members') then
+    alter publication supabase_realtime add table public.deck_members;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='collection_members') then
+    alter publication supabase_realtime add table public.collection_members;
+  end if;
 end $shyraq$;
 
 
