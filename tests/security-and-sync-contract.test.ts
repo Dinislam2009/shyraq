@@ -114,6 +114,13 @@ test("secondary RLS policies use direct membership checks instead of helper-poli
  assert.doesNotMatch(schema,/create policy tags_member[\\s\\S]*private\.is_workspace_member/);
  assert.doesNotMatch(schema,/create policy card_tags_member[\\s\\S]*private\./);
 });
+test("sync mutations surface tag and conflict write failures instead of silently continuing",()=>{
+ assert.match(syncRoute,/const \{error:clearTagsError\}=await supabase\.from\("card_tags"\)\.delete/);
+ assert.match(syncRoute,/if\(clearTagsError\)throw new Error\(clearTagsError\.message\)/);
+ assert.match(syncRoute,/if\(conflictError\)\{[\s\S]*failedEvents\.push\(String\(e\.event_key\)\)/);
+ assert.match(syncRoute,/await supabase\.from\("review_events"\)\.delete\(\)\.eq\("event_key",e\.event_key\)\.eq\("user_id",user\.id\)/);
+ assert.match(syncRoute,/conflicts\.push\(e\.event_key\);[\s\S]*await supabase\.rpc\("create_notification"/);
+});
 test("review sync exposes failed event IDs and the client preserves them as failed",()=>{
  assert.match(syncRoute,/failedEvents/);
  assert.match(syncRoute,/review_events.*delete/);
