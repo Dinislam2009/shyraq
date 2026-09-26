@@ -7,6 +7,7 @@ import { parseCardFormData } from "@/lib/offline/form-payload";
 import { RichContent } from "@/components/rich-content";
 import { BlockEditor } from "@/components/block-editor";
 import { OcclusionEditor, type OcclusionRect } from "@/components/image-occlusion";
+import { CompressedImageInput } from "@/components/compressed-image-input";
 
 type CardAction = (formData: FormData) => void | Promise<void>;
 type Template = { id: string; name: string; front_template: string; back_template: string; css?: string };
