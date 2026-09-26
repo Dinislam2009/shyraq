@@ -22,8 +22,12 @@ export default async function ReviewSettingsPage(){
  return <AppShell><div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
    <p className="text-sm text-slate-400">Review</p>
    <h1 className="mt-1 text-3xl font-semibold tracking-tight">Scheduler settings</h1>
-   <p className="mt-2 text-sm text-slate-500">Tune the FSRS scheduler and customize the review controls without changing review history.</p>
+   <p className="mt-2 text-sm text-slate-500">Choose the scheduling engine and customize review controls without changing your card data.</p>
    <form action={updateReviewPreferences} className="mt-8 space-y-5 rounded-2xl border border-black/[0.06] bg-white p-6">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <label className="block"><span className="text-sm font-medium">Scheduler engine</span><select name="scheduler_engine" defaultValue={String(sessionDefaults.schedulerEngine||"fsrs")} className="mt-2 h-11 w-full rounded-xl border bg-white px-3 text-sm"><option value="fsrs">FSRS</option><option value="sm2">SM-2</option></select></label>
+      <p className="mt-2 text-xs text-slate-500">FSRS uses the Shyraq FSRS implementation. SM-2 uses a classic interval/ease model.</p>
+    </div>
     <div className="grid gap-4 sm:grid-cols-2">
       <label className="block"><span className="text-sm font-medium">Desired retention</span><input name="desired_retention" type="number" min="0.7" max="0.99" step="0.01" defaultValue={prefs?.desired_retention??0.9} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm"/></label>
       <label className="block"><span className="text-sm font-medium">Maximum interval (days)</span><input name="maximum_interval" type="number" min="1" defaultValue={prefs?.maximum_interval??36500} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm"/></label>
@@ -79,9 +83,9 @@ export default async function ReviewSettingsPage(){
     </div>
     <div className="border-t border-slate-100 pt-5">
       <h2 className="text-base font-semibold">Scheduler profiles</h2>
-      <p className="mt-1 text-sm text-slate-500">Save the current FSRS configuration as a named profile.</p>
+      <p className="mt-1 text-sm text-slate-500">Save the current scheduler configuration as a named profile.</p>
       <label className="mt-4 block"><span className="text-sm font-medium">Profile name</span><input name="profile_name" maxLength={50} placeholder="Exam mode" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm"/></label>
-      <div className="mt-4 space-y-2">{profiles.map((profile:any)=><div key={String(profile.id||profile.name)} className="rounded-xl bg-slate-50 px-3 py-3 text-sm"><span className="font-medium">{String(profile.name||"FSRS profile")}</span><span className="ml-2 text-xs text-slate-400">FSRS · retention {String(profile.desired_retention||"—")}</span></div>)}</div>
+      <div className="mt-4 space-y-2">{profiles.map((profile:any)=><div key={String(profile.id||profile.name)} className="rounded-xl bg-slate-50 px-3 py-3 text-sm"><span className="font-medium">{String(profile.name||"FSRS profile")}</span><span className="ml-2 text-xs text-slate-400">{String(profile.engine||"fsrs").toUpperCase()} · retention {String(profile.desired_retention||"—")}</span></div>)}</div>
     </div>
     <div className="flex flex-wrap justify-end gap-2"><a href="/settings/review/diagnostics" className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold">Diagnostics</a><a href="/review/config" className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold">Session configuration</a><button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white">Save scheduler</button></div>
    </form>
