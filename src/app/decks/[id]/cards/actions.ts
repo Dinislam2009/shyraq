@@ -17,14 +17,6 @@ function payload(formData:FormData){
  const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
  const markers=String(formData.get("markers")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
  const status=String(formData.get("status")||"").trim().slice(0,60);
- const kindValue=["basic","reverse","cloze","multiple_choice","image","custom"].includes(String(formData.get("kind")||""))?String(formData.get("kind")):"basic";
- const options=String(formData.get("options")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
- const answerRaw=String(formData.get("answer")||"").trim();
- const answer=Number.isFinite(Number(answerRaw))?Number(answerRaw):0;
- const imageUrl=String(formData.get("image_url")||"").trim().slice(0,2000);
- let reviewPreferences:Record<string,unknown>={};
- try{const parsed=JSON.parse(String(formData.get("fields")||"{}"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))fields=parsed;}catch{}
- try{const parsed=JSON.parse(String(formData.get("review_preferences")||"{}"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))reviewPreferences=parsed;}catch{}
  if(tags.length)content.tags=tags;
  if(markers.length)content.markers=markers;
  if(status)content.status=status;
@@ -209,6 +201,16 @@ export async function bulkEditCards(deckId:string,cardIds:string[],formData:Form
  const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
  const markers=String(formData.get("markers")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
  const status=String(formData.get("status")||"").trim().slice(0,60);
+ const kindValue=["basic","reverse","cloze","multiple_choice","image","custom"].includes(String(formData.get("kind")||""))?String(formData.get("kind")):"basic";
+ const templateId=String(formData.get("template_id")||"").trim();
+ const options=String(formData.get("options")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
+ const answerRaw=String(formData.get("answer")||"").trim();
+ const answer=Number.isFinite(Number(answerRaw))?Number(answerRaw):0;
+ const imageUrl=String(formData.get("image_url")||"").trim().slice(0,2000);
+ let fields:Record<string,unknown>={};
+ let reviewPreferences:Record<string,unknown>={};
+ try{const parsed=JSON.parse(String(formData.get("fields")||"{}"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))fields=parsed;}catch{}
+ try{const parsed=JSON.parse(String(formData.get("review_preferences")||"{}"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))reviewPreferences=parsed;}catch{}
 
  if(!applyFront&&!applyBack&&!applyTags&&!applyMarkers&&!applyStatus&&!applyKind&&!applyTemplate&&!applyOptions&&!applyAnswer&&!applyImage&&!applyFields&&!applyReviewPreferences)fail("/decks/"+deckId,"Choose at least one field to update.");
 
