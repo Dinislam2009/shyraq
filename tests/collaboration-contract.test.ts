@@ -25,3 +25,14 @@ test("workspace member search uses profile identity fields",()=>{
  assert.ok(page.includes('placeholder="Search by name, username or user id"'));
  assert.ok(page.includes("profile?.display_name||profile?.username||\"Member\""));
 });
+
+
+test("presence tracks collaborator identity and active editor roles",()=>{
+ const presence=readFileSync(new URL("../src/components/collaboration-presence.tsx",import.meta.url),"utf8");
+ assert.ok(presence.includes("displayName"));
+ assert.ok(presence.includes("role"));
+ assert.ok(presence.includes('channel.track({userId,displayName:displayName||"Member",role:role||"viewer",joinedAt:Date.now()})'));
+ assert.ok(presence.includes('const editors=members.filter'));
+ assert.ok(presence.includes("active {editors.length===1?"editor":"editors"}"));
+ assert.ok(deckPage.includes("displayName={String(currentProfile?.display_name||currentProfile?.username||"Member")"));
+});
