@@ -16,8 +16,8 @@ export async function GET(request:Request){
  const auth=request.headers.get("authorization");
  if(!process.env.CRON_SECRET||auth!=="Bearer "+process.env.CRON_SECRET)return NextResponse.json({error:"Unauthorized"},{status:401});
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
- const serviceRole=process.env.SUPABASE_SERVICE_ROLE_KEY;
- if(!url||!serviceRole)return NextResponse.json({error:"Supabase service credentials are not configured."},{status:503});
+ const serviceRole=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;
+ if(!url||!serviceRole)return NextResponse.json({error:"Supabase server credentials are not configured."},{status:503});
  const supabase=createSupabaseClient(url,serviceRole,{auth:{autoRefreshToken:false,persistSession:false}});
  const now=new Date().toISOString();
  const {data:schedules,error:scheduleError}=await supabase.from("backup_schedules").select("id,user_id,frequency,next_run_at").eq("enabled",true).lte("next_run_at",now).order("next_run_at",{ascending:true}).limit(50);
