@@ -7,6 +7,18 @@ import {duplicateKey} from "@/lib/import/standard";
 import {isStaleVersion} from "@/lib/concurrency";
 
 function fail(path:string,message:string):never{redirect(path+"?error="+encodeURIComponent(message));}
+async function requireDeckEditor(supabase:any,userId:string,deckId:string){
+ const {data:deck}=await supabase.from("decks").select("id,workspace_id").eq("id",deckId).maybeSingle();
+ if(!deck)fail("/decks/"+deckId,"Deck not found.");
+ const [{data:member},{data:override}]=await Promise.all([
+  supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",userId).maybeSingle(),
+  supabase.from("deck_members").select("role").eq("deck_id",deckId).eq("user_id",userId).maybeSingle()
+ ]);
+ const workspaceRole=String(member?.role||"");
+ const deckRole=String(override?.role||"");
+ if(!["owner","admin","editor"].includes(workspaceRole)&&deckRole!=="editor")fail("/decks/"+deckId,"You do not have permission to edit this deck.");
+ return deck;
+}
 function payload(formData:FormData){
  const rawFields=String(formData.get("fields")||"");
  const rawMediaItems=String(formData.get("media_items")||"");
@@ -99,8 +111,7 @@ export async function createBulkCards(deckId:string,formData:FormData):Promise<v
  if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
  if(!deck)fail("/decks/"+deckId,"Deck not found.");
- const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
- if(!["owner","admin","editor"].includes(String(member?.role||"")))fail("/decks/"+deckId,"You do not have permission to edit this deck.");
+ try{await requireDeckEditor(supabase,user.id,deckId);}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"You do not have permission to edit this deck.");}
  const raw=String(formData.get("bulk")||"").replace(/\r\n/g,"\n");
  const lines=raw.split("\n");
  const rows=lines.map(line=>{
@@ -158,8 +169,7 @@ export async function reorderCards(deckId:string,cardIds:string[]):Promise<void>
  if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
  if(!deck)fail("/decks/"+deckId,"Deck not found.");
- const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
- if(!["owner","admin","editor"].includes(String(member?.role||"")))fail("/decks/"+deckId,"You do not have permission to edit this deck.");
+ try{await requireDeckEditor(supabase,user.id,deckId);}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"You do not have permission to edit this deck.");}
  const ordered=[...new Set(cardIds)].filter(Boolean).slice(0,500);
  for(let index=0;index<ordered.length;index++){
   const {error}=await supabase.from("cards").update({sort_order:index}).eq("id",ordered[index]).eq("deck_id",deckId);
@@ -175,8 +185,7 @@ export async function bulkEditCards(deckId:string,cardIds:string[],formData:Form
  if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
  if(!deck)fail("/decks/"+deckId,"Deck not found.");
- const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
- if(!["owner","admin","editor"].includes(String(member?.role||"")))fail("/decks/"+deckId,"You do not have permission to edit this deck.");
+ try{await requireDeckEditor(supabase,user.id,deckId);}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"You do not have permission to edit this deck.");}
 
  const ids=[...new Set(cardIds)].filter(Boolean).slice(0,500);
  if(!ids.length)fail("/decks/"+deckId,"Select at least one card.");
@@ -239,6 +248,7 @@ export async function bulkEditCards(deckId:string,cardIds:string[],formData:Form
 export async function createCard(deckId:string,formData:FormData):Promise<void>{
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/login");
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();if(!deck)fail("/decks/"+deckId,"Deck not found.");
+ try{await requireDeckEditor(supabase,user.id,deckId);}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"You do not have permission to edit this deck.");}
  const p=payload(formData);const mediaFile=formData.get("media_file");
  const libraryMedia=await validateLibraryMedia(supabase,user.id,p.content.mediaItems||[]); if(libraryMedia.length)p.content.mediaItems=libraryMedia; else delete p.content.mediaItems;
  if(mediaFile instanceof File&&mediaFile.size>0){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;}}catch(error){fail("/decks/"+deckId+"/cards/new",error instanceof Error?error.message:"Unable to upload media.");}}
@@ -273,8 +283,7 @@ export async function updateCard(deckId:string,cardId:string,formData:FormData):
  }
  const {data:deck}=await supabase.from("decks").select("workspace_id").eq("id",deckId).maybeSingle();
  if(!deck)fail("/decks/"+deckId,"Deck not found.");
- const {data:member}=await supabase.from("workspace_members").select("role").eq("workspace_id",deck.workspace_id).eq("user_id",user.id).maybeSingle();
- if(!["owner","admin","editor"].includes(String(member?.role||"")))fail("/decks/"+deckId,"You do not have permission to edit this deck.");
+ try{await requireDeckEditor(supabase,user.id,deckId);}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"You do not have permission to edit this deck.");}
  if(mediaFile instanceof File&&mediaFile.size>0&&deck){try{const media=await uploadMedia(supabase,user.id,deck.workspace_id,mediaFile);if(media){p.content.mediaPath=media.storage_path;p.content.mediaType=media.mime_type;if(p.kind==="image")p.content.occlusions=[];}}catch(error){fail("/decks/"+deckId,error instanceof Error?error.message:"Unable to upload media.");}}
  const {error}=await supabase.from("cards").update(p).eq("id",cardId);
  if(error){
