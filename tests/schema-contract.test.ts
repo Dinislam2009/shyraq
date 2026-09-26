@@ -118,3 +118,12 @@ test("backup restore tracks newly created resources for rollback",()=>{
  assert.match(restore,/uploadedMediaPaths\.push\(newPath\)/);
  assert.match(restore,/cleanupRestore\(supabase,createdDeckIds,createdCollectionIds,uploadedMediaPaths\)/);
 });
+
+
+test("backup restore preserves extended review preferences",()=>{
+ const restore=readFileSync(new URL("../src/app/import/actions.ts",import.meta.url),"utf8");
+ assert.ok(restore.includes("rating_styles:preferences.rating_styles"));
+ assert.ok(restore.includes("accessibility:preferences.accessibility"));
+ assert.ok(restore.includes("session_defaults:preferences.session_defaults"));
+ assert.ok(restore.includes("scheduler_profiles:Array.isArray(preferences.scheduler_profiles)?preferences.scheduler_profiles:[]"));
+});
