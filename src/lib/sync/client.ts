@@ -6,7 +6,7 @@ import {
 import type {OfflineReview,OfflineCardTemplate} from "@/lib/offline/store";
 
 export type SyncOperation={
- id:string;entity_type:"decks"|"cards"|"card_templates";
+ id:string;entity_type:"decks"|"cards"|"card_templates"|"tags"|"collections";
  operation:"upsert"|"delete";entity_id:string;payload:Record<string,unknown>;
 };
 
