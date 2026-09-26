@@ -62,9 +62,9 @@ test("server notification writes use the RLS-safe RPC",()=>{
  assert.match(notificationHelper,/rpc\("create_notification"/);
 });
 
-test("collaboration member/comment policies enforce resource workspace relationships",()=>{
- assert.match(schema,/d\.id=deck_members\.deck_id[\s\S]*d\.workspace_id=deck_members\.workspace_id/);
- assert.match(schema,/c\.id=collection_members\.collection_id[\s\S]*c\.workspace_id=collection_members\.workspace_id/);
+test("collaboration member/comment policies enforce workspace isolation and resource relationships",()=>{
+ assert.match(schema,/create policy deck_members_read[\s\S]*using\(private\.is_workspace_member\(workspace_id,'viewer'\)\)/);
+ assert.match(schema,/create policy collection_members_read[\s\S]*using\(private\.is_workspace_member\(workspace_id,'viewer'\)\)/);
  assert.match(schema,/d\.id=comments\.deck_id[\s\S]*d\.workspace_id=comments\.workspace_id/);
 });
 
