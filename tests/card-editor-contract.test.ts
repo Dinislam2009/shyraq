@@ -152,6 +152,9 @@ test("CardEditor block editor exposes safe visual editing mode",()=>{
  assert.match(block,/contentEditable/);
  assert.match(block,/htmlToMarkdown/);
  assert.match(block,/document\.execCommand\("bold"\)/);
+ assert.match(block,/document\.execCommand\("createLink"/);
+ assert.match(block,/document\.execCommand\("insertUnorderedList"/);
+ assert.match(block,/document\.execCommand\("insertOrderedList"/);
  assert.match(block,/aria-multiline/);
 });
 
