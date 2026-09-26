@@ -19,3 +19,16 @@ test("invalid multiple choice rows report validation issues",()=>{
  assert.equal(validateImportRows(rows).length,1);
 });
 test("duplicate keys are stable",()=>assert.equal(duplicateKey({front:" Hello ",back:"World"}),"hello\u0000world"));
+
+
+test("large imports use indexed duplicate fingerprints",()=>{
+ const schema=readFileSync(new URL("../supabase/schema.sql",import.meta.url),"utf8");
+ const actions=readFileSync(new URL("../src/app/import/actions.ts",import.meta.url),"utf8");
+ const worker=readFileSync(new URL("../src/app/api/import/jobs/[id]/route.ts",import.meta.url),"utf8");
+ assert.match(schema,/duplicate_fingerprint text generated always as/);
+ assert.match(schema,/cards_owner_duplicate_fingerprint_idx/);
+ assert.match(actions,/createHash\("md5"\)\.update\(duplicateKey\(row\)\)/);
+ assert.match(actions,/in\("duplicate_fingerprint",fingerprints\)/);
+ assert.match(worker,/createHash\("md5"\)\.update\(duplicateKey\(row\)\)/);
+ assert.match(worker,/in\("duplicate_fingerprint",fingerprints\)/);
+});
