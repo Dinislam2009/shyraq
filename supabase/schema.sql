@@ -281,6 +281,27 @@ create table if not exists public.error_logs (
 create index if not exists error_logs_user_idx on public.error_logs(user_id,created_at desc);
 create index if not exists error_logs_created_idx on public.error_logs(created_at desc);
 
+create table if not exists public.import_jobs (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references auth.users(id) on delete cascade,
+ workspace_id uuid not null references public.workspaces(id) on delete cascade,
+ deck_id uuid references public.decks(id) on delete set null,
+ storage_path text not null,
+ source_name text not null,
+ format text not null default 'standard',
+ duplicate_mode text not null default 'skip' check(duplicate_mode in ('create','skip','replace')),
+ total_rows integer not null default 0,
+ processed_rows integer not null default 0,
+ created_rows integer not null default 0,
+ replaced_rows integer not null default 0,
+ skipped_rows integer not null default 0,
+ status text not null default 'queued' check(status in ('queued','processing','completed','failed','cancelled')),
+ error text,
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now(),
+ completed_at timestamptz
+);
+create index if not exists import_jobs_user_idx on public.import_jobs(user_id,created_at desc);
 create table if not exists public.backup_versions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -624,6 +645,8 @@ alter table public.creator_relations enable row level security;
 alter table public.deck_copies enable row level security;
 alter table public.deck_copy_update_history enable row level security;
 alter table public.backup_versions enable row level security;
+alter table public.import_jobs enable row level security;
+
 alter table public.workspace_invitations enable row level security;
 alter table public.notifications enable row level security;
 alter table public.review_devices enable row level security;
@@ -811,6 +834,10 @@ create policy deck_copy_update_history_self on public.deck_copy_update_history f
 using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
 drop policy if exists backup_versions_self on public.backup_versions;
+drop policy if exists import_jobs_self on public.import_jobs;
+create policy import_jobs_self on public.import_jobs for all to authenticated
+using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+
 create policy backup_versions_self on public.backup_versions for all to authenticated
 using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
 
