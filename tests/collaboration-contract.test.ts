@@ -39,3 +39,13 @@ test("presence tracks collaborator identity and active editor roles",()=>{
  assert.ok(presence.includes("shyraq:editor-presence"));
  assert.ok(deckPage.includes('displayName={String(currentProfile?.display_name||currentProfile?.username||"Member")'));
 });
+
+
+test("card editor uses realtime draft broadcast for existing collaborative cards",()=>{
+ const draft=readFileSync(new URL("../src/lib/collaboration/draft.ts",import.meta.url),"utf8");
+ const editor=readFileSync(new URL("../src/components/card-editor.tsx",import.meta.url),"utf8");
+ assert.ok(draft.includes('event:"card-draft"'));
+ assert.ok(draft.includes("sourceRef"));
+ assert.ok(editor.includes("useCardDraftChannel"));
+ assert.ok(editor.includes("Live draft collaboration is enabled"));
+});
