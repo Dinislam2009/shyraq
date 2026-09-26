@@ -17,6 +17,16 @@ function payload(formData:FormData){
  const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
  const markers=String(formData.get("markers")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
  const status=String(formData.get("status")||"").trim().slice(0,60);
+ const kindValue=["basic","reverse","cloze","multiple_choice","image","custom"].includes(String(formData.get("kind")||""))?String(formData.get("kind")):"basic";
+ const templateId=String(formData.get("template_id")||"").trim();
+ const options=String(formData.get("options")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
+ const answerRaw=String(formData.get("answer")||"").trim();
+ const answer=Number.isFinite(Number(answerRaw))?Number(answerRaw):0;
+ const imageUrl=String(formData.get("image_url")||"").trim().slice(0,2000);
+ let fields:Record<string,unknown>={};
+ let reviewPreferences:Record<string,unknown>={};
+ try{const parsed=JSON.parse(String(formData.get("fields")||"{}"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))fields=parsed;}catch{}
+ try{const parsed=JSON.parse(String(formData.get("review_preferences")||"{}"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))reviewPreferences=parsed;}catch{}
  if(tags.length)content.tags=tags;
  if(markers.length)content.markers=markers;
  if(status)content.status=status;
@@ -172,13 +182,20 @@ export async function bulkEditCards(deckId:string,cardIds:string[],formData:Form
  const applyTags=formData.get("apply_tags")==="on";
  const applyMarkers=formData.get("apply_markers")==="on";
  const applyStatus=formData.get("apply_status")==="on";
+ const applyKind=formData.get("apply_kind")==="on";
+ const applyTemplate=formData.get("apply_template")==="on";
+ const applyOptions=formData.get("apply_options")==="on";
+ const applyAnswer=formData.get("apply_answer")==="on";
+ const applyImage=formData.get("apply_image")==="on";
+ const applyFields=formData.get("apply_fields")==="on";
+ const applyReviewPreferences=formData.get("apply_review_preferences")==="on";
  const front=String(formData.get("front")||"").slice(0,20000);
  const back=String(formData.get("back")||"").slice(0,20000);
  const tags=String(formData.get("tags")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,30);
  const markers=String(formData.get("markers")||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
  const status=String(formData.get("status")||"").trim().slice(0,60);
 
- if(!applyFront&&!applyBack&&!applyTags&&!applyMarkers&&!applyStatus)fail("/decks/"+deckId,"Choose at least one field to update.");
+ if(!applyFront&&!applyBack&&!applyTags&&!applyMarkers&&!applyStatus&&!applyKind&&!applyTemplate&&!applyOptions&&!applyAnswer&&!applyImage&&!applyFields&&!applyReviewPreferences)fail("/decks/"+deckId,"Choose at least one field to update.");
 
  for(const card of cards){
   const next={...(card.content&&typeof card.content==="object"?card.content:{})} as Record<string,unknown>;
@@ -186,11 +203,16 @@ export async function bulkEditCards(deckId:string,cardIds:string[],formData:Form
   if(applyBack)next.back=back;
   if(applyTags)next.tags=tags;
   if(applyMarkers)next.markers=markers;
-  if(applyStatus){
-   if(status)next.status=status;
-   else delete next.status;
-  }
-  const {error}=await supabase.from("cards").update({content:next}).eq("id",card.id).eq("deck_id",deckId);
+  if(applyStatus){if(status)next.status=status;else delete next.status;}
+  if(applyOptions)next.options=options;
+  if(applyAnswer)next.answer=answer;
+  if(applyImage){if(imageUrl)next.imageUrl=imageUrl;else delete next.imageUrl;}
+  if(applyFields)next.fields=fields;
+  if(applyReviewPreferences)next.reviewPreferences=reviewPreferences;
+  const patch:any={content:next};
+  if(applyKind)patch.kind=kindValue;
+  if(applyTemplate)patch.template_id=templateId||null;
+  const {error}=await supabase.from("cards").update(patch).eq("id",card.id).eq("deck_id",deckId);
   if(error)fail("/decks/"+deckId,error.message);
  }
  revalidatePath("/decks/"+deckId);
