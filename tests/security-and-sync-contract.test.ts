@@ -86,3 +86,9 @@ test("review history export paginates instead of using a fixed row cap",()=>{
  assert.doesNotMatch(source,/\.limit\(10000\)/);
  assert.match(source,/order\("id",\{ascending:true\}\)/);
 });
+
+
+test("legal policy pages remain publicly reachable",()=>{
+ const source=readFileSync(new URL("../src/proxy.ts",import.meta.url),"utf8");
+ assert.match(source,/["']\/legal["']/);
+});
