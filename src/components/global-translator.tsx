@@ -30,8 +30,7 @@ export function GlobalTranslator() {
     });
 
     const translateTextNode = (node: Node) => {
-      const parent = node.parentElement;
-      if (!parent || parent.children.length > 0) return;
+      if (!node.parentElement) return;
       const raw = normalize(node.textContent || "");
       if (!raw) return;
       const key = reverse.get(raw);
