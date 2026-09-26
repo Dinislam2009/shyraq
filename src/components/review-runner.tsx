@@ -153,8 +153,8 @@ export function ReviewRunner({userId,queue,preferences}:{userId:string;queue:Que
    const template=templateOne(card.card_templates);
    const frontRendered=template?applyCardTemplate(template.front_template,{...templateFields,front:maskedFront,back:sourceBack}):maskedFront;
    const backRendered=template?applyCardTemplate(template.back_template,{...templateFields,front:revealedFront,back:clozeBack}):clozeBack;
-   const maskCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}|]+)(?:\|[^}]+)?\}\}/g,"••••"):value;
-   const revealCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}|]+)(?:\|[^}]+)?\}\}/g,"$1"):value;
+   const maskCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}:|]+)(?:::[^}|]+)?(?:\|[^}]+)?\}\}/g,"••••"):value;
+   const revealCloze=(value:string)=>card.kind==="cloze"?value.replace(/\{\{c\d+::([^}:|]+)(?:::[^}|]+)?(?:\|[^}]+)?\}\}/g,"$1"):value;
    return {front:maskCloze(frontRendered),back:revealCloze(backRendered),templateCss:template?.css||""};
  },[card]);
 
