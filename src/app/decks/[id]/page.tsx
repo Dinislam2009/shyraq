@@ -3,6 +3,7 @@ import {notFound} from "next/navigation";
 import {AppShell} from "@/components/app-shell";
 import {CardManager} from "@/components/card-manager";
 import {CollaborationPresence} from "@/components/collaboration-presence";
+import {CollaborationRealtime} from "@/components/collaboration-realtime";
 import {getDeck} from "@/lib/supabase/queries";
 import {acceptDeckUpdate,setDeckUpdatePolicy} from "@/app/explore/[id]/actions";
 import {createClient} from "@/lib/supabase/server";
@@ -75,6 +76,7 @@ export default async function DeckPage({params,searchParams}:{params:Promise<{id
 
  return (
   <AppShell>
+   <CollaborationRealtime deckId={id} workspaceId={String(deck.workspace_id)}/>
    <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
     <Link href="/decks" className="text-sm text-slate-400 hover:text-slate-700">← Back to decks</Link>
 
