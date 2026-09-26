@@ -73,6 +73,13 @@ function mapDeck(item:Record<string,unknown>,userId:string){
  };
 }
 
+function mapTag(item:Record<string,unknown>,userId:string){
+ return {id:String(item.id),userId,workspaceId:String(item.workspace_id??item.workspaceId??""),name:String(item.name??"")};
+}
+function mapCollection(item:Record<string,unknown>,userId:string){
+ return {id:String(item.id),userId,workspaceId:String(item.workspace_id??item.workspaceId??""),ownerId:String(item.owner_id??item.ownerId??userId),name:String(item.name??""),kind:String(item.kind??"custom"),description:String(item.description??""),rule:item.rule??{},sortMode:String(item.sort_mode??"manual"),isPublic:Boolean(item.is_public??item.isPublic),isFeatured:Boolean(item.is_featured??item.isFeatured),createdAt:String(item.created_at??item.createdAt??new Date().toISOString())};
+}
+
 function mapTemplate(item:Record<string,unknown>,userId:string):OfflineCardTemplate{
  return {
   id:String(item.id),
@@ -113,6 +120,8 @@ async function applyPulledChanges(userId:string,changes:Array<Record<string,unkn
   if(type==="decks")await offlineStore.decks.put(mapDeck(payload,userId));
   if(type==="cards")await offlineStore.cards.put(mapCard(payload,userId));
   if(type==="card_templates")await offlineStore.cardTemplates.put(mapTemplate(payload,userId));
+  if(type==="tags")await offlineStore.tags.put(mapTag(payload,userId));
+  if(type==="collections")await offlineStore.collections.put(mapCollection(payload,userId));
  }
 }
 
@@ -131,12 +140,14 @@ export async function pullChanges(userId:string){
 export async function hydrateOfflineMirror(userId:string){
  const response=await fetch("/api/sync?bootstrap=1",{cache:"no-store"});
  if(!response.ok)throw new Error("Offline mirror bootstrap failed.");
- const data=(await response.json()) as {decks:Record<string,unknown>[];cards:Record<string,unknown>[];templates?:Record<string,unknown>[];media?:Record<string,unknown>[]};
+ const data=(await response.json()) as {decks:Record<string,unknown>[];cards:Record<string,unknown>[];templates?:Record<string,unknown>[];tags?:Record<string,unknown>[];collections?:Record<string,unknown>[];media?:Record<string,unknown>[]};
  await cacheMirror(
   userId,
   (data.decks??[]).map(item=>mapDeck(item,userId)),
   (data.cards??[]).map(item=>mapCard(item,userId)),
-  (data.templates??[]).map(item=>mapTemplate(item,userId))
+  (data.templates??[]).map(item=>mapTemplate(item,userId)),
+  (data.tags??[]).map(item=>mapTag(item,userId)),
+  (data.collections??[]).map(item=>mapCollection(item,userId))
  );
  return data;
 }
@@ -226,7 +237,7 @@ export {getCachedReviewSession,getDeviceId};
 export async function bootstrapOfflineMirror(){
  const response=await fetch("/api/sync?bootstrap=1",{cache:"no-store"});
  if(!response.ok)throw new Error("Offline bootstrap failed.");
- const data=await response.json() as {user_id:string;decks:Record<string,unknown>[];cards:Record<string,unknown>[];templates?:Record<string,unknown>[]};
+ const data=await response.json() as {user_id:string;decks:Record<string,unknown>[];cards:Record<string,unknown>[];templates?:Record<string,unknown>[];tags?:Record<string,unknown>[];collections?:Record<string,unknown>[]};
  const userId=String(data.user_id||"");
  if(!userId)throw new Error("No authenticated user.");
  if(typeof window!=="undefined")localStorage.setItem("shyraq:last-user-id",userId);
